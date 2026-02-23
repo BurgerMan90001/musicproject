@@ -1,0 +1,194 @@
+@import url("./index.css");
+
+#root {
+  text-align: center;
+
+  height: 100%;
+  min-width: 100%;
+}
+
+.grid-layout {
+  min-height: 100%;
+
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+#dashboard {
+  display: flex;
+
+  grid-template-rows: 1fr auto;
+  grid-template-columns: 1fr 5fr;
+}
+.bg-orange-500 {
+  background-color: var(--orange-500);
+}
+.bg-orange-700 {
+  background-color: var(--orange-700);
+}
+.bg-orange-900 {
+  background-color: var(--orange-900);
+}
+
+
+#top-media-buttons > button:hover {
+  background-color: var(--orange-900);
+}
+
+#top-media-buttons > button:active {
+  background-color: var(--orange-500);
+}
+
+.header {
+  display: flex;
+}
+.box-shadow {
+  box-shadow: var(--box-shadow);
+}
+.flex {
+  display: flex;
+}
+
+.size-40 {
+  width: 40px;
+  height: 40px;
+}
+
+.height-50 {
+  height: 50px;
+}
+
+.padding-8 {
+  padding: 8px;
+}
+.margin-l-auto {
+  margin-left: auto;
+}
+.margin-r-auto {
+  margin-left: auto;
+}
+.gap-8 {
+  gap: 8px;
+}
+.gap-32 {
+  gap: 32px;
+}
+.margin-auto {
+  margin: auto;
+}
+.margin-8 {
+  margin: 8px;
+}
+.margin-auto-0 {
+  margin: auto 0;
+}
+.margin-0-auto {
+  margin: 0 auto;
+}
+.align-items-center {
+  align-items: center;
+}
+
+.bold {
+  font-weight: bold;
+}
+.font-weight-500 {
+  font-weight: 500;
+}
+.font-large {
+  font-size: large;
+}
+
+.text-align-l {
+  text-align: left;
+}
+
+.line-height {
+  line-height: normal;
+}
+
+.border-radius-8 {
+  border-radius: 8px;
+}
+.border-radius-16 {
+  border-radius: 16px;
+}
+.font-size-15 {
+  font-size: 15px;
+}
+
+.padding-16 {
+  padding: 8px 16px;
+}
+
+.gap-4 {
+  gap: 4px;
+}
+
+.transition-bg-color {
+  transition: background-color 0.1s ease-in-out;
+}
+
+.padding-16-32 {
+  padding: 16px 32px;
+}
+
+.color-black {
+  color: var(--black);
+}
+
+@media (max-width: 700px) {
+  #sidebar {
+    display: none;
+  }
+  #top-media-buttons {
+    display: none;
+  }
+}
+
+.gap-16 {
+  gap: 16px;
+}
+.flex-1 {
+  flex: 1;
+}
+.full-height {
+  height: 100%;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.justifiy-content-center {
+  justify-content: center;
+}
+
+.color-orange-700 {
+  color: var(--orange-700);
+}
+
+.color-white {
+  color: var(--white);
+}
+
+.grid-item-container {
+  display: grid;
+
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+.max-width-250 {
+  max-width: 250px;
+}
+
+#sidebar {
+  max-width: 200px;
+}
+
+.height-250 {
+  height: 250px;
+}
+
+#test {
+  background-color: aliceblue;
+}
