@@ -11,8 +11,8 @@ COPY . .
 
 RUN npm run build
 
-
 FROM nginx:alpine AS run
 
+#EXPOSE 80 8080
 
-COPY --from=build /app/site/dist/ ./usr/share/nginx/html
+COPY --from=build /app/site/dist ./usr/share/nginx/html

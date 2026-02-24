@@ -2,8 +2,6 @@ import "./assets/css/App.css";
 import { createContext } from "react";
 import { Outlet } from "react-router";
 import Header from "./components/Header";
-import ErrorPage from "./routes/ErrorPage";
-import Dashboard from "./routes/Dashboard";
 interface ListContextType {
   animals: string[];
 }

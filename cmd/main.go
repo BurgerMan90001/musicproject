@@ -8,11 +8,8 @@ import (
 	"movieexample.com/internal/controller/auth"
 	"movieexample.com/internal/controller/user"
 	"movieexample.com/internal/handler"
-	"movieexample.com/internal/repository/postgres"
 	"movieexample.com/internal/util/fileutil"
 )
-
-const serverUrl = "localhost:8080"
 
 func main() {
 
@@ -21,9 +18,8 @@ func main() {
 		panic(err)
 	}
 	port := cfg.APIConfig.Port
-	databaseURL := cfg.RepositoryConfig.URL
 
-	repo := postgres.New(databaseURL)
+	repo := newRepository(cfg.RepositoryConfig)
 
 	authController := auth.New(repo, []byte(cfg.APIConfig.JWTKey))
 	userController := user.New(repo)
@@ -32,11 +28,10 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	httphandler := handler.Register(mux)
+	handler.Register(mux)
 	// start server
 	log.Printf("Server listening at localhost:%d", port)
-	if err := http.ListenAndServe(fmt.Sprintf("localhost:%d", port), httphandler); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf("localhost:%d", port), mux); err != nil {
 		panic(err)
 	}
-	// start server
 }

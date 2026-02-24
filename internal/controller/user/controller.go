@@ -16,9 +16,9 @@ func New(repo repository.Repository) *Controller {
 	return &Controller{repo: repo}
 }
 
-func (c *Controller) GetUser(ctx context.Context, id string) (*model.User, error) {
+func (c *Controller) GetUserByID(ctx context.Context, id string) (*model.User, error) {
 
-	user, err := c.repo.GetUser(ctx, id)
+	user, err := c.repo.GetUserByID(ctx, id)
 	if err != nil && errors.Is(err, repository.ErrNotFound) {
 		return nil, repository.ErrNotFound
 	}

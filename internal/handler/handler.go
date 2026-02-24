@@ -10,7 +10,6 @@ import (
 	"github.com/golang-jwt/jwt/v5/request"
 	"movieexample.com/internal/controller/auth"
 	"movieexample.com/internal/controller/user"
-	"movieexample.com/internal/middleware"
 	"movieexample.com/internal/repository"
 	"movieexample.com/internal/util/fileutil"
 	"movieexample.com/pkg/model"
@@ -29,7 +28,7 @@ func New(authController *auth.Controller,
 	}
 }
 
-func (h *Handler) Register(mux *http.ServeMux) http.Handler {
+func (h *Handler) Register(mux *http.ServeMux) {
 
 	// setup routes
 	mux.HandleFunc("/health", h.handleHealth)
@@ -45,10 +44,10 @@ func (h *Handler) Register(mux *http.ServeMux) http.Handler {
 	mux.HandleFunc("/secret", h.handleSecret)
 
 	// static file server
-	mux.Handle("/static/", http.FileServer(http.Dir("public")))
+	//mux.Handle("/static/", http.FileServer(http.Dir("public")))
 
 	// add middleware
-	return middleware.Logger(mux)
+	//middleware.Logger(mux)
 }
 func (h *Handler) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
@@ -96,6 +95,7 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "empty username or password")
 		return
 	}
+	//_, err := h.userController.GetUser(ctx, id)
 
 	// TODO
 }
@@ -120,7 +120,7 @@ func (h *Handler) handleUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	switch r.Method {
 	case http.MethodGet:
-		user, err := h.userController.GetUser(ctx, id)
+		user, err := h.userController.GetUserByID(ctx, id)
 		if err != nil && errors.Is(err, repository.ErrNotFound) {
 			w.WriteHeader(http.StatusNotFound)
 			return

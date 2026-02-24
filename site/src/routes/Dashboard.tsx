@@ -1,6 +1,6 @@
-import { Link } from "react-router";
+//import { Link } from "react-router";
 //import Image from "./Image";
-import List from "../components/List";
+//import List from "../components/List";
 import { createContext } from "react";
 
 interface ListContextType {
@@ -9,6 +9,7 @@ interface ListContextType {
 const ListContext = createContext<ListContextType>({
   animals: [],
 });
+/*
 function Greeting({ username }: { username: string }) {
   return (
     <div className="flex align-items-center text-align-l line-height gap-16">
@@ -31,13 +32,14 @@ function Test() {
         <div className="color-black">
           <h1>Animals: </h1>
           <List />
-          {/*<Image />*/}
+          {<Image />}
           <Link to="/profile">Profile Page</Link>
         </div>
       </main>
     </ListContext>
   );
 }
+*/
 function Dashboard() {
   return (
     <>
@@ -64,9 +66,7 @@ function Dashboard() {
   );
 }
 function Item() {
-  return (
-    <div className="border-radius-8 height-250" id="test"></div>
-  );
+  return <div className="border-radius-8 height-250" id="test"></div>;
 }
 export default Dashboard;
 
