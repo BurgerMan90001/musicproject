@@ -5,7 +5,6 @@ CREATE TABLE IF NOT EXISTS movies (
     director VARCHAR(255)
 );
 
-
 CREATE TABLE IF NOT EXISTS ratings (
     record_id VARCHAR(255),
     record_type VARCHAR(255), 

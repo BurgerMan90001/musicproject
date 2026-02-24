@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 
+	// postgres driver
 	_ "github.com/lib/pq"
-	"movieexample.com/internal/model"
 	"movieexample.com/internal/repository"
+	"movieexample.com/pkg/model"
 )
 
 type Repository struct {
@@ -42,7 +43,9 @@ func (r *Repository) GetUser(ctx context.Context, id string) (*model.User, error
 		PasswordHash: passwordHash,
 	}, nil
 }
-func (r *Repository) Put(ctx context.Context, id string, m *model.User) error {
+
+func (r *Repository) PutUser(ctx context.Context, id string, m *model.User) error {
+
 	query := "INSERT INTO users (id, username, email, password_hash) VALUES($1, $2, $3, $4)"
 	_, err := r.db.ExecContext(ctx, query,
 		id,

@@ -1,34 +1,46 @@
 package handler
 
 import (
+	"errors"
+	"fmt"
+	"log"
 	"net/http"
 
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/golang-jwt/jwt/v5/request"
 	"movieexample.com/internal/controller/auth"
-	"movieexample.com/internal/model"
+	"movieexample.com/internal/controller/user"
+	"movieexample.com/internal/middleware"
+	"movieexample.com/internal/repository"
 	"movieexample.com/internal/util/fileutil"
+	"movieexample.com/pkg/model"
 )
 
 type Handler struct {
-	authController auth.Controller
+	authController *auth.Controller
+	userController *user.Controller
 }
 
-func New(authController auth.Controller) *Handler {
+func New(authController *auth.Controller,
+	userController *user.Controller) *Handler {
 	return &Handler{
 		authController: authController,
+		userController: userController,
 	}
 }
-func (h *Handler) Register(handler *http.ServeMux) {
-	mux := http.NewServeMux()
+
+func (h *Handler) Register(mux *http.ServeMux) http.Handler {
 
 	// setup routes
-	//mux.HandleFunc("GET /health", handler.HandleHealth)
-
+	mux.HandleFunc("/health", h.handleHealth)
+	//mux.Handle("/", middleware.Logger)
 	// user routes
 	mux.HandleFunc("/user", h.handleUser)
 
 	// auth routes
-	mux.HandleFunc("POST /auth/login", h.handleLogin)
-	mux.HandleFunc("/auth/signup", h.handleSignup)
+	mux.HandleFunc("/auth/login", h.handleLogin)
+	mux.HandleFunc("/auth/signup", h.HandleSignup)
+	//mux.HandleFunc("/auth/oath", h.handleSignup)
 
 	mux.HandleFunc("/secret", h.handleSecret)
 
@@ -36,18 +48,97 @@ func (h *Handler) Register(handler *http.ServeMux) {
 	mux.Handle("/static/", http.FileServer(http.Dir("public")))
 
 	// add middleware
-	//httphandler := middleware.Logger(mux)
-	//httphandler = middleware.PanicRecovery(mux)
+	return middleware.Logger(mux)
 }
-func (h *Handler) handleSignup(w http.ResponseWriter, r *http.Request) {
-	fileutil.WriteJSON(w, &model.User{ID: "asda"})
+func (h *Handler) handleHealth(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	_, _ = fmt.Fprintln(w, "alive")
+}
+func (h *Handler) HandleSignup(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	username := r.FormValue("username")
+	passwordHash := r.FormValue("password_hash")
+
+	if username == "" || passwordHash == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = fmt.Fprintln(w, "empty username or password")
+		return
+	}
+
+	ctx := r.Context()
+
+	tokenString, err := h.authController.GenerateToken(ctx, username)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/jwt")
+	w.WriteHeader(http.StatusOK)
+	_, _ = fmt.Fprintln(w, tokenString)
 }
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
+	username := r.FormValue("username")
+	passwordHash := r.FormValue("password_hash")
+
+	if username == "" || passwordHash == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(w, "empty username or password")
+		return
+	}
+
+	// TODO
 }
 func (h *Handler) handleSecret(w http.ResponseWriter, r *http.Request) {
 
+	token, err := request.ParseFromRequest(r, request.AuthorizationHeaderExtractor, func(t *jwt.Token) (any, error) {
+		return "", nil
+	}, request.WithClaims(&auth.Claims{}))
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = fmt.Fprintln(w, "Invalid token: %w", err)
+	}
+	_, _ = fmt.Fprintln(w, "Welcome,", token.Claims.(*auth.Claims).Username)
 }
-func (h *Handler) handleUser(w http.ResponseWriter, r *http.Request) {
 
+func (h *Handler) handleUser(w http.ResponseWriter, r *http.Request) {
+	id := r.FormValue("id")
+	if id == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	ctx := r.Context()
+	switch r.Method {
+	case http.MethodGet:
+		user, err := h.userController.GetUser(ctx, id)
+		if err != nil && errors.Is(err, repository.ErrNotFound) {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		} else if err != nil {
+			log.Printf("Repository get error: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		fileutil.WriteJSON(w, user)
+	case http.MethodPut:
+		err := h.userController.PutUser(ctx, &model.User{})
+		if err != nil {
+			log.Printf("Repository get error: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	default:
+		http.Error(w, "invalid request method", http.StatusBadRequest)
+	}
+	w.WriteHeader(http.StatusOK)
 }

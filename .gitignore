@@ -4,9 +4,6 @@
 main
 .env
 
-# microservice things
-
-ratingingester
 
 base.yml
 base.yaml

@@ -1,22 +1,65 @@
 package auth
 
 import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 	"movieexample.com/internal/repository"
 )
 
+type Claims struct {
+	Username string `json:"username"`
+	jwt.RegisteredClaims
+}
 type Controller struct {
-	repo repository.Repository
+	repo   repository.Repository
+	jwtKey []byte
 }
 
-func New(repo repository.Repository) *Controller {
-	return &Controller{repo: repo}
+func New(repo repository.Repository, secretKey []byte) *Controller {
+	return &Controller{
+		repo:   repo,
+		jwtKey: secretKey,
+	}
+}
+func (c *Controller) GenerateToken(ctx context.Context, username string) (string, error) {
+	claims := &Claims{
+		Username: username,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(5 * time.Minute)),
+			Issuer:    "my_app",
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(c.jwtKey)
+	if err != nil {
+		return "", err
+	}
+	return tokenString, nil
 }
 
+func (c *Controller) VerifyToken(ctx context.Context, tokenString string) error {
+
+	claims := &Claims{}
+
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (any, error) {
+		return c.jwtKey, nil
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
+	if err != nil {
+		return fmt.Errorf("failed to parse token: %v", err)
+	} else if _, ok := token.Claims.(*Claims); ok {
+		// token is valid
+		return nil
+	} else {
+		return fmt.Errorf("unknown claims type: %v", err)
+	}
+}
 
 func HashPassword(password string) string {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-
 	if err != nil {
 		panic(err)
 	}
@@ -24,7 +67,7 @@ func HashPassword(password string) string {
 	return string(bytes)
 }
 
-func CheckPasswordHash(password string, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+func CheckPasswordHash(password string, passwordHash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password))
 	return err == nil
 }

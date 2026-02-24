@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"movieexample.com/internal/controller/auth"
+	"movieexample.com/internal/controller/user"
 	"movieexample.com/internal/handler"
 	"movieexample.com/internal/repository/postgres"
 	"movieexample.com/internal/util/fileutil"
@@ -24,16 +25,17 @@ func main() {
 
 	repo := postgres.New(databaseURL)
 
-	authController := auth.New(repo)
+	authController := auth.New(repo, []byte(cfg.APIConfig.JWTKey))
+	userController := user.New(repo)
 
-	handler := handler.New(*authController)
-	
+	handler := handler.New(authController, userController)
+
 	mux := http.NewServeMux()
 
-	handler.Register(mux)
+	httphandler := handler.Register(mux)
 	// start server
 	log.Printf("Server listening at localhost:%d", port)
-	if err := http.ListenAndServe(fmt.Sprintf("localhost:%d", port), mux); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf("localhost:%d", port), httphandler); err != nil {
 		panic(err)
 	}
 	// start server

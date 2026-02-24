@@ -12,7 +12,8 @@ type serviceConfig struct {
 }
 
 type apiConfig struct {
-	Port int `yaml:"port"`
+	Port   int    `yaml:"port"`
+	JWTKey string `yaml:"jwt_key"`
 }
 
 type repositoryConfig struct {
