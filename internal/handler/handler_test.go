@@ -1,71 +1,95 @@
 package handler
 
 import (
-	"fmt"
+	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"go.uber.org/mock/gomock"
+	mock_repository "movieexample.com/gen/mocks"
+	"movieexample.com/internal/controller/user"
+	"movieexample.com/pkg/model"
 )
 
-type handlerTest struct {
-	name         string
-	method       string
-	url          string
-	expect       string
-	expectStatus int
-}
-
 func TestHandler(t *testing.T) {
-	tests := []handlerTest{
+	tests := []struct {
+		name          string
+		method        string
+		url           string
+		body          io.Reader
+		wantBody      string
+		wantStatus    int
+		expectRepoRes *model.User
+		expectRepoErr error
+	}{
 		{
-			name:         "put user",
-			method:       "PUT",
-			url:          "localhost:8081/user",
-			expect:       `{"test":"test"}`,
-			expectStatus: http.StatusOK,
+			name:          "put user",
+			method:        "PUT",
+			url:           "8081/user",
+			wantBody:      `{"test":"test"}`,
+			wantStatus:    http.StatusOK,
+			expectRepoRes: nil,
 		},
 		{
-			name:         "get user by id",
-			method:       "GET",
-			url:          "localhost:8081/user",
-			expect:       `{"test":"test"}`,
-			expectStatus: http.StatusOK,
+			name:          "get user by id",
+			method:        "GET",
+			url:           "/user?id=id",
+			wantStatus:    http.StatusOK,
+			expectRepoRes: &model.User{ID: "", Username: ""},
 		},
 		{
-			name:         "signup success",
-			method:       "POST",
-			url:          "localhost:8081/auth/signup",
-			expect:       `{"test":"test"}`,
-			expectStatus: http.StatusOK,
+			name:       "invalid method",
+			method:     http.MethodDelete,
+			url:        "/user?id=id",
+			wantBody:   "invalid request method",
+			wantStatus: http.StatusMethodNotAllowed,
 		},
+		/*
+			{
+				name:       "signup success",
+				method:     "POST",
+				url:        "localhost:8081/auth/signup",
+				expect:     `{"test":"test"}`,
+				wantStatus: http.StatusOK,
+			},
+		*/
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := http.NewRequest(tt.method, tt.url, nil)
+			mockController := gomock.NewController(t)
+			defer mockController.Finish()
+
+			repoMock := mock_repository.NewMockRepository(mockController)
+
+			r, err := http.NewRequest(tt.method, tt.url, tt.body)
 			if err != nil {
 				t.Error(err)
 			}
 
-			rr := httptest.NewRecorder()
+			w := httptest.NewRecorder()
 
-			//repo :=
-			//authController := auth.New(repo, []byte(cfg.APIConfig.JWTKey))
-			//userController := user.New(repo)
+			ctx := context.Background()
 
-			//h := handler.New(authController, userController)
-			//handler := http.HandlerFunc(h.handleUser)
+			repoMock.EXPECT().GetUserByID(ctx, "id").Return(tt.expectRepoRes, tt.expectRepoErr)
 
-			//handler.ServeHTTP(rr, req)
-			//mux.ServeHTTP(rr, req)
+			//authController := auth.New(repoMock, []byte("test_key"))
+			userController := user.New(repoMock)
 
-			// if status := rr.Code; status != http.StatusOK {
-			// 	t.Errorf("wrong status code got: %v wanted: %v", status, http.StatusOK)
-			// }
-			if status := rr.Code; status != tt.expectStatus {
+			h := New(nil, userController)
+			h.handleUser(w, r)
 
+			res := w.Result()
+			data, err := io.ReadAll(res.Body)
+
+			if w.Code != tt.wantStatus {
+				t.Errorf("wrong status code got: %v wanted: %v", w.Code, tt.wantStatus)
 			}
 
-			fmt.Println(rr.Body.String())
+			if string(data) != tt.wantBody {
+				t.Errorf("wrong body got: %v wanted: %v", w.Body.String(), tt.wantBody)
+			}
 		})
 	}
 }

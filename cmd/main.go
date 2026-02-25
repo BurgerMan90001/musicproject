@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 
-	"movieexample.com/internal/controller/auth"
 	"movieexample.com/internal/controller/user"
 	"movieexample.com/internal/handler"
 	"movieexample.com/internal/util/fileutil"
@@ -21,17 +20,21 @@ func main() {
 
 	repo := newRepository(cfg.RepositoryConfig)
 
-	authController := auth.New(repo, []byte(cfg.APIConfig.JWTKey))
+	//authController := auth.New(repo, []byte(cfg.APIConfig.JWTKey))
 	userController := user.New(repo)
 
-	handler := handler.New(authController, userController)
+	handler := handler.New(nil, userController)
 
 	mux := http.NewServeMux()
 
 	handler.Register(mux)
+
+	host := "localhost"
+
 	// start server
-	log.Printf("Server listening at localhost:%d", port)
-	if err := http.ListenAndServe(fmt.Sprintf("localhost:%d", port), mux); err != nil {
+	log.Printf("Server listening at %v:%d", host, port)
+	if err := http.ListenAndServe(fmt.Sprintf("%v:%d", host, port), mux); err != nil {
 		panic(err)
 	}
+
 }

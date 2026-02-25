@@ -58,7 +58,7 @@ func (c *Controller) VerifyToken(ctx context.Context, tokenString string) error 
 	}
 }
 
-func HashPassword(password string) string {
+func (c *Controller) HashPassword(password string) string {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	if err != nil {
 		panic(err)

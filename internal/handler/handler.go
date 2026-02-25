@@ -38,7 +38,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 
 	// auth routes
 	mux.HandleFunc("/auth/login", h.handleLogin)
-	mux.HandleFunc("/auth/signup", h.HandleSignup)
+	mux.HandleFunc("/auth/signup", h.handleSignup)
 	//mux.HandleFunc("/auth/oath", h.handleSignup)
 
 	mux.HandleFunc("/secret", h.handleSecret)
@@ -53,7 +53,7 @@ func (h *Handler) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = fmt.Fprintln(w, "alive")
 }
-func (h *Handler) HandleSignup(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleSignup(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusBadRequest)
@@ -61,15 +61,22 @@ func (h *Handler) HandleSignup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	username := r.FormValue("username")
-	passwordHash := r.FormValue("password_hash")
+	password := r.FormValue("password")
 
-	if username == "" || passwordHash == "" {
+	if username == "" || password == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = fmt.Fprintln(w, "empty username or password")
 		return
 	}
-
+	passwordHash := h.authController.HashPassword(password)
+	user := &model.User{
+		Username:     username,
+		PasswordHash: passwordHash,
+	}
 	ctx := r.Context()
+	if err := h.userController.PutUser(ctx, user); err != nil {
+
+	}
 
 	tokenString, err := h.authController.GenerateToken(ctx, username)
 	if err != nil {
@@ -138,7 +145,8 @@ func (h *Handler) handleUser(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 	default:
-		http.Error(w, "invalid request method", http.StatusBadRequest)
+
+		http.Error(w, "invalid request method", http.StatusMethodNotAllowed)
 	}
 	w.WriteHeader(http.StatusOK)
 }

@@ -11,3 +11,4 @@ type Repository interface {
 	PutUser(ctx context.Context, id string, u *model.User) error
 	GetUserByUsername(ctx context.Context, username string) (*model.User, error)
 }
+
