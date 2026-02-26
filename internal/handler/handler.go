@@ -6,11 +6,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/golang-jwt/jwt/v5/request"
-	"movieexample.com/internal/controller/auth"
-	"movieexample.com/internal/controller/user"
+	"movieexample.com/internal/auth"
 	"movieexample.com/internal/repository"
+	"movieexample.com/internal/user"
 	"movieexample.com/internal/util/fileutil"
 	"movieexample.com/pkg/model"
 )
@@ -29,7 +27,6 @@ func New(authController *auth.Controller,
 }
 
 func (h *Handler) Register(mux *http.ServeMux) {
-
 	// setup routes
 	mux.HandleFunc("/health", h.handleHealth)
 	//mux.Handle("/", middleware.Logger)
@@ -41,7 +38,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/signup", h.handleSignup)
 	//mux.HandleFunc("/auth/oath", h.handleSignup)
 
-	mux.HandleFunc("/secret", h.handleSecret)
+	//mux.HandleFunc("/secret", h.handleSecret)
 
 	// static file server
 	//mux.Handle("/static/", http.FileServer(http.Dir("public")))
@@ -60,17 +57,17 @@ func (h *Handler) handleSignup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	username := r.FormValue("username")
+	email := r.FormValue("email")
 	password := r.FormValue("password")
 
-	if username == "" || password == "" {
+	if email == "" || password == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		_, _ = fmt.Fprintln(w, "empty username or password")
+		_, _ = fmt.Fprintln(w, "empty email or password")
 		return
 	}
 	passwordHash := h.authController.HashPassword(password)
 	user := &model.User{
-		Username:     username,
+		Email:        email,
 		PasswordHash: passwordHash,
 	}
 	ctx := r.Context()
@@ -78,7 +75,7 @@ func (h *Handler) handleSignup(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	tokenString, err := h.authController.GenerateToken(ctx, username)
+	tokenString, err := h.authController.GenerateToken(&auth.Claims{})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -93,21 +90,27 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	ctx := r.Context()
 
-	username := r.FormValue("username")
-	passwordHash := r.FormValue("password_hash")
+	email := r.FormValue("email")
+	password := r.FormValue("password")
 
-	if username == "" || passwordHash == "" {
+	if email == "" || password == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintln(w, "empty username or password")
 		return
 	}
-	//_, err := h.userController.GetUser(ctx, id)
+	_, err := h.userController.GetUserByEmail(ctx, email)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	// TODO
 }
-func (h *Handler) handleSecret(w http.ResponseWriter, r *http.Request) {
 
+/*
+func (h *Handler) handleSecret(w http.ResponseWriter, r *http.Request) {
 	token, err := request.ParseFromRequest(r, request.AuthorizationHeaderExtractor, func(t *jwt.Token) (any, error) {
 		return "", nil
 	}, request.WithClaims(&auth.Claims{}))
@@ -117,6 +120,7 @@ func (h *Handler) handleSecret(w http.ResponseWriter, r *http.Request) {
 	}
 	_, _ = fmt.Fprintln(w, "Welcome,", token.Claims.(*auth.Claims).Username)
 }
+*/
 
 func (h *Handler) handleUser(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")

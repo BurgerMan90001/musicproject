@@ -24,13 +24,12 @@ func New(url string) *Repository {
 
 func (r *Repository) GetUserByID(ctx context.Context, id string) (*model.User, error) {
 	var (
-		username     string
 		email        string
 		passwordHash string
 	)
-	query := "SELECT username, email, password_hash FROM users WHERE id=$1"
+	query := "SELECT email, password_hash FROM users WHERE id=$1"
 	row := r.db.QueryRowContext(ctx, query, id)
-	if err := row.Scan(&username, &email, &passwordHash); err != nil {
+	if err := row.Scan(&email, &passwordHash); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, repository.ErrNotFound
 		}
@@ -38,20 +37,18 @@ func (r *Repository) GetUserByID(ctx context.Context, id string) (*model.User, e
 	}
 	return &model.User{
 		ID:           id,
-		Username:     username,
 		Email:        email,
 		PasswordHash: passwordHash,
 	}, nil
 }
-func (r *Repository) GetUserByUsername(ctx context.Context, username string) (*model.User, error) {
+func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	var (
 		id           string
-		email        string
 		passwordHash string
 	)
-	query := "SELECT id, email, password_hash WHERE username=$1"
-	row := r.db.QueryRowContext(ctx, query, username)
-	if err := row.Scan(&id, &email, &passwordHash); err != nil {
+	query := "SELECT email, password_hash FROM users WHERE email=$1"
+	row := r.db.QueryRowContext(ctx, query, email)
+	if err := row.Scan(&email, &passwordHash); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, repository.ErrNotFound
 		}
@@ -59,17 +56,19 @@ func (r *Repository) GetUserByUsername(ctx context.Context, username string) (*m
 	}
 	return &model.User{
 		ID:           id,
-		Username:     username,
 		Email:        email,
 		PasswordHash: passwordHash,
 	}, nil
 }
 func (r *Repository) PutUser(ctx context.Context, id string, m *model.User) error {
-	query := "INSERT INTO users (id, username, email, password_hash) VALUES($1, $2, $3, $4)"
+	query := "INSERT INTO users (id, email, password_hash) VALUES($1, $2, $3)"
 	_, err := r.db.ExecContext(ctx, query,
 		id,
-		m.Username,
 		m.Email,
 		m.PasswordHash)
 	return err
+}
+
+func (r *Repository) DeleteUserByID(ctx context.Context, id string) error {
+	return nil
 }

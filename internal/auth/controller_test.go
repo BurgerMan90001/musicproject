@@ -16,7 +16,7 @@ func TestAuthController(t *testing.T) {
 		wantRes       string
 	}{
 		{
-			name:    "dasdasd",
+			name:    "",
 			wantRes: "",
 			wantErr: errors.New("awdawd"),
 		},

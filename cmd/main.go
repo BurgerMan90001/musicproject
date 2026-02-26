@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"movieexample.com/internal/controller/user"
+	"movieexample.com/internal/user"
 	"movieexample.com/internal/handler"
 	"movieexample.com/internal/util/fileutil"
 )

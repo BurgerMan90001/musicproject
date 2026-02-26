@@ -6,8 +6,11 @@ import (
 
 type User struct {
 	ID           string `json:"id"`
-	Username     string `json:"name"`
 	Email        string `json:"email"`
 	PasswordHash string `json:"password_hash"`
 	jwt.Claims
+}
+
+type UserMetadata struct {
+	ProfilePicture string `json:"pfp"` // a link to an image
 }

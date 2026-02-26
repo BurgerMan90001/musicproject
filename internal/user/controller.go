@@ -23,6 +23,25 @@ func (c *Controller) GetUserByID(ctx context.Context, id string) (*model.User, e
 	}
 	return user, nil
 }
+func (c *Controller) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
+	user, err := c.repo.GetUserByEmail(ctx, email)
+	if err != nil && errors.Is(err, repository.ErrNotFound) {
+		return nil, repository.ErrNotFound
+	}
+	return user, nil
+}
+
 func (c *Controller) PutUser(ctx context.Context, u *model.User) error {
 	return c.repo.PutUser(ctx, u.ID, u)
+}
+
+func (c *Controller) DeleteUserByID(ctx context.Context, id string) error {
+	_, err := c.repo.GetUserByID(ctx, id)
+	if err != nil && errors.Is(err, repository.ErrNotFound) {
+		return repository.ErrNotFound
+	}
+	if err := c.repo.DeleteUserByID(ctx, id); err != nil {
+		return err
+	}
+	return nil
 }

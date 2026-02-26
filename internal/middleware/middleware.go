@@ -1,10 +1,15 @@
 package middleware
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"runtime/debug"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/golang-jwt/jwt/v5/request"
+	"movieexample.com/internal/auth"
 )
 
 func Logger(next http.Handler) http.Handler {
@@ -25,8 +30,19 @@ func PanicRecovery(next http.Handler) http.Handler {
 		next.ServeHTTP(w, req)
 	})
 }
-func JWTMiddleware(next http.Handler) http.Handler {
+func JWTMiddleware(jwtKey []byte, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := request.ParseFromRequest(r, request.AuthorizationHeaderExtractor, func(t *jwt.Token) (any, error) {
+			return jwtKey, nil
+		}, request.WithClaims(&auth.Claims{}))
 
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = fmt.Fprintln(w, "Invalid token:", err)
+			return
+		}
+
+		fmt.Fprintln(w, "Valid token")
+		next.ServeHTTP(w, r)
 	})
 }

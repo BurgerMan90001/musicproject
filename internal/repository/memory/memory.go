@@ -26,8 +26,8 @@ func (r *Repository) GetUserByID(ctx context.Context, id string) (*model.User, e
 	}
 	return user, nil
 }
-func (r *Repository) GetUserByUsername(ctx context.Context, username string) (*model.User, error) {
-	
+func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
+
 	return nil, nil
 }
 func (r *Repository) PutUser(ctx context.Context, id string, m *model.User) error {
@@ -36,5 +36,8 @@ func (r *Repository) PutUser(ctx context.Context, id string, m *model.User) erro
 
 	r.users[id] = m
 
+	return nil
+}
+func (r *Repository) DeleteUserByID(ctx context.Context, id string) error {
 	return nil
 }

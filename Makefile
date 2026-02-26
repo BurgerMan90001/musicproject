@@ -5,3 +5,6 @@ build-server:
 
 run-server:
 	cd cmd && go run *.go
+
+test:
+	go test ./...
