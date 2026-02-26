@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"movieexample.com/internal/repository"
-	"movieexample.com/pkg/model"
+	"okapi.com/internal/repository"
+	"okapi.com/pkg/model"
 )
 
 type Repository struct {

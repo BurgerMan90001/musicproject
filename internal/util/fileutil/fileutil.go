@@ -27,12 +27,11 @@ func ReadYAML[T any](fileName string) (T, error) {
 
 func ReadJSON[T any](r io.ReadCloser) (T, error) {
 	var v T
-	// decode the JSON into v
+
 	err := json.NewDecoder(r).Decode(&v)
 	return v, errors.Join(err, r.Close())
 }
 
-/* TODO change */
 func WriteJSON(w http.ResponseWriter, v any) {
 	w.Header().Set("Content-type", "application/json")
 	err := json.NewEncoder(w).Encode(v)

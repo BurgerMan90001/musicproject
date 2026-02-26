@@ -14,7 +14,7 @@ import (
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
-	model "movieexample.com/pkg/model"
+	model "okapi.com/pkg/model"
 )
 
 // MockRepository is a mock of Repository interface.

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/golang-jwt/jwt/v5"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type Claims struct {
@@ -29,7 +28,11 @@ func (c *Controller) GenerateToken(claims *Claims) (string, error) {
 }
 
 func (c *Controller) VerifyToken(tokenString string) error {
-	claims := &Claims{}
+	claims := &Claims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer: "okapi",
+		},
+	}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (any, error) {
 		return c.jwtKey, nil
 	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
@@ -41,18 +44,4 @@ func (c *Controller) VerifyToken(tokenString string) error {
 	} else {
 		return fmt.Errorf("unknown claims type: %v", err)
 	}
-}
-
-func (c *Controller) HashPassword(password string) string {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-	if err != nil {
-		panic(err)
-	}
-
-	return string(bytes)
-}
-
-func (c *Controller) CheckPasswordHash(password string, passwordHash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password))
-	return err == nil
 }

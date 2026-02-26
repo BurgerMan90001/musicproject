@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"movieexample.com/internal/repository"
-	"movieexample.com/pkg/model"
+	"okapi.com/internal/repository"
+	"okapi.com/pkg/model"
 )
 
 type Controller struct {
@@ -23,6 +23,7 @@ func (c *Controller) GetUserByID(ctx context.Context, id string) (*model.User, e
 	}
 	return user, nil
 }
+
 func (c *Controller) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	user, err := c.repo.GetUserByEmail(ctx, email)
 	if err != nil && errors.Is(err, repository.ErrNotFound) {

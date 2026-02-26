@@ -6,39 +6,62 @@ import (
 	"log"
 	"net/http"
 
-	"movieexample.com/internal/auth"
-	"movieexample.com/internal/repository"
-	"movieexample.com/internal/user"
-	"movieexample.com/internal/util/fileutil"
-	"movieexample.com/pkg/model"
+	"okapi.com/config"
+	"okapi.com/internal/auth"
+	"okapi.com/internal/middleware"
+	"okapi.com/internal/repository"
+	"okapi.com/internal/repository/memory"
+	"okapi.com/internal/repository/postgres"
+	"okapi.com/internal/user"
+	"okapi.com/internal/util/fileutil"
+	"okapi.com/internal/util/uuid"
+	"okapi.com/pkg/model"
 )
 
 type Handler struct {
+	mux            *http.ServeMux
 	authController *auth.Controller
 	userController *user.Controller
+	cfg            config.ServiceConfig
 }
 
-func New(authController *auth.Controller,
-	userController *user.Controller) *Handler {
+func New(mux *http.ServeMux, cfg config.ServiceConfig) *Handler {
+
+	repo := newRepository(cfg)
 	return &Handler{
-		authController: authController,
-		userController: userController,
+		mux,
+		auth.New([]byte(cfg.APIConfig.JWTKey)),
+		user.New(repo),
+		cfg,
 	}
 }
+func newRepository(cfg config.ServiceConfig) repository.Repository {
+	var repo repository.Repository
 
-func (h *Handler) Register(mux *http.ServeMux) {
+	switch cfg.RepositoryConfig.Type {
+	case "memory":
+		repo = memory.New()
+	case "postgres":
+		repo = postgres.New(cfg.RepositoryConfig.URL)
+	default:
+		repo = memory.New()
+	}
+	return repo
+}
+
+func (h *Handler) Register(path string) {
+	jwtKey := []byte(h.cfg.APIConfig.JWTKey)
 	// setup routes
-	mux.HandleFunc("/health", h.handleHealth)
-	//mux.Handle("/", middleware.Logger)
+	h.mux.HandleFunc("/health", h.handleHealth)
 	// user routes
-	mux.HandleFunc("/user", h.handleUser)
+	h.mux.HandleFunc("/user", h.handleUser)
 
 	// auth routes
-	mux.HandleFunc("/auth/login", h.handleLogin)
-	mux.HandleFunc("/auth/signup", h.handleSignup)
+	h.mux.HandleFunc("/auth/login", h.handleLogin)
+	h.mux.HandleFunc("/auth/signup", h.handleSignup)
 	//mux.HandleFunc("/auth/oath", h.handleSignup)
 
-	//mux.HandleFunc("/secret", h.handleSecret)
+	h.mux.HandleFunc("/secret", middleware.JWTMiddleware(jwtKey, h.handleSecret))
 
 	// static file server
 	//mux.Handle("/static/", http.FileServer(http.Dir("public")))
@@ -51,9 +74,8 @@ func (h *Handler) handleHealth(w http.ResponseWriter, r *http.Request) {
 	_, _ = fmt.Fprintln(w, "alive")
 }
 func (h *Handler) handleSignup(w http.ResponseWriter, r *http.Request) {
-
 	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -62,17 +84,20 @@ func (h *Handler) handleSignup(w http.ResponseWriter, r *http.Request) {
 
 	if email == "" || password == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		_, _ = fmt.Fprintln(w, "empty email or password")
+		fmt.Fprintln(w, "empty email or password")
 		return
 	}
-	passwordHash := h.authController.HashPassword(password)
+	passwordHash := auth.HashPassword(password)
 	user := &model.User{
+		ID:           uuid.GenerateID(),
 		Email:        email,
 		PasswordHash: passwordHash,
 	}
 	ctx := r.Context()
 	if err := h.userController.PutUser(ctx, user); err != nil {
-
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w, "repository put error:", err)
+		return
 	}
 
 	tokenString, err := h.authController.GenerateToken(&auth.Claims{})
@@ -83,11 +108,11 @@ func (h *Handler) handleSignup(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/jwt")
 	w.WriteHeader(http.StatusOK)
-	_, _ = fmt.Fprintln(w, tokenString)
+	fmt.Fprintln(w, tokenString)
 }
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 	ctx := r.Context()
@@ -100,28 +125,25 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "empty username or password")
 		return
 	}
-	_, err := h.userController.GetUserByEmail(ctx, email)
-	if err != nil {
+	user, err := h.userController.GetUserByEmail(ctx, email)
+
+	if err != nil && errors.Is(err, repository.ErrNotFound) ||
+		!auth.CheckPasswordHash(password, user.PasswordHash) {
+		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Println("invalid email or password")
+		return
+	} else if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	// TODO
+	fmt.Println("Login successful")
 }
 
-/*
 func (h *Handler) handleSecret(w http.ResponseWriter, r *http.Request) {
-	token, err := request.ParseFromRequest(r, request.AuthorizationHeaderExtractor, func(t *jwt.Token) (any, error) {
-		return "", nil
-	}, request.WithClaims(&auth.Claims{}))
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		_, _ = fmt.Fprintln(w, "Invalid token: %w", err)
-	}
-	_, _ = fmt.Fprintln(w, "Welcome,", token.Claims.(*auth.Claims).Username)
+	//fmt.Fprintln(w, "Welcome,", token.Claims.(*auth.Claims).Username)
+	w.WriteHeader(http.StatusOK)
 }
-*/
-
 func (h *Handler) handleUser(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	if id == "" {
@@ -143,7 +165,9 @@ func (h *Handler) handleUser(w http.ResponseWriter, r *http.Request) {
 
 		fileutil.WriteJSON(w, user)
 	case http.MethodPut:
-		err := h.userController.PutUser(ctx, &model.User{})
+		user := &model.User{}
+
+		err := h.userController.PutUser(ctx, user)
 		if err != nil {
 			log.Printf("Repository get error: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)

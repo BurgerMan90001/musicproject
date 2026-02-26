@@ -6,8 +6,8 @@ import (
 
 	// postgres driver
 	_ "github.com/lib/pq"
-	"movieexample.com/internal/repository"
-	"movieexample.com/pkg/model"
+	"okapi.com/internal/repository"
+	"okapi.com/pkg/model"
 )
 
 type Repository struct {
@@ -46,7 +46,7 @@ func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*model.U
 		id           string
 		passwordHash string
 	)
-	query := "SELECT email, password_hash FROM users WHERE email=$1"
+	query := "SELECT id, password_hash FROM users WHERE email=$1"
 	row := r.db.QueryRowContext(ctx, query, email)
 	if err := row.Scan(&email, &passwordHash); err != nil {
 		if err == sql.ErrNoRows {
@@ -70,5 +70,7 @@ func (r *Repository) PutUser(ctx context.Context, id string, m *model.User) erro
 }
 
 func (r *Repository) DeleteUserByID(ctx context.Context, id string) error {
-	return nil
+	query := "DELETE FROM users WHERE id=$1"
+	_, err := r.db.ExecContext(ctx, query, id)
+	return err
 }

@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"movieexample.com/pkg/model"
+	"okapi.com/pkg/model"
 )
 
 type Repository interface {

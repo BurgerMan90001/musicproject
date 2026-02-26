@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"movieexample.com/pkg/model"
+	"okapi.com/pkg/model"
 )
 
 func TestHandler(t *testing.T) {
@@ -24,7 +24,7 @@ func TestHandler(t *testing.T) {
 				name:          "put user",
 				method:        "PUT",
 				url:           "8081/user",
-				wantBody:      `{"test":"test"}`,
+				wantBody:      ``,
 				wantStatus:    http.StatusOK,
 				expectRepoRes: nil,
 			},
@@ -63,7 +63,6 @@ func TestHandler(t *testing.T) {
 				repoMock := mock_repository.NewMockRepository(mockController)
 
 				ctx := context.Background()
-				//repoMock.PutUser(ctx, "id", tt.expectRepoRes)
 
 				r, err := http.NewRequest(tt.method, tt.url, tt.body)
 				if err != nil {
@@ -74,10 +73,9 @@ func TestHandler(t *testing.T) {
 
 				repoMock.EXPECT().GetUserByID(ctx, "id").Return(tt.expectRepoRes, tt.expectRepoErr)
 
-				//authController := auth.New(repoMock, []byte("test_key"))
-				userController := user.New(repoMock)
+				//cfg, err :=
 
-				h := New(nil, userController)
+				h := New()
 
 				h.handleUser(w, r)
 
@@ -96,6 +94,7 @@ func TestHandler(t *testing.T) {
 					t.Errorf("wrong body got: %v wanted: %v", user, tt.expectRes)
 				}
 			*/
+
 		})
 	}
 }

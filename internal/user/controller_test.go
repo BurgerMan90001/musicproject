@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
-	mock_repository "movieexample.com/gen/mocks"
-	"movieexample.com/pkg/model"
+	mock_repository "okapi.com/gen/mocks"
+	"okapi.com/pkg/model"
 )
 
 func TestUserController(t *testing.T) {

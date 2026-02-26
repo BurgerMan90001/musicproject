@@ -1,9 +1,10 @@
-module movieexample.com
+module okapi.com
 
 go 1.25.6
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
+	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.11.2
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/mock v0.6.0

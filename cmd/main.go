@@ -5,31 +5,25 @@ import (
 	"log"
 	"net/http"
 
-	"movieexample.com/internal/user"
-	"movieexample.com/internal/handler"
-	"movieexample.com/internal/util/fileutil"
+	"okapi.com/config"
+	"okapi.com/internal/handler"
+	"okapi.com/internal/util/fileutil"
 )
 
 func main() {
 
-	cfg, err := fileutil.ReadYAML[serviceConfig]("base.yml")
+	cfg, err := fileutil.ReadYAML[config.ServiceConfig]("base.yml")
 	if err != nil {
 		panic(err)
 	}
 	port := cfg.APIConfig.Port
-
-	repo := newRepository(cfg.RepositoryConfig)
-
-	//authController := auth.New(repo, []byte(cfg.APIConfig.JWTKey))
-	userController := user.New(repo)
-
-	handler := handler.New(nil, userController)
+	host := cfg.APIConfig.Host
 
 	mux := http.NewServeMux()
 
-	handler.Register(mux)
+	handler := handler.New(mux, cfg)
 
-	host := "localhost"
+	handler.Register("")
 
 	// start server
 	log.Printf("Server listening at %v:%d", host, port)
