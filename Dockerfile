@@ -1,9 +1,8 @@
 FROM golang:alpine AS build
 
-WORKDIR /src
+RUN apk add git
 
-COPY go.mod .
-COPY go.sum .
+WORKDIR /src
 
 COPY . .
 
@@ -17,9 +16,6 @@ FROM alpine:latest AS run
 WORKDIR /src
 
 COPY --from=build /src/main .
-COPY --from=build /src/config/. .
-
-EXPOSE 8081
-
+COPY --from=build /src/config config
 
 CMD [ "./main" ]

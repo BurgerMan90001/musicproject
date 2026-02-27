@@ -12,6 +12,20 @@ import (
 
 var ErrInvalidToken = errors.New("invalid token")
 
+type Claims struct {
+	jwt.RegisteredClaims
+}
+
+func GenerateToken(jwtKey []byte, claims *Claims) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(jwtKey)
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
+}
+
 func JWTParseToken(jwtKey []byte, r *http.Request) (*Claims, error) {
 	token, err := request.ParseFromRequest(r, request.AuthorizationHeaderExtractor, func(t *jwt.Token) (any, error) {
 		return jwtKey, nil
@@ -41,7 +55,7 @@ func HashPassword(password string) string {
 
 func CheckPasswordHash(password string, passwordHash string) bool {
 	err := bcrypt.CompareHashAndPassword(
-		[]byte(passwordHash), 
+		[]byte(passwordHash),
 		[]byte(password),
 	)
 	return err == nil

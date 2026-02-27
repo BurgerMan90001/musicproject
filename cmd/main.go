@@ -7,15 +7,11 @@ import (
 
 	"okapi.com/config"
 	"okapi.com/internal/handler"
-	"okapi.com/internal/util/fileutil"
 )
 
 func main() {
+	cfg := config.ReadConfigFile()
 
-	cfg, err := fileutil.ReadYAML[config.ServiceConfig]("base.yml")
-	if err != nil {
-		panic(err)
-	}
 	port := cfg.APIConfig.Port
 	host := cfg.APIConfig.Host
 
