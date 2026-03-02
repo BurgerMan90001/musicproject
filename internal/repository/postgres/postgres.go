@@ -19,6 +19,7 @@ func New(url string) *Repository {
 	if err != nil {
 		panic(err)
 	}
+	db.SetMaxIdleConns(5)
 	return &Repository{db}
 }
 

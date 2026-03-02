@@ -6,11 +6,12 @@ import (
 	"testing"
 )
 
+var jwtSecret = "test"
+
 func TestJWTMiddleware(t *testing.T) {
-	t.Parallel()
 	tests := []struct {
-		name       string
-		token      string
+		name  string
+		token string
 		wantBody   string
 		wantStatus int
 	}{
@@ -20,8 +21,13 @@ func TestJWTMiddleware(t *testing.T) {
 			wantStatus: http.StatusOK,
 		},
 		{
+			name:       "valid oauth token",
+			token:      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJva2FwaSIsImV4cCI6MTc3MjM5OTM4NX0.P0f93OMwTD180Tr9rEctXOtqeBI4Zi83wwLbXy85gOc",
+			wantStatus: http.StatusOK,
+		},
+		{
 			name:       "invalid token",
-			token:      "paaaah123",
+			token:      "eyJhbGcaaaaI1NiIsInR5cCI6IkpXVCJ9.e30.P4Lqll22jQQJ1eMJikvNg5HKG-cKB0hUZA9BZFIG7Jk",
 			wantStatus: http.StatusUnauthorized,
 		},
 		{
@@ -40,7 +46,7 @@ func TestJWTMiddleware(t *testing.T) {
 
 			w := httptest.NewRecorder()
 
-			handler := JWTMiddleware([]byte("test"), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler := JWTMiddleware([]byte(jwtSecret), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
 			}))
 
@@ -49,7 +55,6 @@ func TestJWTMiddleware(t *testing.T) {
 			if w.Code != tt.wantStatus {
 				t.Errorf("wrong status got: %v wanted: %v", w.Code, tt.wantStatus)
 			}
-
 		})
 	}
 }

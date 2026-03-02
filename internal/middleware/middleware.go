@@ -18,6 +18,7 @@ func Logger(next http.Handler) http.Handler {
 		log.Printf("%s %s %s", r.Method, r.RequestURI, time.Since(start))
 	})
 }
+
 func PanicRecovery(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		defer func() {
@@ -29,9 +30,10 @@ func PanicRecovery(next http.Handler) http.Handler {
 		next.ServeHTTP(w, req)
 	})
 }
+
 func JWTMiddleware(jwtKey []byte, next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		claims, err := auth.JWTParseToken(jwtKey, r)
+		claims, err := auth.ParseToken(jwtKey, r)
 
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)

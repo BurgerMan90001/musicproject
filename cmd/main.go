@@ -10,10 +10,10 @@ import (
 )
 
 func main() {
-	cfg := config.ReadConfigFile()
+	cfg := config.ReadConfigFile("config/base.yml")
 
-	port := cfg.APIConfig.Port
-	host := cfg.APIConfig.Host
+	port := cfg.API.Port
+	host := cfg.API.Host
 
 	mux := http.NewServeMux()
 
@@ -26,5 +26,4 @@ func main() {
 	if err := http.ListenAndServe(fmt.Sprintf("%v:%d", host, port), mux); err != nil {
 		panic(err)
 	}
-
 }

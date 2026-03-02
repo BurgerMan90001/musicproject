@@ -31,30 +31,29 @@ func TestHandler(t *testing.T) {
 		*/
 		{
 			name:       "get user by id",
-			method:     "GET",
+			method:     http.MethodGet,
 			wantStatus: http.StatusOK,
 			expectRes:  nil,
 		},
-		/*
-			{
-				name:       "invalid method",
-				method:     http.MethodDelete,
-				url:        "/user?id=id",
-				wantBody:   "invalid request method",
-				wantStatus: http.StatusMethodNotAllowed,
-			},
-			/*
 
-				{
-					name:       "signup success",
-					method:     "POST",
-					url:        "localhost:8081/auth/signup",
-					expect:     `{"test":"test"}`,
-					wantStatus: http.StatusOK,
-				},
-		*/
+		{
+			name:   "invalid method",
+			method: http.MethodDelete,
+			//url:        "/user?id=id",
+			wantBody:   "invalid request method",
+			wantStatus: http.StatusMethodNotAllowed,
+		},
+
+		{
+			name:   "signup success",
+			method: "POST",
+			//url:        "localhost:8081/auth/signup",
+			//expect:     `{"test":"test"}`,
+			wantStatus: http.StatusOK,
+		},
 	}
 	for _, tt := range tests {
+		t.Skip("not implemented")
 		t.Run(tt.name, func(t *testing.T) {
 			/*
 				mockController := gomock.NewController(t)

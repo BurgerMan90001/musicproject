@@ -25,11 +25,11 @@ func ReadYAML[T any](fileName string) (T, error) {
 	return v, nil
 }
 
-func ReadJSON[T any](r io.ReadCloser) (T, error) {
+func ReadJSON[T any](r io.ReadCloser) (*T, error) {
 	var v T
 
 	err := json.NewDecoder(r).Decode(&v)
-	return v, errors.Join(err, r.Close())
+	return &v, errors.Join(err, r.Close())
 }
 
 func WriteJSON(w http.ResponseWriter, v any) {

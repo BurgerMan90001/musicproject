@@ -2,47 +2,77 @@ package config
 
 import (
 	"golang.org/x/oauth2"
-	"okapi.com/internal/util/fileutil"
+	"golang.org/x/oauth2/google"
+	"okapi.com/internal/repository"
+	"okapi.com/internal/repository/memory"
+	"okapi.com/internal/repository/postgres"
+	"okapi.com/pkg/util/fileutil"
 )
 
-type ServiceConfig struct {
-	APIConfig        apiConfig        `yaml:"api"`
-	RepositoryConfig repositoryConfig `yaml:"repository"`
-	Oath2Config      oauth2.Config    `yaml:"oath2"`
+type Config struct {
+	API        apiCfg        `yaml:"api"`
+	Repository repositoryCfg `yaml:"repository"`
+	Oauth      oauthCfg      `yaml:"oauth"`
 }
 
-type apiConfig struct {
-	Host   string `yaml:"host"`
-	Port   int    `yaml:"port"`
-	JWTKey string `yaml:"jwtKey"`
+type apiCfg struct {
+	Host string `yaml:"host"`
+	Port int    `yaml:"port"`
+	Jwt  jwtCfg `yaml:"jwt"`
 }
 
-type repositoryConfig struct {
+type jwtCfg struct {
+	AccessKey  string `yaml:"accessKey"`
+	RefreshKey string `yaml:"refreshKey"`
+}
+
+type repositoryCfg struct {
 	Type    string `yaml:"type"`
 	URL     string `yaml:"url"`
 	TestURL string `yaml:"testUrl"`
 }
 
-type oath2Config struct {
-	//oauth2.Config
+type oauthCfg struct {
+	Google oauthGoogle `yaml:"google"`
+}
+
+type oauthGoogle struct {
 	ClientID     string   `yaml:"clientId"`
 	ClientSecret string   `yaml:"clientSecret"`
 	RedirectURL  string   `yaml:"redirectUrl"`
 	Scopes       []string `yaml:"scopes"`
 }
 
-func ReadConfigFile() ServiceConfig {
-	cfg, err := fileutil.ReadYAML[ServiceConfig]("config/base.yml")
+func ReadConfigFile(fileName string) Config {
+	cfg, err := fileutil.ReadYAML[Config](fileName)
 	if err != nil {
 		panic(err)
 	}
 	return cfg
 }
-func getOathConfig(cfg oath2Config) *oauth2.Config {
-	return &oauth2.Config{
-		ClientID:     cfg.ClientID,
-		ClientSecret: cfg.ClientSecret,
-		RedirectURL:  cfg.RedirectURL,
-		Scopes:       cfg.Scopes,
+func (cfg Config) NewRepository() repository.Repository {
+	var repo repository.Repository
+
+	switch cfg.Repository.Type {
+	case "memory":
+		repo = memory.New()
+	case "postgres":
+		repo = postgres.New(cfg.Repository.URL)
+	default:
+		repo = memory.New()
 	}
+	return repo
+}
+
+func (cfg Config) GoogleOathConfig() *oauth2.Config {
+	return &oauth2.Config{
+		ClientID:     cfg.Oauth.Google.ClientID,
+		ClientSecret: cfg.Oauth.Google.ClientSecret,
+		RedirectURL:  cfg.Oauth.Google.RedirectURL,
+		Scopes:       cfg.Oauth.Google.Scopes,
+		Endpoint:     google.Endpoint,
+	}
+}
+func (cfg Config) JWTAccessKey() []byte {
+	return []byte(cfg.API.Jwt.AccessKey)
 }
