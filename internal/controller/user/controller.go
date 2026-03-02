@@ -3,7 +3,6 @@ package user
 import (
 	"context"
 	"errors"
-	"regexp"
 
 	"okapi.com/internal/auth"
 	"okapi.com/internal/controller"
@@ -39,19 +38,22 @@ func (c *Controller) GetUserByEmail(ctx context.Context, email string) (*model.U
 }
 
 func (c *Controller) PutUser(ctx context.Context, id string, email string, password string) error {
-
-	user := &model.User{
-		ID:           id,
-		Email:        email,
-		PasswordHash: auth.HashPassword(password),
+	passwordHash, err := auth.HashPassword(password)
+	if err != nil {
+		return err
 	}
-	valid, err := isValidEmailString(email)
+	valid, err := auth.ValidateEmail(email)
 
 	if !valid {
 		return controller.ErrInvalidFormat
 	}
 	if err != nil {
 		return err
+	}
+	user := &model.User{
+		ID:           id,
+		Email:        email,
+		PasswordHash: passwordHash,
 	}
 
 	if err := c.repo.PutUser(ctx, user.ID, user); err != nil {
@@ -70,7 +72,4 @@ func (c *Controller) DeleteUserByID(ctx context.Context, id string) error {
 		return err
 	}
 	return nil
-}
-func isValidEmailString(email string) (bool, error) {
-	return regexp.MatchString(`^([\w\.\_]{2,10})@(\w{1,}).([a-z]{2,4})$`, email)
 }
