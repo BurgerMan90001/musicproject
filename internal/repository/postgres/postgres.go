@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	// postgres driver
+
 	_ "github.com/lib/pq"
 	"okapi.com/internal/repository"
 	"okapi.com/pkg/model"
@@ -23,7 +24,7 @@ func New(url string) *Repository {
 	return &Repository{db}
 }
 
-func (r *Repository) GetUserByID(ctx context.Context, id string) (*model.User, error) {
+func (r *Repository) GetUserByID(ctx context.Context, id model.UUID) (*model.User, error) {
 	var (
 		email        string
 		passwordHash string
@@ -42,14 +43,15 @@ func (r *Repository) GetUserByID(ctx context.Context, id string) (*model.User, e
 		PasswordHash: passwordHash,
 	}, nil
 }
+
 func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	var (
-		id           string
+		id           model.UUID
 		passwordHash string
 	)
 	query := "SELECT id, password_hash FROM users WHERE email=$1"
 	row := r.db.QueryRowContext(ctx, query, email)
-	if err := row.Scan(&email, &passwordHash); err != nil {
+	if err := row.Scan(&id, &passwordHash); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, repository.ErrNotFound
 		}
@@ -61,16 +63,15 @@ func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*model.U
 		PasswordHash: passwordHash,
 	}, nil
 }
-func (r *Repository) PutUser(ctx context.Context, id string, m *model.User) error {
-	query := "INSERT INTO users (id, email, password_hash) VALUES($1, $2, $3)"
+func (r *Repository) PutUser(ctx context.Context, id model.UUID, m *model.User) error {
+	query := "INSERT INTO users (email, password_hash) VALUES($1, $2)"
 	_, err := r.db.ExecContext(ctx, query,
-		id,
 		m.Email,
 		m.PasswordHash)
 	return err
 }
 
-func (r *Repository) DeleteUserByID(ctx context.Context, id string) error {
+func (r *Repository) DeleteUserByID(ctx context.Context, id model.UUID) error {
 	query := "DELETE FROM users WHERE id=$1"
 	_, err := r.db.ExecContext(ctx, query, id)
 	return err

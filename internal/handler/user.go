@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/google/uuid"
 	"okapi.com/internal/controller/user"
 	"okapi.com/internal/repository"
 	"okapi.com/pkg/util/fileutil"
@@ -12,9 +13,14 @@ import (
 
 func handleUser(c *user.Controller) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id := r.FormValue("id")
-		if id == "" {
+		id, err := uuid.Parse(r.FormValue("id"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if id == uuid.Nil {
 			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
 		ctx := r.Context()
 
@@ -31,6 +37,8 @@ func handleUser(c *user.Controller) http.HandlerFunc {
 			}
 
 			fileutil.WriteJSON(w, user)
+		case http.MethodPut:
+
 		case http.MethodDelete:
 			/*
 				claims, err := auth.JWTParseToken(jwtKey, r)

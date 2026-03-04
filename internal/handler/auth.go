@@ -6,11 +6,11 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/google/uuid"
 	"okapi.com/internal/auth"
 	"okapi.com/internal/controller/user"
 	"okapi.com/internal/repository"
 	"okapi.com/pkg/model"
-	"okapi.com/pkg/util/uuid"
 )
 
 func handleSignup(jwtKey []byte, c *user.Controller) http.HandlerFunc {
@@ -29,8 +29,8 @@ func handleSignup(jwtKey []byte, c *user.Controller) http.HandlerFunc {
 			fmt.Fprintln(w, "empty email or password")
 			return
 		}
-		id := uuid.GenerateID()
-		err := c.PutUser(ctx, id, email, password)
+		
+		err := c.PutUser(ctx, uuid.Nil, email, password)
 		if err != nil {
 			log.Printf("repository put error: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
 	"okapi.com/internal/auth"
 	"okapi.com/internal/controller"
 	"okapi.com/internal/repository"
@@ -20,7 +21,7 @@ func New(repo repository.Repository) *Controller {
 	return &Controller{repo: repo}
 }
 
-func (c *Controller) GetUserByID(ctx context.Context, id string) (*model.User, error) {
+func (c *Controller) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	user, err := c.repo.GetUserByID(ctx, id)
 	if err != nil && errors.Is(err, repository.ErrNotFound) {
 		return nil, repository.ErrNotFound
@@ -37,7 +38,7 @@ func (c *Controller) GetUserByEmail(ctx context.Context, email string) (*model.U
 	return user, nil
 }
 
-func (c *Controller) PutUser(ctx context.Context, id string, email string, password string) error {
+func (c *Controller) PutUser(ctx context.Context, id uuid.UUID, email string, password string) error {
 	passwordHash, err := auth.HashPassword(password)
 	if err != nil {
 		return err
@@ -63,7 +64,7 @@ func (c *Controller) PutUser(ctx context.Context, id string, email string, passw
 	return nil
 }
 
-func (c *Controller) DeleteUserByID(ctx context.Context, id string) error {
+func (c *Controller) DeleteUserByID(ctx context.Context, id uuid.UUID) error {
 	_, err := c.repo.GetUserByID(ctx, id)
 	if err != nil && errors.Is(err, repository.ErrNotFound) {
 		return repository.ErrNotFound

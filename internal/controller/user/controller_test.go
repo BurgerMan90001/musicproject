@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	mock_repository "okapi.com/gen/mocks"
@@ -33,7 +34,7 @@ func TestUserController(t *testing.T) {
 			controller := New(repoMock)
 
 			ctx := context.Background()
-			id := "id"
+			id := uuid.New()
 			//username := "jane doe"
 
 			repoMock.EXPECT().GetUserByID(ctx, id).Return(tt.expectRepoRes, tt.expectRepoErr)
