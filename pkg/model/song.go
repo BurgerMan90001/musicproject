@@ -1,28 +1,32 @@
 package model
 
+import "github.com/google/uuid"
+
 type Artist struct {
-	UUID   `json:"id"`
-	Albums []Album `json:"albums"`
+	ID     uuid.UUID `json:"id"`
+	Albums []Album   `json:"albums"`
 }
 
 type Album struct {
-	ID       UUID   `json:"id"`
-	Songs    []Song `json:"songs"`
-	ArtistID int    `json:"artistId"`
+	ID       uuid.UUID `json:"id"`
+	Songs    []Song    `json:"songs"`
+	ArtistID int       `json:"artistId"`
 }
 
 type Song struct {
-	ID       UUID   `json:"id"`
-	Name     string `json:"name"`
-	Duration int    `json:"duration"`
-	Image    string `json:"image"`
+	ID       uuid.UUID `json:"id"`
+	Name     string    `json:"name"`
+	Duration int       `json:"duration"`
+	Image    string    `json:"image"`
+}
+
+type Rating struct {
+	SongID uuid.UUID `json:"songId"`
+	UserID uuid.UUID `json:"userId"`
+	Value  int       `json:"value"`
 }
 
 type SongPlayer struct {
 	SongID    int `json:"songId"`
 	TimeStamp int `json:"timeStamp"`
-}
-
-type Item struct {
-	Container string `json:"container"`
 }

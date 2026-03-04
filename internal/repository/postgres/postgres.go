@@ -6,6 +6,7 @@ import (
 
 	// postgres driver
 
+	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 	"okapi.com/internal/repository"
 	"okapi.com/pkg/model"
@@ -24,7 +25,7 @@ func New(url string) *Repository {
 	return &Repository{db}
 }
 
-func (r *Repository) GetUserByID(ctx context.Context, id model.UUID) (*model.User, error) {
+func (r *Repository) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	var (
 		email        string
 		passwordHash string
@@ -46,7 +47,7 @@ func (r *Repository) GetUserByID(ctx context.Context, id model.UUID) (*model.Use
 
 func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	var (
-		id           model.UUID
+		id           uuid.UUID
 		passwordHash string
 	)
 	query := "SELECT id, password_hash FROM users WHERE email=$1"
@@ -63,7 +64,7 @@ func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*model.U
 		PasswordHash: passwordHash,
 	}, nil
 }
-func (r *Repository) PutUser(ctx context.Context, id model.UUID, m *model.User) error {
+func (r *Repository) PutUser(ctx context.Context, id uuid.UUID, m *model.User) error {
 	query := "INSERT INTO users (email, password_hash) VALUES($1, $2)"
 	_, err := r.db.ExecContext(ctx, query,
 		m.Email,
@@ -71,7 +72,7 @@ func (r *Repository) PutUser(ctx context.Context, id model.UUID, m *model.User) 
 	return err
 }
 
-func (r *Repository) DeleteUserByID(ctx context.Context, id model.UUID) error {
+func (r *Repository) DeleteUserByID(ctx context.Context, id uuid.UUID) error {
 	query := "DELETE FROM users WHERE id=$1"
 	_, err := r.db.ExecContext(ctx, query, id)
 	return err

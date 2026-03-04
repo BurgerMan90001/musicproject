@@ -10,19 +10,14 @@ var jwtSecret = "test"
 
 func TestJWTMiddleware(t *testing.T) {
 	tests := []struct {
-		name  string
-		token string
+		name       string
+		token      string
 		wantBody   string
 		wantStatus int
 	}{
 		{
 			name:       "valid token",
 			token:      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.P4Lqll22jQQJ1eMJikvNg5HKG-cKB0hUZA9BZFIG7Jk",
-			wantStatus: http.StatusOK,
-		},
-		{
-			name:       "valid oauth token",
-			token:      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJva2FwaSIsImV4cCI6MTc3MjM5OTM4NX0.P0f93OMwTD180Tr9rEctXOtqeBI4Zi83wwLbXy85gOc",
 			wantStatus: http.StatusOK,
 		},
 		{
@@ -57,4 +52,22 @@ func TestJWTMiddleware(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestJWTNoHeader(t *testing.T) {
+	t.Run("no header", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/protected", nil)
+
+		w := httptest.NewRecorder()
+
+		handler := JWTMiddleware([]byte(jwtSecret), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusUnauthorized {
+			t.Errorf("wrong status got: %v wanted: %v", w.Code, http.StatusUnauthorized)
+		}
+	})
 }

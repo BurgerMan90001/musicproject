@@ -3,17 +3,22 @@ package repository
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"okapi.com/pkg/model"
 )
 
 type Repository interface {
 	// User methods
-	GetUserByID(ctx context.Context, id model.UUID) (*model.User, error)
+	GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
-	PutUser(ctx context.Context, id model.UUID, u *model.User) error
-	DeleteUserByID(ctx context.Context, id model.UUID) error
+	PutUser(ctx context.Context, id uuid.UUID, u *model.User) error
+	DeleteUserByID(ctx context.Context, id uuid.UUID) error
 
 	// Song methods
-	GetSongByID(ctx context.Context, id model.UUID) (*model.Song, error)
-	PutSong(ctx context.Context, id model.UUID, u *model.Song) error
+	GetSongByID(ctx context.Context, id uuid.UUID) (*model.Song, error)
+	PutSong(ctx context.Context, id uuid.UUID, u *model.Song) error
+
+	// Song rating methods
+	GetRatings(ctx context.Context, songId uuid.UUID) []model.Rating
+	PutRating(ctx context.Context, songId uuid.UUID)
 }

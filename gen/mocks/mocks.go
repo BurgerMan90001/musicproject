@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	uuid "github.com/google/uuid"
 	gomock "go.uber.org/mock/gomock"
 	model "okapi.com/pkg/model"
 )
@@ -42,7 +43,7 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 }
 
 // DeleteUserByID mocks base method.
-func (m *MockRepository) DeleteUserByID(ctx context.Context, id string) error {
+func (m *MockRepository) DeleteUserByID(ctx context.Context, id uuid.UUID) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteUserByID", ctx, id)
 	ret0, _ := ret[0].(error)
@@ -53,6 +54,21 @@ func (m *MockRepository) DeleteUserByID(ctx context.Context, id string) error {
 func (mr *MockRepositoryMockRecorder) DeleteUserByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUserByID", reflect.TypeOf((*MockRepository)(nil).DeleteUserByID), ctx, id)
+}
+
+// GetSongByID mocks base method.
+func (m *MockRepository) GetSongByID(ctx context.Context, id uuid.UUID) (*model.Song, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSongByID", ctx, id)
+	ret0, _ := ret[0].(*model.Song)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSongByID indicates an expected call of GetSongByID.
+func (mr *MockRepositoryMockRecorder) GetSongByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSongByID", reflect.TypeOf((*MockRepository)(nil).GetSongByID), ctx, id)
 }
 
 // GetUserByEmail mocks base method.
@@ -71,7 +87,7 @@ func (mr *MockRepositoryMockRecorder) GetUserByEmail(ctx, email any) *gomock.Cal
 }
 
 // GetUserByID mocks base method.
-func (m *MockRepository) GetUserByID(ctx context.Context, id string) (*model.User, error) {
+func (m *MockRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserByID", ctx, id)
 	ret0, _ := ret[0].(*model.User)
@@ -85,8 +101,22 @@ func (mr *MockRepositoryMockRecorder) GetUserByID(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByID", reflect.TypeOf((*MockRepository)(nil).GetUserByID), ctx, id)
 }
 
+// PutSong mocks base method.
+func (m *MockRepository) PutSong(ctx context.Context, id uuid.UUID, u *model.Song) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PutSong", ctx, id, u)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PutSong indicates an expected call of PutSong.
+func (mr *MockRepositoryMockRecorder) PutSong(ctx, id, u any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutSong", reflect.TypeOf((*MockRepository)(nil).PutSong), ctx, id, u)
+}
+
 // PutUser mocks base method.
-func (m *MockRepository) PutUser(ctx context.Context, id string, u *model.User) error {
+func (m *MockRepository) PutUser(ctx context.Context, id uuid.UUID, u *model.User) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PutUser", ctx, id, u)
 	ret0, _ := ret[0].(error)

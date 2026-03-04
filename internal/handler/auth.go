@@ -73,12 +73,14 @@ func handleLogin(jwtKey []byte, c *user.Controller) http.HandlerFunc {
 
 		user, err := c.GetUserByEmail(ctx, email)
 
-		if err != nil && errors.Is(err, repository.ErrNotFound) ||
+		if err != nil {
+			if errors.Is(err, repository.ErrNotFound) ||
 			!auth.ComparePassword(password, user.PasswordHash) {
-			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Println("invalid email or password")
-			return
-		} else if err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				fmt.Println("invalid email or password")
+				return
+			}
+
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

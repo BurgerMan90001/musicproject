@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/golang-jwt/jwt/v5/request"
+	"github.com/google/uuid"
 	"okapi.com/pkg/model"
 )
 
@@ -17,8 +18,8 @@ var ErrInvalidToken = errors.New("invalid token")
 var ExpiresInOneDay = time.Now().Add(time.Hour * 24)
 
 type Claims struct {
-	UserID string `json:"userId"`
-	Email  string `json:"email"`
+	UserID uuid.UUID `json:"userId"`
+	Email  string    `json:"email"`
 	jwt.RegisteredClaims
 }
 
