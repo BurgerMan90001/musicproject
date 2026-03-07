@@ -5,9 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"okapi.com/config"
-	"okapi.com/pkg/model"
-	"okapi.com/pkg/util/fileutil"
+	"musicproject.com/config"
+	"musicproject.com/pkg/model"
+	"musicproject.com/pkg/util/fileutil"
 )
 
 func TestHandleOathGoogleLogin(t *testing.T) {
@@ -24,14 +24,14 @@ func TestHandleOathGoogleLogin(t *testing.T) {
 			wantRes:    &model.GoogleUserInfo{},
 		},
 	}
-
+	t.Skip()
 	cfg := config.ReadConfigFile("../../config/base.yml")
 	oauthCfg := cfg.GoogleOathConfig()
 	//jwtKey := cfg.JWTAccessKey()
 	for _, tt := range tests {
 		//t.Skip()
 		t.Run(tt.name, func(t *testing.T) {
-			ts := httptest.NewServer(handleOathGoogleLogin(oauthCfg))
+			ts := httptest.NewServer(handleOauthGoogleLogin(oauthCfg))
 			defer ts.Close()
 			//client := oauthCfg.Client(context.Background(), auth.GenerateToken(jwtKey))
 

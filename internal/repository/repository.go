@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"okapi.com/pkg/model"
+	"musicproject.com/pkg/model"
 )
 
 type Repository interface {
@@ -16,9 +16,10 @@ type Repository interface {
 
 	// Song methods
 	GetSongByID(ctx context.Context, id uuid.UUID) (*model.Song, error)
+	GetSongsByGenre(ctx context.Context, genre string) ([]model.Song, error)
 	PutSong(ctx context.Context, id uuid.UUID, u *model.Song) error
 
-	// Song rating methods
-	GetRatings(ctx context.Context, songId uuid.UUID) []model.Rating
-	PutRating(ctx context.Context, songId uuid.UUID)
+	// Song racting methods
+	GetRatings(ctx context.Context, songId uuid.UUID) ([]model.Rating, error)
+	PutRating(ctx context.Context, songId uuid.UUID, userId uuid.UUID, value float64) error
 }

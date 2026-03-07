@@ -6,26 +6,27 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/google/uuid"
 	"golang.org/x/oauth2"
-	"okapi.com/internal/auth"
-	"okapi.com/pkg/model"
-	"okapi.com/pkg/util/fileutil"
+	"musicproject.com/internal/auth"
+	"musicproject.com/pkg/model"
+	"musicproject.com/pkg/util/fileutil"
 )
 
-func handleOathGoogleLogin(cfg *oauth2.Config) http.HandlerFunc {
+func handleOauthGoogleLogin(cfg *oauth2.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		url := cfg.AuthCodeURL("state", oauth2.AccessTypeOffline)
 		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 	}
 }
-func handleOathGoogleRedirect(jwtKey []byte, cfg *oauth2.Config) http.HandlerFunc {
+func handleOauthGoogleRedirect(jwtKey []byte, cfg *oauth2.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		code := r.FormValue("code")
 		state := r.FormValue("state")
 
 		if state != "state" {
 			log.Println("state mismatch")
-			http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
 
@@ -35,29 +36,36 @@ func handleOathGoogleRedirect(jwtKey []byte, cfg *oauth2.Config) http.HandlerFun
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Printf("unable to extchange token: %v", err)
-			http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
 
 		userInfo, err := getUserInfoGoogle(ctx, cfg, token)
 		if err != nil {
 			log.Printf("get user info error: %v", err)
-			http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
-
-		tokenString, err := auth.GenerateToken(jwtKey, &model.User{
-			ID:    userInfo.ID,
+		id, err := uuid.NewV7()
+		if err != nil {
+			log.Printf("generate uuid error: %v", err)
+			http.Redirect(w, r, "/", http.StatusFound)
+		}
+		user := &model.User{
+			ID:    id,
 			Email: userInfo.Email,
-		}, auth.ExpiresInOneDay)
+		}
+		tokenString, err := auth.GenerateToken(jwtKey, user, auth.ExpiresInOneDay)
 
 		if err != nil {
 			log.Printf("generate token error: %v", err)
-			http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
 		fileutil.WriteJSON(w, &model.Login{
-			AccessToken: tokenString,
+			AccessToken:  tokenString,
+			RefreshToken: tokenString,
+			User:         user,
 		})
 	}
 }

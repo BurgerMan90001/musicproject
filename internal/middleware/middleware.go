@@ -8,7 +8,7 @@ import (
 	"runtime/debug"
 	"time"
 
-	"okapi.com/internal/auth"
+	"musicproject.com/internal/auth"
 )
 
 func Logger(next http.Handler) http.Handler {
@@ -41,8 +41,17 @@ func JWTMiddleware(jwtKey []byte, next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		fmt.Fprintln(w, "Valid token")
+		if claims.TokenType != auth.TokenTypeAccess {
+			w.WriteHeader(http.StatusUnauthorized)
+			fmt.Fprintln(w, "Invalid token type")
+		}
+
 		ctx := context.WithValue(r.Context(), "claims", claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func GetContextClaims(ctx context.Context) (*auth.Claims, bool) {
+	claims, ok := ctx.Value("claims").(*auth.Claims)
+	return claims, ok
 }

@@ -1,5 +1,7 @@
-# the okapi project
-web application
+# the music project
+
+music streaming web application
+
 ## api
 
 authentication routes

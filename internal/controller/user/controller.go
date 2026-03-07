@@ -5,10 +5,10 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
-	"okapi.com/internal/auth"
-	"okapi.com/internal/controller"
-	"okapi.com/internal/repository"
-	"okapi.com/pkg/model"
+	"musicproject.com/internal/auth"
+	"musicproject.com/internal/controller"
+	"musicproject.com/internal/repository"
+	"musicproject.com/pkg/model"
 )
 
 //var ErrInvalidEFormat
@@ -23,8 +23,11 @@ func New(repo repository.Repository) *Controller {
 
 func (c *Controller) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	user, err := c.repo.GetUserByID(ctx, id)
-	if err != nil && errors.Is(err, repository.ErrNotFound) {
-		return nil, repository.ErrNotFound
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, repository.ErrNotFound
+		}
+		return nil, err
 	}
 	return user, nil
 }
@@ -57,7 +60,7 @@ func (c *Controller) PutUser(ctx context.Context, id uuid.UUID, email string, pa
 		PasswordHash: passwordHash,
 	}
 
-	if err := c.repo.PutUser(ctx, user.ID, user); err != nil {
+	if err := c.repo.PutUser(ctx, id, user); err != nil {
 		return err
 	}
 

@@ -8,7 +8,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/golang-jwt/jwt/v5/request"
 	"github.com/google/uuid"
-	"okapi.com/pkg/model"
+	"musicproject.com/pkg/model"
 )
 
 var issuer = "okapi"
@@ -17,16 +17,23 @@ var ErrInvalidToken = errors.New("invalid token")
 
 var ExpiresInOneDay = time.Now().Add(time.Hour * 24)
 
+const (
+	TokenTypeAccess  string = "access"
+	TokenTypeRefresh string = "refresh"
+)
+
 type Claims struct {
-	UserID uuid.UUID `json:"userId"`
-	Email  string    `json:"email"`
+	UserID    uuid.UUID `json:"userId"`
+	Email     string    `json:"email"`
+	TokenType string    `json:"tokenType"`
 	jwt.RegisteredClaims
 }
 
 func GenerateToken(jwtKey []byte, user *model.User, expireAt time.Time) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &Claims{
-		UserID: user.ID,
-		Email:  user.Email,
+		UserID:    user.ID,
+		Email:     user.Email,
+		TokenType: "",
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    issuer,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -44,14 +51,16 @@ func GenerateToken(jwtKey []byte, user *model.User, expireAt time.Time) (string,
 func ParseToken(jwtKey []byte, r *http.Request) (*Claims, error) {
 	extractor := request.MultiExtractor{
 		request.AuthorizationHeaderExtractor,
-		request.OAuth2Extractor,
 	}
+
 	token, err := request.ParseFromRequest(r, extractor, func(t *jwt.Token) (any, error) {
 		return jwtKey, nil
 	}, request.WithClaims(&Claims{}))
+
 	if err != nil {
 		return nil, err
 	}
+
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 		return claims, nil
 	}

@@ -4,3 +4,6 @@ main
 
 schema
 .git
+
+node_modules
+

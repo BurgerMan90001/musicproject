@@ -18,15 +18,16 @@ type Song struct {
 	Name     string    `json:"name"`
 	Duration int       `json:"duration"`
 	Image    string    `json:"image"`
+	Source   string    `json:"src"`
 }
 
 type Rating struct {
 	SongID uuid.UUID `json:"songId"`
 	UserID uuid.UUID `json:"userId"`
-	Value  int       `json:"value"`
+	Value  float64   `json:"value"`
 }
 
 type SongPlayer struct {
-	SongID    int `json:"songId"`
-	TimeStamp int `json:"timeStamp"`
+	SongID    int     `json:"songId"`
+	TimeStamp float64 `json:"timeStamp"`
 }

@@ -7,10 +7,10 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"okapi.com/internal/auth"
-	"okapi.com/internal/controller/user"
-	"okapi.com/internal/repository"
-	"okapi.com/pkg/model"
+	"musicproject.com/internal/auth"
+	"musicproject.com/internal/controller/user"
+	"musicproject.com/internal/repository"
+	"musicproject.com/pkg/model"
 )
 
 func handleSignup(jwtKey []byte, c *user.Controller) http.HandlerFunc {
@@ -29,8 +29,8 @@ func handleSignup(jwtKey []byte, c *user.Controller) http.HandlerFunc {
 			fmt.Fprintln(w, "empty email or password")
 			return
 		}
-		
-		err := c.PutUser(ctx, uuid.Nil, email, password)
+		id := uuid.New()
+		err := c.PutUser(ctx, id, email, password)
 		if err != nil {
 			log.Printf("repository put error: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -75,7 +75,7 @@ func handleLogin(jwtKey []byte, c *user.Controller) http.HandlerFunc {
 
 		if err != nil {
 			if errors.Is(err, repository.ErrNotFound) ||
-			!auth.ComparePassword(password, user.PasswordHash) {
+				!auth.ComparePassword(password, user.PasswordHash) {
 				w.WriteHeader(http.StatusUnauthorized)
 				fmt.Println("invalid email or password")
 				return
@@ -99,5 +99,12 @@ func handleLogin(jwtKey []byte, c *user.Controller) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/jwt")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintln(w, tokenString)
+	}
+}
+
+func handleRefresh() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+		}
 	}
 }

@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 
-	"okapi.com/config"
-	"okapi.com/internal/handler"
+	"musicproject.com/config"
+	"musicproject.com/internal/handler"
 )
 
 func main() {

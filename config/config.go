@@ -3,10 +3,10 @@ package config
 import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	"okapi.com/internal/repository"
-	"okapi.com/internal/repository/memory"
-	"okapi.com/internal/repository/postgres"
-	"okapi.com/pkg/util/fileutil"
+	"musicproject.com/internal/repository"
+	"musicproject.com/internal/repository/memory"
+	"musicproject.com/internal/repository/postgres"
+	"musicproject.com/pkg/util/fileutil"
 )
 
 type Config struct {

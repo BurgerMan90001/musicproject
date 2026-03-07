@@ -8,6 +8,7 @@ api:
 repository:
   type: postgres
   url:
+  testUrl:
 
 oauth:
   google:

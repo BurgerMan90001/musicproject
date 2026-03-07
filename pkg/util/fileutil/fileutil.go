@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 )
 
 func ReadYAML[T any](fileName string) (T, error) {

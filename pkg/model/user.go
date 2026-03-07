@@ -9,9 +9,8 @@ type User struct {
 }
 
 type GoogleUserInfo struct {
-	ID      uuid.UUID `json:"id"`
-	Email   string    `json:"email"`
-	Picture string    `json:"picture"`
+	Email   string `json:"email"`
+	Picture string `json:"picture"`
 }
 
 type UserMetadata struct {
@@ -23,5 +22,5 @@ type UserMetadata struct {
 type Login struct {
 	AccessToken  string `json:"accessToken"`
 	RefreshToken string `json:"refreshToken"`
-	User         User   `json:"user"`
+	User         *User  `json:"user"`
 }

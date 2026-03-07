@@ -3,6 +3,7 @@ FROM node:alpine AS build
 WORKDIR /app/site
 
 COPY package.json .
+COPY package-lock.json .
 
 # some legacy dependancies are cooked
 RUN npm install --legacy-peer-deps
@@ -11,8 +12,7 @@ COPY . .
 
 RUN npm run build
 
-FROM nginx:alpine AS run
+FROM nginx
 
-#EXPOSE 80 8080
-
-COPY --from=build /app/site/dist ./usr/share/nginx/html
+COPY nginx/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/site/dist /usr/share/nginx/html

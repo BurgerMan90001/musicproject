@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"okapi.com/pkg/model"
+	"musicproject.com/pkg/model"
 )
 
 func TestHandler(t *testing.T) {

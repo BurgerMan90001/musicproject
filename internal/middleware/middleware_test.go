@@ -43,6 +43,7 @@ func TestJWTMiddleware(t *testing.T) {
 
 			handler := JWTMiddleware([]byte(jwtSecret), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
+
 			}))
 
 			handler.ServeHTTP(w, req)

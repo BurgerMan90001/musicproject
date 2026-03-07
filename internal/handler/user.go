@@ -6,9 +6,9 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"okapi.com/internal/controller/user"
-	"okapi.com/internal/repository"
-	"okapi.com/pkg/util/fileutil"
+	"musicproject.com/internal/controller/user"
+	"musicproject.com/internal/repository"
+	"musicproject.com/pkg/util/fileutil"
 )
 
 func handleUser(c *user.Controller) http.HandlerFunc {
@@ -27,15 +27,15 @@ func handleUser(c *user.Controller) http.HandlerFunc {
 		switch r.Method {
 		case http.MethodGet:
 			user, err := c.GetUserByID(ctx, id)
-			if err != nil && errors.Is(err, repository.ErrNotFound) {
-				w.WriteHeader(http.StatusNotFound)
-				return
-			} else if err != nil {
-				log.Printf("repository get error: %v", err)
+			if err != nil {
+				if errors.Is(err, repository.ErrNotFound) {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				log.Printf("Repository get error: %v", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-
 			fileutil.WriteJSON(w, user)
 		case http.MethodPut:
 
