@@ -7,6 +7,7 @@ import (
 
 	"musicproject.com/config"
 	"musicproject.com/internal/handler"
+	"musicproject.com/internal/repository/postgres"
 )
 
 func main() {
@@ -17,7 +18,9 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	handler := handler.New(mux, cfg)
+	repo := postgres.New(cfg)
+	handler := handler.New(mux, repo, cfg)
+	
 
 	handler.Register("")
 

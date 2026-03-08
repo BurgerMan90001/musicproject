@@ -3,9 +3,6 @@ package config
 import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	"musicproject.com/internal/repository"
-	"musicproject.com/internal/repository/memory"
-	"musicproject.com/internal/repository/postgres"
 	"musicproject.com/pkg/util/fileutil"
 )
 
@@ -43,25 +40,13 @@ type oauthGoogle struct {
 	Scopes       []string `yaml:"scopes"`
 }
 
+// Reads file from local directory
 func ReadConfigFile(fileName string) Config {
 	cfg, err := fileutil.ReadYAML[Config](fileName)
 	if err != nil {
 		panic(err)
 	}
 	return cfg
-}
-func (cfg Config) NewRepository() repository.Repository {
-	var repo repository.Repository
-
-	switch cfg.Repository.Type {
-	case "memory":
-		repo = memory.New()
-	case "postgres":
-		repo = postgres.New(cfg.Repository.URL)
-	default:
-		repo = memory.New()
-	}
-	return repo
 }
 
 func (cfg Config) GoogleOathConfig() *oauth2.Config {

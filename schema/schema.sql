@@ -1,21 +1,16 @@
 
-/*
-CREATE TABLE IF NOT EXISTS movies (
-    id VARCHAR(255), 
-    title VARCHAR(255), 
-    description TEXT, 
-    director VARCHAR(255)
-);
-*/
 
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
     email VARCHAR(255),
-    password_hash VARCHAR(255),
+    password_hash VARCHAR(255)
 );
 
+COPY users
+FROM './users.csv' DELIMITER ',' CSV HEADER;
+
 CREATE TABLE IF NOT EXISTS artists (
-    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    id UUID PRIMARY KEY DEFAULT uuidv7()
 );
 
 CREATE TABLE IF NOT EXISTS songs (

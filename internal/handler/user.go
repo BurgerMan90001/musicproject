@@ -9,6 +9,7 @@ import (
 	"musicproject.com/internal/controller/user"
 	"musicproject.com/internal/repository"
 	"musicproject.com/pkg/util/fileutil"
+	"musicproject.com/pkg/util/handleutil"
 )
 
 func handleUser(c *user.Controller) http.HandlerFunc {
@@ -32,7 +33,7 @@ func handleUser(c *user.Controller) http.HandlerFunc {
 					w.WriteHeader(http.StatusNotFound)
 					return
 				}
-				log.Printf("Repository get error: %v", err)
+				log.Printf("repository get error: %v", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -58,7 +59,7 @@ func handleUser(c *user.Controller) http.HandlerFunc {
 			}
 
 		default:
-			http.Error(w, "invalid request method", http.StatusMethodNotAllowed)
+			handleutil.ErrMethodNotAllowed(w, r)
 		}
 	}
 }

@@ -26,12 +26,13 @@ func (c *Controller) GetAggregatedRating(ctx context.Context, songId uuid.UUID) 
 	}
 	var sum float64 = 0
 	for _, rating := range ratings {
-		sum += rating.Value
+		sum += float64(rating.Value)
 	}
-	return sum, nil
+	aggregatedRating := sum / float64(len(ratings))
+	return aggregatedRating, nil
 }
 
 func (c *Controller) PutRating(ctx context.Context, songId uuid.UUID, userId uuid.UUID, value float64) error {
-	
-	return nil
+
+	return c.repo.PutRating(ctx, songId, userId, value)
 }

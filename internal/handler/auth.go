@@ -25,8 +25,7 @@ func handleSignup(jwtKey []byte, c *user.Controller) http.HandlerFunc {
 		password := r.FormValue("password")
 
 		if email == "" || password == "" {
-			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintln(w, "empty email or password")
+			http.Error(w, "empty email or password", http.StatusBadRequest)
 			return
 		}
 		id := uuid.New()

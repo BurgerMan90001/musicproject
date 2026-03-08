@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
 	"musicproject.com/internal/repository"
 	"musicproject.com/pkg/model"
 )
@@ -15,7 +16,16 @@ type Controller struct {
 func New(repo repository.Repository) *Controller {
 	return &Controller{repo: repo}
 }
-
+func (c *Controller) GetSongByID(ctx context.Context, id uuid.UUID) (*model.Song, error) {
+	song, err := c.repo.GetSongByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, repository.ErrNotFound
+		}
+		return nil, err
+	}
+	return song, nil
+}
 func (c *Controller) GetSongsByGenre(ctx context.Context, genre string) ([]model.Song, error) {
 	songs, err := c.repo.GetSongsByGenre(ctx, genre)
 	if err != nil {

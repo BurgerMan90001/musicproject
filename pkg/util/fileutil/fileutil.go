@@ -1,6 +1,8 @@
 package fileutil
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"io"
@@ -38,4 +40,15 @@ func WriteJSON(w http.ResponseWriter, v any) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func ExecSql(ctx context.Context, db *sql.DB, filePath string) error {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
+	if _, err := db.ExecContext(ctx, string(data)); err != nil {
+		return err
+	}
+	return nil
 }

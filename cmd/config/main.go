@@ -1,19 +1,14 @@
 package main
 
-import (
-	"fmt"
-
-	"musicproject.com/config"
-)
-
 func main() {
 	//flag.
-	cfg := config.ReadConfigFile("config/base.yml")
+	//cfg := config.ReadConfigFile("config/base.yml")
 
 	// fmt.Println(cfg.APIConfig.Port)
 	// fmt.Println(cfg.RepositoryConfig.Type)
 	// fmt.Println(cfg.RepositoryConfig.URL)
-	oauthCfg := cfg.GoogleOathConfig()
+	//oauthCfg := cfg.GoogleOathConfig()
+	//fileutil.ExecSql(context.Background(), )
 
 	// fmt.Println(cfg.Oauth.Google.ClientID)
 	// fmt.Println(cfg.Oauth.Google.ClientSecret)
@@ -21,10 +16,10 @@ func main() {
 	// fmt.Println(cfg.Oauth.Google.RedirectURL)
 	// fmt.Println(cfg.Oauth.Google.Scopes)
 	//fmt.Println(time.Now().Unix())
-	fmt.Println(oauthCfg.ClientID)
-	fmt.Println(oauthCfg.ClientSecret)
-	fmt.Println(oauthCfg.RedirectURL)
-	fmt.Println(oauthCfg.Scopes)
+	// fmt.Println(oauthCfg.ClientID)
+	// fmt.Println(oauthCfg.ClientSecret)
+	// fmt.Println(oauthCfg.RedirectURL)
+	// fmt.Println(oauthCfg.Scopes)
 
 	// token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 	// 	ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * -10)),
