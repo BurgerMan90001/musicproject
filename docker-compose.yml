@@ -1,9 +1,12 @@
 services:
   server:
+    container_name: server
     build: .
-    network_mode: host
+    ports:
+      - 8081:8081
 
   site:
+    container_name: site
     build: site
     ports:
       - 8080:80

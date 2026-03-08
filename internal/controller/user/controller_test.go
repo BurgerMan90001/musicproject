@@ -60,9 +60,9 @@ func TestPutUser(t *testing.T) {
 		wantRes       *model.User
 	}{
 		{
-			name:          "success",
-			id:            uuid.New(),
-			user:          &model.User{
+			name: "success",
+			id:   uuid.New(),
+			user: &model.User{
 				PasswordHash: "test123a",
 			},
 			expectRepoRes: &model.User{},
