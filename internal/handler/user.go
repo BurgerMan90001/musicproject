@@ -30,7 +30,7 @@ func handleUser(c *user.Controller) http.HandlerFunc {
 			user, err := c.GetUserByID(ctx, id)
 			if err != nil {
 				if errors.Is(err, repository.ErrNotFound) {
-					w.WriteHeader(http.StatusNotFound)
+					http.Error(w, err.Error(), http.StatusNotFound)
 					return
 				}
 				log.Printf("repository get error: %v", err)

@@ -1,13 +1,22 @@
 services:
   server:
     build: .
-    network_mode: host
-
+    ports:
+      - 8081:8081
+    depends_on:
+      - db
   site:
     build: site
     ports:
       - 8080:80
-  #db:
-  # image: postgres:alpine
-  #  ports:
-  #  - 5432:5432
+  db:
+    container_name: musicproject-db
+    image: postgres:alpine
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: musicproject
+    volumes:
+      - ./schema:/docker-entrypoint-initdb.d/schema

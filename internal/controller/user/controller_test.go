@@ -52,25 +52,21 @@ func TestGetUserByID(t *testing.T) {
 func TestPutUser(t *testing.T) {
 	tests := []struct {
 		name          string
-		id            uuid.UUID
 		user          *model.User
+		wantUser      *model.User
 		expectRepoErr error
-		expectRepoRes *model.User
 		wantErr       error
-		wantRes       *model.User
 	}{
 		{
-			name:          "success",
-			id:            uuid.New(),
-			user:          &model.User{
+			name: "success",
+			user: &model.User{
+				Email:        "paul@doe.com",
 				PasswordHash: "test123a",
 			},
-			expectRepoRes: &model.User{},
-			wantRes:       &model.User{},
+			wantErr: nil,
 		},
 		{
 			name: "empty user",
-			id:   uuid.Nil,
 		},
 	}
 	for _, tt := range tests {
@@ -83,9 +79,11 @@ func TestPutUser(t *testing.T) {
 
 			ctx := context.Background()
 
-			repoMock.EXPECT().PutUser(ctx, tt.id, tt.user).Return(tt.expectRepoErr)
+			id := uuid.Nil
 
-			err := controller.PutUser(ctx, tt.id, tt.user.Email, tt.user.PasswordHash)
+			repoMock.EXPECT().PutUser(ctx, id, tt.user).Return(tt.expectRepoErr)
+
+			err := controller.PutUser(ctx, id, tt.user.Email, tt.user.PasswordHash)
 
 			assert.Equal(t, tt.wantErr, err, tt.name)
 		})
