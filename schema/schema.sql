@@ -6,8 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255)
 );
 
-COPY users
-FROM './users.csv' DELIMITER ',' CSV HEADER;
+
 
 CREATE TABLE IF NOT EXISTS artists (
     id UUID PRIMARY KEY DEFAULT uuidv7()

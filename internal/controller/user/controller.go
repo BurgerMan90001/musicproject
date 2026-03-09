@@ -68,11 +68,11 @@ func (c *Controller) PutUser(ctx context.Context, id uuid.UUID, email string, pa
 }
 
 func (c *Controller) DeleteUserByID(ctx context.Context, id uuid.UUID) error {
-	_, err := c.repo.GetUserByID(ctx, id)
-	if err != nil && errors.Is(err, repository.ErrNotFound) {
-		return repository.ErrNotFound
-	}
-	if err := c.repo.DeleteUserByID(ctx, id); err != nil {
+	err := c.repo.DeleteUserByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return repository.ErrNotFound
+		}
 		return err
 	}
 	return nil

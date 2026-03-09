@@ -62,18 +62,18 @@ func (h *Handler) Register(path string) {
 func (h *Handler) Cleanup() {
 	c := make(chan os.Signal, 2)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-c
-		// stop db
-		if err := h.repo.Stop(); err != nil {
-			panic(err)
-		}
-		os.Exit(1)
-	}()
+	// go func() {
+	// 	<-c
+	// 	// stop db
+	// 	if err := h.repo.Stop(); err != nil {
+	// 		panic(err)
+	// 	}
+	// 	os.Exit(1)
+	// }()
 }
 func handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "alive")
+	fmt.Fprintln(w, "aliveeeeeeeeeeeee")
 }
 
 func handleSecret(w http.ResponseWriter, r *http.Request) {

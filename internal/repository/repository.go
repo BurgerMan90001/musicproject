@@ -23,5 +23,4 @@ type Repository interface {
 	GetRatings(ctx context.Context, songId uuid.UUID) ([]model.Rating, error)
 	PutRating(ctx context.Context, songId uuid.UUID, userId uuid.UUID, value float64) error
 
-	Stop() error
 }

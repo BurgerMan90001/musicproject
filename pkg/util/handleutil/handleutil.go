@@ -6,9 +6,9 @@ import (
 )
 
 func ErrMethodNotAllowed(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, fmt.Sprintf("method not allowed %v", r.Method), http.StatusMethodNotAllowed)
+	http.Error(w, fmt.Sprintf("%v method not allowed", r.Method), http.StatusMethodNotAllowed)
 }
 
 func ErrNotFound(w http.ResponseWriter, r *http.Request) {
-	
+
 }
