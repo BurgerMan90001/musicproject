@@ -16,6 +16,8 @@ type Album struct {
 type Song struct {
 	ID       uuid.UUID `json:"id"`
 	Name     string    `json:"name"`
+	Genre    string    `json:"genre"`
+	Streams  int       `json:"streams"`
 	Duration int       `json:"duration"`
 	Image    string    `json:"image"`
 	Source   string    `json:"src"`

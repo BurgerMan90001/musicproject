@@ -20,7 +20,6 @@ func main() {
 
 	repo := postgres.New(cfg)
 	handler := handler.New(mux, repo, cfg)
-	
 
 	handler.Register("")
 

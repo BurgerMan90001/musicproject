@@ -2,5 +2,7 @@ package repository
 
 import "errors"
 
-var ErrNotFound = errors.New("not found")
-var ErrAlreadExists = errors.New("already exists")
+var (
+	ErrNotFound = errors.New("not found")
+)
+//var ErrAlreadExists = errors.New("already exists")

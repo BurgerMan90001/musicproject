@@ -14,29 +14,29 @@ type Repository struct {
 }
 
 func New(cfg config.Config) *Repository {
+	var url string
+
 	switch cfg.Repository.Type {
 	case "test":
-		db, err := sql.Open("postgres", cfg.Repository.TestURL)
-		if err != nil {
-			panic(err)
-		}
-		ctx := context.TODO()
-		if err := fileutil.ExecSql(ctx, db, "schema/schema.sql"); err != nil {
-			panic(err)
-		}
-		return &Repository{db}
+		url = cfg.Repository.TestURL
 	case "postgres":
-		db, err := sql.Open("postgres", cfg.Repository.URL)
-		if err != nil {
-			panic(err)
-		}
-		return &Repository{db}
+		url = cfg.Repository.URL
 	default:
-		db, err := sql.Open("postgres", cfg.Repository.URL)
-		if err != nil {
-			panic(err)
-		}
-		return &Repository{db}
+		url = cfg.Repository.TestURL
 	}
 
+	ctx := context.Background()
+	db, err := sql.Open("postgres", url)
+	if err != nil {
+		panic(err)
+	}
+	if err := db.PingContext(ctx); err != nil {
+		panic(err)
+	}
+
+	if err := fileutil.ExecSql(ctx, db, "schema/schema.sql"); err != nil {
+		panic(err)
+	}
+
+	return &Repository{db}
 }

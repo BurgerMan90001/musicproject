@@ -1,9 +1,6 @@
 package auth
 
 import (
-	"fmt"
-	"unicode"
-
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -27,18 +24,6 @@ func HashPassword(password string) (string, error) {
 	}
 
 	return string(bytes), nil
-}
-func ValidatePassword(password string) error {
-	if len(password) < minLength {
-		return fmt.Errorf("password less than %d characters", minLength)
-	}
-	for _, char := range password {
-		switch {
-		case unicode.IsDigit(char):
-
-		}
-	}
-	return nil
 }
 func ComparePassword(password string, passwordHash string) bool {
 	err := bcrypt.CompareHashAndPassword(

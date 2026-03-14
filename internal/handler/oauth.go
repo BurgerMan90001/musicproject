@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
-	"musicproject.com/internal/auth"
+	"musicproject.com/internal/service/auth"
 	"musicproject.com/pkg/model"
 	"musicproject.com/pkg/util/fileutil"
 )
@@ -55,7 +55,7 @@ func handleOauthGoogleRedirect(jwtKey []byte, cfg *oauth2.Config) http.HandlerFu
 			ID:    id,
 			Email: userInfo.Email,
 		}
-		tokenString, err := auth.GenerateToken(jwtKey, user, auth.ExpiresInOneDay)
+		tokenString, err := auth.GenerateToken(jwtKey, user, auth.TokenRefresh, auth.ExpiresInOneDay)
 
 		if err != nil {
 			log.Printf("generate token error: %v", err)

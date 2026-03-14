@@ -3,7 +3,6 @@ package handler
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -11,8 +10,6 @@ import (
 
 	"github.com/google/uuid"
 	"musicproject.com/config"
-	"musicproject.com/internal/controller/song"
-	"musicproject.com/internal/controller/user"
 	"musicproject.com/internal/middleware"
 	"musicproject.com/internal/repository"
 	"musicproject.com/pkg/util/fileutil"
@@ -30,23 +27,22 @@ func New(mux *http.ServeMux, repo repository.Repository, cfg config.Config) *Han
 }
 
 func (h *Handler) Register(path string) {
-	userController := user.New(h.repo)
-	songController := song.New(h.repo)
 	jwtAccessKey := h.cfg.JWTAccessKey()
 	oathCfg := h.cfg.GoogleOathConfig()
 
 	// setup routes
 	h.mux.HandleFunc("/health", handleHealth)
 	// user routes
-	h.mux.HandleFunc("/user", handleUser(userController))
+	h.mux.HandleFunc("/user", handleUser(h.repo))
 
-	h.mux.HandleFunc("/songs", handleSongs(songController))
+	h.mux.HandleFunc("/songs", handleSongs(h.repo))
 	h.mux.HandleFunc("/artists", handleArtists())
 
 	// auth routes
-	h.mux.HandleFunc("/auth/login", handleLogin(jwtAccessKey, userController))
-	h.mux.HandleFunc("/auth/signup", handleSignup(jwtAccessKey, userController))
+	h.mux.HandleFunc("/auth/login", handleLogin(jwtAccessKey, h.repo))
+	h.mux.HandleFunc("/auth/signup", handleSignup(jwtAccessKey, h.repo))
 	h.mux.HandleFunc("/auth/refresh", handleRefresh())
+	h.mux.HandleFunc("/auth/email/reset", handleEmailReset())
 
 	h.mux.HandleFunc("/auth/google/login", handleOauthGoogleLogin(oathCfg))
 	h.mux.HandleFunc("/auth/google/redirect", handleOauthGoogleRedirect(jwtAccessKey, oathCfg))
@@ -73,14 +69,14 @@ func (h *Handler) Cleanup() {
 }
 func handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "aliveeeeeeeeeeeee")
+	fmt.Fprintln(w, "alive")
 }
 
 func handleSecret(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func handleSongs(c *song.Controller) http.HandlerFunc {
+func handleSongs(repo repository.Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(r.FormValue("id"))
 		if err != nil {
@@ -91,21 +87,24 @@ func handleSongs(c *song.Controller) http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodGet:
-			song, err := c.GetSongByID(ctx, id)
+			song, err := repo.GetSongByID(ctx, id)
 			if err != nil {
 				if errors.Is(err, repository.ErrNotFound) {
 					http.Error(w, err.Error(), http.StatusNotFound)
 					return
 				}
-				log.Printf("repository get error: %v", err)
-				w.WriteHeader(http.StatusInternalServerError)
+				handleutil.InternalServerError(w, r, err)
 				return
 			}
 			fileutil.WriteJSON(w, song)
 
 		case http.MethodPut:
+			err := repo.PutSong(ctx, id, nil)
+			if err != nil {
+				handleutil.InternalServerError(w, r, err)
+			}
 		default:
-			handleutil.ErrMethodNotAllowed(w, r)
+			handleutil.MethodNotAllowedError(w, r)
 		}
 	}
 }

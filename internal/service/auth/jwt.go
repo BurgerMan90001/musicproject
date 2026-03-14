@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"errors"
 	"net/http"
 	"time"
 
@@ -13,13 +12,11 @@ import (
 
 var issuer = "okapi"
 
-var ErrInvalidToken = errors.New("invalid token")
-
 var ExpiresInOneDay = time.Now().Add(time.Hour * 24)
 
 const (
-	TokenTypeAccess  string = "access"
-	TokenTypeRefresh string = "refresh"
+	TokenAccess  = "access"
+	TokenRefresh = "refresh"
 )
 
 type Claims struct {
@@ -29,11 +26,12 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(jwtKey []byte, user *model.User, expireAt time.Time) (string, error) {
+func GenerateToken(jwtKey []byte, user *model.User, tokenType string, expireAt time.Time) (string, error) {
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &Claims{
 		UserID:    user.ID,
 		Email:     user.Email,
-		TokenType: "",
+		TokenType: tokenType,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    issuer,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

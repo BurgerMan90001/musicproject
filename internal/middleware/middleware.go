@@ -8,7 +8,7 @@ import (
 	"runtime/debug"
 	"time"
 
-	"musicproject.com/internal/auth"
+	"musicproject.com/internal/service/auth"
 )
 
 func Logger(next http.Handler) http.Handler {
@@ -41,9 +41,9 @@ func JWTMiddleware(jwtKey []byte, next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		if claims.TokenType != auth.TokenTypeAccess {
+		if claims.TokenType != auth.TokenAccess {
 			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprintln(w, "Invalid token type")
+			fmt.Fprintln(w, "Invalid token type:", claims.TokenType)
 		}
 
 		ctx := context.WithValue(r.Context(), "claims", claims)

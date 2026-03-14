@@ -8,16 +8,16 @@ import (
 	"musicproject.com/internal/repository"
 )
 
-type Controller struct {
+type Service struct {
 	repo repository.Repository
 }
 
-func New(repo repository.Repository) *Controller {
-	return &Controller{repo: repo}
+func New(repo repository.Repository) *Service {
+	return &Service{repo: repo}
 }
 
-func (c *Controller) GetAggregatedRating(ctx context.Context, songId uuid.UUID) (float64, error) {
-	ratings, err := c.repo.GetRatings(ctx, songId)
+func (s *Service) GetAggregatedRating(ctx context.Context, songId uuid.UUID) (float64, error) {
+	ratings, err := s.repo.GetRatings(ctx, songId)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			return 0, repository.ErrNotFound
@@ -32,7 +32,8 @@ func (c *Controller) GetAggregatedRating(ctx context.Context, songId uuid.UUID) 
 	return aggregatedRating, nil
 }
 
-func (c *Controller) PutRating(ctx context.Context, songId uuid.UUID, userId uuid.UUID, value float64) error {
-
+/*
+func (c *Service) PutRating(ctx context.Context, songId uuid.UUID, userId uuid.UUID, value float64) error {
 	return c.repo.PutRating(ctx, songId, userId, value)
 }
+*/

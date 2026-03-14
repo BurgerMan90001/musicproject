@@ -7,13 +7,13 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"musicproject.com/internal/auth"
-	"musicproject.com/internal/controller/user"
 	"musicproject.com/internal/repository"
+	"musicproject.com/internal/service/auth"
 	"musicproject.com/pkg/model"
+	"musicproject.com/pkg/util/handleutil"
 )
 
-func handleSignup(jwtKey []byte, c *user.Controller) http.HandlerFunc {
+func handleSignup(jwtKey []byte, repo repository.Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			w.WriteHeader(http.StatusMethodNotAllowed)
@@ -21,16 +21,33 @@ func handleSignup(jwtKey []byte, c *user.Controller) http.HandlerFunc {
 		}
 		ctx := r.Context()
 
+		id, err := uuid.Parse(r.FormValue("id"))
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			//log.Printf("internal server error: %v", err)
+			return
+		}
+		if id == uuid.Nil {
+			id = uuid.New()
+		}
 		email := r.FormValue("email")
 		password := r.FormValue("password")
 
-		if email == "" || password == "" {
-			http.Error(w, "empty email or password", http.StatusBadRequest)
+		passwordHash, err := auth.HashPassword(password)
+		if err != nil {
+			if errors.Is(err, auth.ErrInvalidPassword) {
+				http.Error(w, auth.ErrInvalidPassword.Error(), http.StatusBadRequest)
+				return
+			}
+			handleutil.InternalServerError(w, r, err)
 			return
 		}
-		id := uuid.New()
-		err := c.PutUser(ctx, id, email, password)
-		if err != nil {
+		user := &model.User{
+			ID:           id,
+			Email:        email,
+			PasswordHash: passwordHash,
+		}
+		if err := repo.PutUser(ctx, id, user); err != nil {
 			log.Printf("repository put error: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -39,7 +56,7 @@ func handleSignup(jwtKey []byte, c *user.Controller) http.HandlerFunc {
 		tokenString, err := auth.GenerateToken(jwtKey, &model.User{
 			ID:    id,
 			Email: email,
-		}, auth.ExpiresInOneDay)
+		}, auth.TokenAccess, auth.ExpiresInOneDay)
 
 		if err != nil {
 			log.Printf("generate token error: %v", err)
@@ -53,7 +70,7 @@ func handleSignup(jwtKey []byte, c *user.Controller) http.HandlerFunc {
 	}
 }
 
-func handleLogin(jwtKey []byte, c *user.Controller) http.HandlerFunc {
+func handleLogin(jwtKey []byte, repo repository.Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			w.WriteHeader(http.StatusMethodNotAllowed)
@@ -70,7 +87,7 @@ func handleLogin(jwtKey []byte, c *user.Controller) http.HandlerFunc {
 			return
 		}
 
-		user, err := c.GetUserByEmail(ctx, email)
+		user, err := repo.GetUserByEmail(ctx, email)
 
 		if err != nil {
 			if errors.Is(err, repository.ErrNotFound) ||
@@ -87,7 +104,7 @@ func handleLogin(jwtKey []byte, c *user.Controller) http.HandlerFunc {
 		tokenString, err := auth.GenerateToken(jwtKey, &model.User{
 			ID:    user.ID,
 			Email: user.Email,
-		}, auth.ExpiresInOneDay)
+		}, auth.TokenAccess, auth.ExpiresInOneDay)
 
 		if err != nil {
 			log.Printf("generate token error: %v", err)
@@ -102,6 +119,12 @@ func handleLogin(jwtKey []byte, c *user.Controller) http.HandlerFunc {
 }
 
 func handleRefresh() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+		}
+	}
+}
+func handleEmailReset() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 		}

@@ -10,6 +10,7 @@ import (
 	"musicproject.com/pkg/model"
 )
 
+// Gets a user's email and password hash by their uuid
 func (r *Repository) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	var (
 		email        string

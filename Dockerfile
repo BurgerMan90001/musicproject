@@ -6,9 +6,9 @@ COPY . .
 
 ENV GOCACHE=/root/.cache/go-build
 
-RUN --mount=type=cache,target="/root/.cache/go-build" \
-    GOOS=linux go build -o main cmd/*.go
-
+#RUN --mount=type=cache,target="/root/.cache/go-build" \
+ #   GOOS=linux go build -o main cmd/*.go
+RUN GOOS=linux go build -o main cmd/*.go
 FROM alpine:latest AS run
 
 WORKDIR /src

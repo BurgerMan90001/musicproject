@@ -2,17 +2,15 @@ package handler
 
 import (
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/google/uuid"
-	"musicproject.com/internal/controller/user"
 	"musicproject.com/internal/repository"
 	"musicproject.com/pkg/util/fileutil"
 	"musicproject.com/pkg/util/handleutil"
 )
 
-func handleUser(c *user.Controller) http.HandlerFunc {
+func handleUser(repo repository.Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(r.FormValue("id"))
 		if err != nil {
@@ -27,14 +25,14 @@ func handleUser(c *user.Controller) http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodGet:
-			user, err := c.GetUserByID(ctx, id)
+			user, err := repo.GetUserByID(ctx, id)
 			if err != nil {
 				if errors.Is(err, repository.ErrNotFound) {
 					http.Error(w, err.Error(), http.StatusNotFound)
 					return
 				}
-				log.Printf("repository get error: %v", err)
-				w.WriteHeader(http.StatusInternalServerError)
+
+				handleutil.InternalServerError(w, r, err)
 				return
 			}
 			fileutil.WriteJSON(w, user)
@@ -51,7 +49,7 @@ func handleUser(c *user.Controller) http.HandlerFunc {
 				}
 			*/
 
-			err := c.DeleteUserByID(ctx, id)
+			err := repo.DeleteUserByID(ctx, id)
 			if err != nil && errors.Is(err, repository.ErrNotFound) {
 				w.WriteHeader(http.StatusNotFound)
 				fileutil.WriteJSON(w, err)
@@ -59,7 +57,7 @@ func handleUser(c *user.Controller) http.HandlerFunc {
 			}
 
 		default:
-			handleutil.ErrMethodNotAllowed(w, r)
+			handleutil.MethodNotAllowedError(w, r)
 		}
 	}
 }
