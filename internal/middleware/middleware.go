@@ -31,13 +31,15 @@ func PanicRecovery(next http.Handler) http.Handler {
 	})
 }
 
-func JWTMiddleware(jwtKey []byte, next http.HandlerFunc) http.HandlerFunc {
+func JWTMiddleware(authService *auth.Service, next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		claims, err := auth.ParseToken(jwtKey, r)
+
+		claims, err := authService.ValidateAccessToken("")
 
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprintln(w, "Invalid token:", err)
+
+			//fmt.Fprintln(w, "Invalid token:", err)
 			return
 		}
 
@@ -53,5 +55,6 @@ func JWTMiddleware(jwtKey []byte, next http.HandlerFunc) http.HandlerFunc {
 
 func GetContextClaims(ctx context.Context) (*auth.Claims, bool) {
 	claims, ok := ctx.Value("claims").(*auth.Claims)
+
 	return claims, ok
 }

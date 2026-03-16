@@ -2,6 +2,8 @@ package handler
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,22 +12,24 @@ import (
 	"golang.org/x/oauth2"
 	"musicproject.com/internal/service/auth"
 	"musicproject.com/pkg/model"
-	"musicproject.com/pkg/util/fileutil"
 )
 
-func handleOauthGoogleLogin(cfg *oauth2.Config) http.HandlerFunc {
+func HandleOauthGoogleLogin(cfg *oauth2.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		url := cfg.AuthCodeURL("state", oauth2.AccessTypeOffline)
+		state := generateStateCookie(w)
+		url := cfg.AuthCodeURL(state, oauth2.AccessTypeOffline)
 		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 	}
 }
-func handleOauthGoogleRedirect(jwtKey []byte, cfg *oauth2.Config) http.HandlerFunc {
+func HandleOauthGoogleRedirect(jwtKey []byte, cfg *oauth2.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		code := r.FormValue("code")
 		state := r.FormValue("state")
 
-		if state != "state" {
-			log.Println("state mismatch")
+		stateCookie, err := r.Cookie("oauthState")
+
+		if state != stateCookie.Value || err != nil {
+			log.Println("invalid google oauth state")
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
@@ -55,21 +59,30 @@ func handleOauthGoogleRedirect(jwtKey []byte, cfg *oauth2.Config) http.HandlerFu
 			ID:    id,
 			Email: userInfo.Email,
 		}
-		tokenString, err := auth.GenerateToken(jwtKey, user, auth.TokenRefresh, auth.ExpiresInOneDay)
+		tokenString, err := auth.GenerateToken(jwtKey, id, auth.TokenRefresh, auth.ExpiresInOneDay)
 
 		if err != nil {
 			log.Printf("generate token error: %v", err)
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
-		fileutil.WriteJSON(w, &model.Login{
+		WriteJSON(w, StatusSucess, model.LoginResponse{
 			AccessToken:  tokenString,
 			RefreshToken: tokenString,
 			User:         user,
-		})
+		}, http.StatusOK)
 	}
 }
-
+func generateStateCookie(w http.ResponseWriter) string {
+	b := make([]byte, 128)
+	rand.Read(b)
+	state := base64.URLEncoding.EncodeToString(b)
+	http.SetCookie(w, &http.Cookie{
+		Name:  "oauthState",
+		Value: state,
+	})
+	return state
+}
 func getUserInfoGoogle(ctx context.Context, cfg *oauth2.Config, token *oauth2.Token) (*model.GoogleUserInfo, error) {
 	client := cfg.Client(ctx, token)
 
@@ -79,10 +92,10 @@ func getUserInfoGoogle(ctx context.Context, cfg *oauth2.Config, token *oauth2.To
 	}
 	defer resp.Body.Close()
 
-	userInfo, err := fileutil.ReadJSON[model.GoogleUserInfo](resp.Body)
+	userInfo, err := ReadJSON[model.GoogleUserInfo](resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed read response: %v", err)
 	}
 
-	return userInfo, nil
+	return &userInfo, nil
 }

@@ -5,8 +5,11 @@ main
 .env
 
 
-base.yml
-base.yaml
+base.dev.yml
+base.dev.yaml
+
+base.prod.yml
+base.prod.yaml
 
 node_modules
 

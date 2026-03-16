@@ -1,44 +1,57 @@
 package auth
 
 import (
-	"net/http"
+	"context"
+	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/golang-jwt/jwt/v5/request"
 	"github.com/google/uuid"
-	"musicproject.com/pkg/model"
+	"musicproject.com/config"
 )
-
-var issuer = "okapi"
-
-var ExpiresInOneDay = time.Now().Add(time.Hour * 24)
 
 const (
 	TokenAccess  = "access"
 	TokenRefresh = "refresh"
 )
 
+var ExpiresInOneDay = time.Now().Add(time.Hour * 24)
+
+type Service struct {
+	AccessKey  []byte
+	RefreshKey []byte
+	Issuer     string
+}
+
 type Claims struct {
 	UserID    uuid.UUID `json:"userId"`
-	Email     string    `json:"email"`
 	TokenType string    `json:"tokenType"`
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(jwtKey []byte, user *model.User, tokenType string, expireAt time.Time) (string, error) {
+func New(cfg config.Config) *Service {
+	return &Service{
+		[]byte(cfg.API.Jwt.AccessKey),
+		[]byte(cfg.API.Jwt.RefreshKey),
+		cfg.API.Jwt.Issuer,
+	}
+}
 
+func (s *Service) GenerateToken(userId uuid.UUID, tokenType string, expireAt time.Time) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &Claims{
-		UserID:    user.ID,
-		Email:     user.Email,
+		UserID:    userId,
 		TokenType: tokenType,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    issuer,
+			Issuer:    s.Issuer,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(expireAt),
 		},
 	})
-	tokenString, err := token.SignedString(jwtKey)
+	key, err := s.keyType(tokenType)
+	if err != nil {
+		return "", err
+	}
+	tokenString, err := token.SignedString(key)
 	if err != nil {
 		return "", err
 	}
@@ -46,21 +59,88 @@ func GenerateToken(jwtKey []byte, user *model.User, tokenType string, expireAt t
 	return tokenString, nil
 }
 
-func ParseToken(jwtKey []byte, r *http.Request) (*Claims, error) {
-	extractor := request.MultiExtractor{
-		request.AuthorizationHeaderExtractor,
-	}
-
-	token, err := request.ParseFromRequest(r, extractor, func(t *jwt.Token) (any, error) {
-		return jwtKey, nil
-	}, request.WithClaims(&Claims{}))
-
+func (s *Service) ValidateAccessToken(tokenString string) (*Claims, error) {
+	token, err := s.parseToken(tokenString, TokenAccess)
 	if err != nil {
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return nil, err
+		}
 		return nil, err
 	}
 
-	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
+	claims, ok := token.Claims.(*Claims)
+
+	switch {
+	case !ok || !token.Valid:
+		return nil, jwt.ErrTokenInvalidClaims
+	case claims.TokenType != TokenAccess:
+		return nil, ErrInvalidTokenType
+	default:
 		return claims, nil
 	}
-	return nil, ErrInvalidToken
+}
+
+func (s *Service) RefreshTokens(ctx context.Context, tokenString string) {
+	token, err := s.parseToken(tokenString, TokenRefresh)
+	if err != nil {
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return nil, err
+		}
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(*Claims)
+
+	switch {
+	case !ok || !token.Valid:
+		return nil, jwt.ErrTokenInvalidClaims
+
+	case claims.TokenType != TokenRefresh:
+		return nil, ErrInvalidTokenType
+
+	default:
+		return claims, nil
+	}
+}
+
+func (s *Service) parseToken(tokenString string, tokenType string) (*jwt.Token, error) {
+	key, err := s.keyType(tokenType)
+	if err != nil {
+		return nil, err
+	}
+	token, err := jwt.ParseWithClaims(tokenString,
+		&Claims{},
+		func(t *jwt.Token) (any, error) {
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, jwt.ErrSignatureInvalid
+			}
+			return key, nil
+		},
+		jwt.WithIssuer(s.Issuer),
+		jwt.WithValidMethods([]string{"HS256"}),
+		jwt.WithExpirationRequired(),
+	)
+	return token, err
+}
+func (s *Service) keyType(tokenType string) ([]byte, error) {
+	switch tokenType {
+	case TokenAccess:
+		return s.AccessKey, nil
+	case TokenRefresh:
+		return s.RefreshKey, nil
+	default:
+		return nil, ErrInvalidTokenType
+	}
+}
+
+func SetToken() {
+
+}
+
+func (s *Service) Signup() {
+
+}
+
+func (s *Service) Login() {
+
 }

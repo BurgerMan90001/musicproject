@@ -48,11 +48,11 @@ func (r *Repository) GetRatings(ctx context.Context, songId uuid.UUID) ([]model.
 
 	return ratings, nil
 }
-func (r *Repository) PutRating(ctx context.Context, songId uuid.UUID, userId uuid.UUID, value float64) error {
-	query := "INSERT INTO ratings (song_id, user_id, value) VALUES($1, $2, $3)"
+func (r *Repository) PutRating(ctx context.Context, songId uuid.UUID, userId uuid.UUID, value float64) (uuid.UUID, error) {
+	query := "INSERT INTO ratings (song_id, user_id, value) VALUES($1, $2, $3) RETURNING  "
 	_, err := r.db.ExecContext(ctx, query, songId, userId, value)
 	if err != nil {
-		return err
+		return uuid.Nil, err
 	}
-	return nil
+	return uuid.Nil, nil
 }

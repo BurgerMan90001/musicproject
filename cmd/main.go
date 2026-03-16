@@ -1,31 +1,27 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
 	"musicproject.com/config"
-	"musicproject.com/internal/handler"
 	"musicproject.com/internal/repository/postgres"
+	"musicproject.com/internal/server"
 )
 
 func main() {
-	cfg := config.ReadConfigFile("config/base.yml")
-
-	port := cfg.API.Port
-	host := cfg.API.Host
+	cfg := config.ReadConfigFile()
 
 	mux := http.NewServeMux()
 
 	repo := postgres.New(cfg)
-	handler := handler.New(mux, repo, cfg)
+	server := server.New(mux, repo, cfg)
 
-	handler.Register("")
+	server.Handle()
 
 	// start server
-	log.Printf("Server listening at %v:%d", host, port)
-	if err := http.ListenAndServe(fmt.Sprintf("%v:%d", host, port), mux); err != nil {
+	log.Printf("Server listening at %s", cfg.ApiUrl())
+	if err := http.ListenAndServe(cfg.ApiUrl(), mux); err != nil {
 		panic(err)
 	}
 }

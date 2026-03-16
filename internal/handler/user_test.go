@@ -2,8 +2,7 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,37 +11,58 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	mock_repository "musicproject.com/gen/mocks"
+	"musicproject.com/internal/repository"
 	"musicproject.com/pkg/model"
 )
 
 func TestHandleGet(t *testing.T) {
-	tests := []struct {
-		name         string
-		method       string
-		wantBody     string
-		wantRepoUser *model.User
-		wantStatus   int
-		wantErr      error
-	}{
+	id, err := uuid.NewV7()
+	if err != nil {
+		t.Error(err)
+	}
 
+	tests := []HandlerTest{
 		{
-			name:       "get user by id",
-			method:     http.MethodGet,
-			wantStatus: http.StatusOK,
-			wantBody:   `"id":"00000000-0000-0000-0000-000000000000","email":"paul@pol.coom","passwordHash":""}\n`,
-			wantRepoUser: &model.User{
-				Email: "paul@pol.coom",
+			Name:       "get success",
+			WantCode:   http.StatusOK,
+			Method:     http.MethodGet,
+			WantStatus: StatusSucess,
+
+			WantData: model.User{
+				ID:           id,
+				Email:        "paulcasigay@gmail.com",
+				PasswordHash: "asijdoiojghjflgnhkgfh",
+			},
+
+			RepoItem: &model.User{
+				ID:           id,
+				Email:        "paulcasigay@gmail.com",
+				PasswordHash: "asijdoiojghjflgnhkgfh",
 			},
 		},
-		// {
-		// 	name:       "invalid method",
-		// 	method:     http.MethodPatch,
-		// 	wantBody:   "PATCH method not allowed\n",
-		// 	wantStatus: http.StatusMethodNotAllowed,
-		// },
+		{
+			Name:     "user not found",
+			Method:   http.MethodGet,
+			WantCode: http.StatusNotFound,
+			RepoErr:  repository.ErrNotFound,
+
+			WantStatus:  StatusError,
+			WantMessage: ErrUserNotFound.Error(),
+		},
+
+		{
+			Name:   "method not allowed",
+			Method: http.MethodConnect,
+
+			WantStatus:  StatusError,
+			WantMessage: ErrInvalidMethod.Error(),
+
+			WantCode: http.StatusMethodNotAllowed,
+		},
 	}
+
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.Name, func(t *testing.T) {
 			mockController := gomock.NewController(t)
 			defer mockController.Finish()
 
@@ -50,29 +70,51 @@ func TestHandleGet(t *testing.T) {
 
 			ctx := context.Background()
 
-			id, err := uuid.NewV7()
-			if err != nil {
-				t.Error(err)
-			}
-			repoMock.EXPECT().GetUserByID(ctx, id).Return(tt.wantRepoUser, tt.wantErr)
-
-			r, err := http.NewRequestWithContext(ctx, tt.method, fmt.Sprintf("localhost:8081/user?id=%v", id), nil)
-			if err != nil {
-				t.Error(err)
-			}
+			repoMock.EXPECT().GetUserByID(ctx, id).Return(tt.RepoItem, tt.RepoErr).AnyTimes()
 
 			w := httptest.NewRecorder()
 
-			handleUser(repoMock).ServeHTTP(w, r)
+			body, err := NewRequestBody(tt.Body)
+			if err != nil {
+				t.Error(err)
+			}
 
-			res := w.Result()
+			r := httptest.NewRequestWithContext(ctx, tt.Method, "/user", body)
+			r.Header.Set("Content-Type", "application/json")
 
-			var user *model.User
-			json.NewDecoder(res.Body).Decode(&user)
+			r.SetPathValue("id", id.String())
 
-			assert.Equal(t, tt.wantStatus, w.Code, tt.name)
-			assert.Equal(t, tt.wantRepoUser, user, tt.name)
+			HandleUserID(repoMock).ServeHTTP(w, r)
+
+			t1, err := MarshalJSON(tt.WantStatus, tt.WantData, tt.WantCode, tt.WantMessage)
+			if err != nil {
+				t.Error(err)
+			}
+
+			t2, err := io.ReadAll(w.Body)
+			if err != nil {
+				t.Error(err)
+			}
+
+			assert.JSONEq(t, string(t1), string(t2), tt.Name)
+			assert.Equal(t, tt.WantCode, w.Code, tt.Name)
 		})
 	}
+}
+func TestPut(t *testing.T) {
+	tests := []HandlerTest{
+		{
+			Name:     "success",
+			WantCode: http.StatusOK,
+			//Body:     model.User{},
+			RepoItem: model.User{},
+		},
+	}
+	t.Skip()
+	for _, tt := range tests {
 
+		t.Run(tt.Name, func(t *testing.T) {
+
+		})
+	}
 }

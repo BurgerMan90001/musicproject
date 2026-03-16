@@ -132,11 +132,12 @@ func (mr *MockRepositoryMockRecorder) GetUserByID(ctx, id any) *gomock.Call {
 }
 
 // PutRating mocks base method.
-func (m *MockRepository) PutRating(ctx context.Context, songId, userId uuid.UUID, value float64) error {
+func (m *MockRepository) PutRating(ctx context.Context, songId, userId uuid.UUID, value float64) (uuid.UUID, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PutRating", ctx, songId, userId, value)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(uuid.UUID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // PutRating indicates an expected call of PutRating.
@@ -146,43 +147,31 @@ func (mr *MockRepositoryMockRecorder) PutRating(ctx, songId, userId, value any) 
 }
 
 // PutSong mocks base method.
-func (m *MockRepository) PutSong(ctx context.Context, id uuid.UUID, u *model.Song) error {
+func (m *MockRepository) PutSong(ctx context.Context, id uuid.UUID, song *model.Song) (uuid.UUID, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PutSong", ctx, id, u)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "PutSong", ctx, id, song)
+	ret0, _ := ret[0].(uuid.UUID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // PutSong indicates an expected call of PutSong.
-func (mr *MockRepositoryMockRecorder) PutSong(ctx, id, u any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) PutSong(ctx, id, song any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutSong", reflect.TypeOf((*MockRepository)(nil).PutSong), ctx, id, u)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutSong", reflect.TypeOf((*MockRepository)(nil).PutSong), ctx, id, song)
 }
 
 // PutUser mocks base method.
-func (m *MockRepository) PutUser(ctx context.Context, id uuid.UUID, u *model.User) error {
+func (m *MockRepository) PutUser(ctx context.Context, email, password string) (uuid.UUID, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PutUser", ctx, id, u)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "PutUser", ctx, email, password)
+	ret0, _ := ret[0].(uuid.UUID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // PutUser indicates an expected call of PutUser.
-func (mr *MockRepositoryMockRecorder) PutUser(ctx, id, u any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) PutUser(ctx, email, password any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutUser", reflect.TypeOf((*MockRepository)(nil).PutUser), ctx, id, u)
-}
-
-// Stop mocks base method.
-func (m *MockRepository) Stop() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Stop")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Stop indicates an expected call of Stop.
-func (mr *MockRepositoryMockRecorder) Stop() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockRepository)(nil).Stop))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutUser", reflect.TypeOf((*MockRepository)(nil).PutUser), ctx, email, password)
 }

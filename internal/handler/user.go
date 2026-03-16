@@ -6,19 +6,13 @@ import (
 
 	"github.com/google/uuid"
 	"musicproject.com/internal/repository"
-	"musicproject.com/pkg/util/fileutil"
-	"musicproject.com/pkg/util/handleutil"
 )
 
-func handleUser(repo repository.Repository) http.HandlerFunc {
+func HandleUserID(repo repository.Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id, err := uuid.Parse(r.FormValue("id"))
+		id, err := uuid.Parse(r.PathValue("id"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		if id == uuid.Nil {
-			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 		ctx := r.Context()
@@ -28,14 +22,14 @@ func handleUser(repo repository.Repository) http.HandlerFunc {
 			user, err := repo.GetUserByID(ctx, id)
 			if err != nil {
 				if errors.Is(err, repository.ErrNotFound) {
-					http.Error(w, err.Error(), http.StatusNotFound)
+					WriteErrJSON(w, ErrUserNotFound, http.StatusNotFound)
 					return
 				}
-
-				handleutil.InternalServerError(w, r, err)
+				InternalServerError(w, r, err)
 				return
 			}
-			fileutil.WriteJSON(w, user)
+
+			WriteJSON(w, "success", user, http.StatusOK)
 		case http.MethodPut:
 
 		case http.MethodDelete:
@@ -51,13 +45,13 @@ func handleUser(repo repository.Repository) http.HandlerFunc {
 
 			err := repo.DeleteUserByID(ctx, id)
 			if err != nil && errors.Is(err, repository.ErrNotFound) {
-				w.WriteHeader(http.StatusNotFound)
-				fileutil.WriteJSON(w, err)
+
+				WriteErrJSON(w, err, http.StatusNotFound)
 				return
 			}
 
 		default:
-			handleutil.MethodNotAllowedError(w, r)
+			MethodNotAllowedError(w, r)
 		}
 	}
 }

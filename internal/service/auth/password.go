@@ -6,9 +6,6 @@ import (
 
 const (
 	cost = 14
-
-	minLength = 8
-	maxLength = 255
 )
 
 func HashPassword(password string) (string, error) {

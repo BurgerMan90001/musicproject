@@ -1,14 +1,15 @@
 api:
   port: 8081
   host:
+  version: "1.23"
   jwt:
     accessKey: test
     refreshKey:
+    issuer: okapi
 
 repository:
-  type: postgres
+  type: dev
   url:
-  testUrl: 
 
 oauth:
   google:

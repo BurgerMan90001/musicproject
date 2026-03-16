@@ -14,19 +14,9 @@ type Repository struct {
 }
 
 func New(cfg config.Config) *Repository {
-	var url string
-
-	switch cfg.Repository.Type {
-	case "test":
-		url = cfg.Repository.TestURL
-	case "postgres":
-		url = cfg.Repository.URL
-	default:
-		url = cfg.Repository.TestURL
-	}
 
 	ctx := context.Background()
-	db, err := sql.Open("postgres", url)
+	db, err := sql.Open("postgres", cfg.Repository.URL)
 	if err != nil {
 		panic(err)
 	}

@@ -5,9 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"musicproject.com/config"
 	"musicproject.com/pkg/model"
-	"musicproject.com/pkg/util/fileutil"
 )
 
 func TestHandleOathGoogleLogin(t *testing.T) {
@@ -25,13 +25,13 @@ func TestHandleOathGoogleLogin(t *testing.T) {
 		},
 	}
 	t.Skip()
-	cfg := config.ReadConfigFile("../../config/base.yml")
+	cfg := config.ReadConfigFile()
 	oauthCfg := cfg.GoogleOathConfig()
 	//jwtKey := cfg.JWTAccessKey()
 	for _, tt := range tests {
 		//t.Skip()
 		t.Run(tt.name, func(t *testing.T) {
-			ts := httptest.NewServer(handleOauthGoogleLogin(oauthCfg))
+			ts := httptest.NewServer(HandleOauthGoogleLogin(oauthCfg))
 			defer ts.Close()
 			//client := oauthCfg.Client(context.Background(), auth.GenerateToken(jwtKey))
 
@@ -50,16 +50,17 @@ func TestHandleOathGoogleLogin(t *testing.T) {
 			// if err != nil {
 			// 	t.Error(err)
 			// }
+
 			if tt.wantStatus != resp.StatusCode {
 				t.Errorf("wrong status code want: %v got: %v", tt.wantStatus, resp.StatusCode)
 			}
-			userInfo, err := fileutil.ReadJSON[model.GoogleUserInfo](resp.Body)
+			userInfo, err := ReadJSON[model.GoogleUserInfo](resp.Body)
 			if err != nil {
+
 				t.Errorf("read error: %v", err)
 			}
-			if tt.wantRes != userInfo {
-				t.Errorf("wrong body want: %v got: %v", tt.wantRes, userInfo)
-			}
+
+			assert.Equal(t, tt.wantRes, userInfo, tt.name)
 		})
 	}
 

@@ -4,9 +4,8 @@ services:
     build: .
     ports:
       - 8081:8081
-    volumes:
-      - ./:/app
-      - .:/go/pkg/mod
+    environment:
+      - env=dev
     depends_on:
       - db
   site:

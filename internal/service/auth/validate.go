@@ -5,6 +5,14 @@ import (
 	"unicode"
 )
 
+const (
+	minLength = 8
+	maxLength = 255
+)
+func Logout() {
+	
+}
+
 func ValidateEmail(email string) error {
 	valid, err := regexp.MatchString(`^[\w\-\.]+@([\w-]+\.)+[\w-]{2,}$`, email)
 	if !valid {

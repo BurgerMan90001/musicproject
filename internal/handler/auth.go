@@ -6,57 +6,58 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/google/uuid"
 	"musicproject.com/internal/repository"
 	"musicproject.com/internal/service/auth"
 	"musicproject.com/pkg/model"
-	"musicproject.com/pkg/util/handleutil"
 )
 
-func handleSignup(jwtKey []byte, repo repository.Repository) http.HandlerFunc {
+func HandleSignup(jwtKey []byte, repo repository.Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
+			MethodNotAllowedError(w, r)
 			return
 		}
 		ctx := r.Context()
 
-		id, err := uuid.Parse(r.FormValue("id"))
+		signup, err := ReadJSON[model.SignupRequest](r.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			//log.Printf("internal server error: %v", err)
 			return
 		}
-		if id == uuid.Nil {
-			id = uuid.New()
-		}
-		email := r.FormValue("email")
-		password := r.FormValue("password")
 
-		passwordHash, err := auth.HashPassword(password)
-		if err != nil {
-			if errors.Is(err, auth.ErrInvalidPassword) {
-				http.Error(w, auth.ErrInvalidPassword.Error(), http.StatusBadRequest)
-				return
-			}
-			handleutil.InternalServerError(w, r, err)
+		if err := auth.ValidateEmail(signup.Email); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			WriteErrJSON(w, err, http.StatusBadRequest)
 			return
 		}
-		user := &model.User{
-			ID:           id,
-			Email:        email,
-			PasswordHash: passwordHash,
+		if err := auth.ValidatePassword(signup.Password); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			WriteErrJSON(w, err, http.StatusBadRequest)
+			return
 		}
-		if err := repo.PutUser(ctx, id, user); err != nil {
+
+		if user, _ := repo.GetUserByEmail(ctx, signup.Email); user != nil {
+			WriteErrJSON(w, ErrUserAlreadyExists,
+				http.StatusConflict)
+			return
+		}
+
+		id, err := repo.PutUser(ctx, signup.Email, signup.Password)
+		if err != nil {
 			log.Printf("repository put error: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-
-		tokenString, err := auth.GenerateToken(jwtKey, &model.User{
+		user := &model.User{
 			ID:    id,
-			Email: email,
-		}, auth.TokenAccess, auth.ExpiresInOneDay)
+			Email: signup.Email,
+		}
+
+		accessToken, err := auth.GenerateToken(jwtKey, id,
+			auth.TokenAccess, auth.ExpiresInOneDay)
+
+		refreshToken, err := auth.GenerateToken(jwtKey, id,
+			auth.TokenRefresh, auth.ExpiresInOneDay)
 
 		if err != nil {
 			log.Printf("generate token error: %v", err)
@@ -64,13 +65,17 @@ func handleSignup(jwtKey []byte, repo repository.Repository) http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/jwt")
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintln(w, tokenString)
+		res := model.LoginResponse{
+			AccessToken:  accessToken,
+			RefreshToken: refreshToken,
+			User:         user,
+		}
+
+		WriteJSON(w, StatusSucess, res, http.StatusOK)
 	}
 }
 
-func handleLogin(jwtKey []byte, repo repository.Repository) http.HandlerFunc {
+func HandleLogin(jwtKey []byte, repo repository.Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			w.WriteHeader(http.StatusMethodNotAllowed)
@@ -101,10 +106,8 @@ func handleLogin(jwtKey []byte, repo repository.Repository) http.HandlerFunc {
 			return
 		}
 
-		tokenString, err := auth.GenerateToken(jwtKey, &model.User{
-			ID:    user.ID,
-			Email: user.Email,
-		}, auth.TokenAccess, auth.ExpiresInOneDay)
+		tokenString, err := auth.GenerateToken(jwtKey, user.ID,
+			auth.TokenAccess, auth.ExpiresInOneDay)
 
 		if err != nil {
 			log.Printf("generate token error: %v", err)
@@ -118,13 +121,20 @@ func handleLogin(jwtKey []byte, repo repository.Repository) http.HandlerFunc {
 	}
 }
 
-func handleRefresh() http.HandlerFunc {
+func HandleRefresh() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 		}
 	}
 }
-func handleEmailReset() http.HandlerFunc {
+
+func HandleLogout() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+		}
+	}
+}
+func HandleEmailReset() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 		}

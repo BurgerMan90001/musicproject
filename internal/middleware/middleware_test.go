@@ -6,61 +6,67 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"musicproject.com/config"
 	"musicproject.com/internal/service/auth"
-	"musicproject.com/pkg/model"
 )
 
 var jwtSecret = []byte("test")
 
 func TestJWTMiddleware(t *testing.T) {
-	validToken, err := auth.GenerateToken(jwtSecret, &model.User{
-		ID: uuid.Nil,
-	}, auth.TokenAccess, auth.ExpiresInOneDay)
+	cfg := config.ReadConfigFile()
+	authService := auth.New(cfg)
+
+	validToken, err := authService.GenerateToken(uuid.Nil, auth.TokenAccess, auth.ExpiresInOneDay)
 	if err != nil {
 		t.Error(err)
 	}
-	expiredToken, err := auth.GenerateToken(jwtSecret, &model.User{
-		ID: uuid.Nil,
-	}, auth.TokenAccess, time.Now().Add(time.Hour*-1))
+	expiredToken, err := authService.GenerateToken(uuid.Nil,
+		auth.TokenAccess, time.Now().Add(time.Hour*-1))
 	if err != nil {
 		t.Error(err)
 	}
 
 	tests := []struct {
-		name       string
-		token      string
-		wantBody   string
-		wantStatus int
+		name     string
+		token    string
+		wantRes  string
+		wantCode int
+		//wantErr  map[string]error
 	}{
+
 		{
-			name:       "valid token",
-			token:      validToken,
-			wantStatus: http.StatusOK,
+			name:     "valid token",
+			wantCode: http.StatusOK,
+			token:    validToken,
 		},
 		{
-			name:       "expired token",
-			token:      expiredToken,
-			wantStatus: http.StatusUnauthorized,
+			name:  "expired token",
+			token: expiredToken,
+
+			wantRes:  jwt.ErrTokenExpired.Error(),
+			wantCode: http.StatusUnauthorized,
 		},
 		{
-			name:       "invalid token",
-			token:      "eyJhbGcaaaaI1NiIsInR5cCI6IkpXVCJ9.e30.P4Lqll22jQQJ1eMJikvNg5HKG-cKB0hUZA9BZFIG7Jk",
-			wantStatus: http.StatusUnauthorized,
+
+			token:    "eyJhbGcaaaaaaaaaaaaaaaaaaaaaaaJk",
+			name:     "invalid token",
+			wantCode: http.StatusUnauthorized,
 		},
 		{
-			name:       "empty token or no header",
-			token:      "",
-			wantStatus: http.StatusUnauthorized,
+			token:    "",
+			name:     "empty token or no header",
+			wantCode: http.StatusUnauthorized,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest("GET", "/protected", nil)
+			r := httptest.NewRequest("GET", "/protected", nil)
 			if tt.token != "" {
-				req.Header.Set("Authorization", "Bearer "+tt.token)
+				r.Header.Set("Authorization", "Bearer "+tt.token)
 			}
 			w := httptest.NewRecorder()
 
@@ -68,15 +74,18 @@ func TestJWTMiddleware(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 			}))
 
-			handler.ServeHTTP(w, req)
+			handler.ServeHTTP(w, r)
 
-			// body, err := io.ReadAll(w.Body)
+			// res, err := ReadJSON[map[string]string](w.Result().Body)
 			// if err != nil {
 			// 	t.Error(err)
 			// }
-			assert.Equal(t, tt.wantStatus, w.Code, tt.name)
-			//assert.NotEmpty()
-			//assert.Equal(t, tt.wantBody, string(body), tt.name)
+
+			assert.Equal(t, tt.wantCode, w.Code, tt.name)
+			//assert.JSONEqf()
+
+			//assert.Equal(t, tt.wantRes, res["data"], tt.name)
+			//assert.Equal(t, tt.wantRes, res["error"], tt.name)
 		})
 	}
 }

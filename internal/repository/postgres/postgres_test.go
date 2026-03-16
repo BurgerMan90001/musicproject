@@ -5,12 +5,14 @@ import (
 )
 
 func TestConfig(t *testing.T) {
-	//repo := New("")
-	//repo.db.
-	file := `repository:
-				type: postgres
-				url:
-				testUrl:`
-	//mock_repository.NewMockRepository(&gomock.Controller{})
-	t.Skip()
+
+	// file := `repository:
+	// 			type: postgres
+	// 			url:
+	// 			testUrl:`
+
+	//t.Skip()
+
+	//repo := New(cfg)
+
 }
