@@ -23,10 +23,9 @@ func TestHandleGet(t *testing.T) {
 
 	tests := []HandlerTest{
 		{
-			Name:       "get success",
-			WantCode:   http.StatusOK,
-			Method:     http.MethodGet,
-			WantStatus: StatusSucess,
+			Name:     "get success",
+			WantCode: http.StatusOK,
+			Method:   http.MethodGet,
 
 			WantData: model.User{
 				ID:           id,
@@ -46,7 +45,6 @@ func TestHandleGet(t *testing.T) {
 			WantCode: http.StatusNotFound,
 			RepoErr:  repository.ErrNotFound,
 
-			WantStatus:  StatusError,
 			WantMessage: ErrUserNotFound.Error(),
 		},
 
@@ -54,7 +52,6 @@ func TestHandleGet(t *testing.T) {
 			Name:   "method not allowed",
 			Method: http.MethodConnect,
 
-			WantStatus:  StatusError,
 			WantMessage: ErrInvalidMethod.Error(),
 
 			WantCode: http.StatusMethodNotAllowed,
@@ -86,7 +83,7 @@ func TestHandleGet(t *testing.T) {
 
 			HandleUserID(repoMock).ServeHTTP(w, r)
 
-			t1, err := MarshalJSON(tt.WantStatus, tt.WantData, tt.WantCode, tt.WantMessage)
+			t1, err := model.MarshalJSON(tt.WantData, tt.WantCode, tt.WantMessage)
 			if err != nil {
 				t.Error(err)
 			}

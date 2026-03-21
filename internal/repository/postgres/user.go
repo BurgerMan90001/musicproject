@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/uuid"
 	"musicproject.com/internal/repository"
-	"musicproject.com/internal/service/auth"
 	"musicproject.com/pkg/model"
 )
 
@@ -51,12 +50,9 @@ func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*model.U
 		PasswordHash: passwordHash,
 	}, nil
 }
-func (r *Repository) PutUser(ctx context.Context, email string, password string) (uuid.UUID, error) {
+func (r *Repository) PutUser(ctx context.Context, email string, passwordHash string) (uuid.UUID, error) {
 	query := "INSERT INTO users (email, password_hash) VALUES($1, $2) RETURNING id"
-	passwordHash, err := auth.HashPassword(password)
-	if err != nil {
-		return uuid.Nil, err
-	}
+
 	row := r.db.QueryRowContext(ctx, query, email, passwordHash)
 	var id uuid.UUID
 	if err := row.Scan(&id); err != nil {

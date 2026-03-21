@@ -25,10 +25,11 @@ func HandleSongs(repo repository.Repository) http.HandlerFunc {
 					http.Error(w, err.Error(), http.StatusNotFound)
 					return
 				}
-				InternalServerError(w, r, err)
+				WriteError(w, ErrInternalServerError, http.StatusInternalServerError)
+				
 				return
 			}
-			WriteJSON(w, "success", song, http.StatusOK)
+			WriteJSON(w, song, http.StatusOK)
 
 		case http.MethodPut:
 			_, err := repo.PutSong(ctx, id, nil)

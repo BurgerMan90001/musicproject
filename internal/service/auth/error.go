@@ -8,4 +8,6 @@ var (
 
 	ErrInvalidTokenType        = errors.New("invalid token type")
 	ErrUnexpectedSigningMethod = errors.New("unexpected signing method")
+
+	ErrUserAlreadyExists = errors.New("user already exists")
 )

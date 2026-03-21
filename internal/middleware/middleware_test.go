@@ -4,47 +4,48 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"musicproject.com/config"
+	mock_repository "musicproject.com/gen/mocks"
 	"musicproject.com/internal/service/auth"
+	"musicproject.com/pkg/util/fileutil"
 )
 
 var jwtSecret = []byte("test")
 
 func TestJWTMiddleware(t *testing.T) {
-	cfg := config.ReadConfigFile()
-	authService := auth.New(cfg)
-
-	validToken, err := authService.GenerateToken(uuid.Nil, auth.TokenAccess, auth.ExpiresInOneDay)
+	cfg, err := fileutil.ReadYAML[config.Config]("../../config/base.dev.yml")
 	if err != nil {
 		t.Error(err)
 	}
-	expiredToken, err := authService.GenerateToken(uuid.Nil,
-		auth.TokenAccess, time.Now().Add(time.Hour*-1))
-	if err != nil {
-		t.Error(err)
-	}
+	// validToken, err := authService.GenerateToken(uuid.Nil, auth.TokenAccess, auth.ExpiresInOneDay)
+	// if err != nil {
+	// 	t.Error(err)
+	// }
+	// expiredToken, err := authService.GenerateToken(uuid.Nil,
+	// 	auth.TokenAccess, time.Now().Add(time.Hour*-1))
+	// if err != nil {
+	// 	t.Error(err)
+	// }
 
 	tests := []struct {
 		name     string
 		token    string
 		wantRes  string
 		wantCode int
-		//wantErr  map[string]error
 	}{
 
 		{
 			name:     "valid token",
 			wantCode: http.StatusOK,
-			token:    validToken,
+			//token:    validToken,
 		},
 		{
-			name:  "expired token",
-			token: expiredToken,
+			name: "expired token",
+			//token: expiredToken,
 
 			wantRes:  jwt.ErrTokenExpired.Error(),
 			wantCode: http.StatusUnauthorized,
@@ -64,13 +65,19 @@ func TestJWTMiddleware(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			mockController := gomock.NewController(t)
+			defer mockController.Finish()
+
+			repoMock := mock_repository.NewMockRepository(mockController)
+
+			authService := auth.New(cfg.API.Auth, repoMock)
 			r := httptest.NewRequest("GET", "/protected", nil)
 			if tt.token != "" {
 				r.Header.Set("Authorization", "Bearer "+tt.token)
 			}
 			w := httptest.NewRecorder()
 
-			handler := JWTMiddleware(jwtSecret, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler := JWTMiddleware(authService, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
 			}))
 

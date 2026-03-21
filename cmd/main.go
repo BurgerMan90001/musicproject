@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	cfg := config.ReadConfigFile()
+	cfg := config.ReadConfigFile(config.TypeDev)
 
 	mux := http.NewServeMux()
 

@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -11,103 +10,73 @@ import (
 	"musicproject.com/pkg/model"
 )
 
-func HandleSignup(jwtKey []byte, repo repository.Repository) http.HandlerFunc {
+func HandleSignup(authService *auth.Service, repo repository.Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			MethodNotAllowedError(w, r)
+			//MethodNotAllowedError(w, r)
+			WriteError(w, ErrInvalidMethod, http.StatusMethodNotAllowed)
 			return
 		}
 		ctx := r.Context()
 
-		signup, err := ReadJSON[model.SignupRequest](r.Body)
+		signup, err := model.ReadJSON[model.SignupRequest](r.Body)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
+			WriteError(w, err, http.StatusBadRequest)
 			return
 		}
-
-		if err := auth.ValidateEmail(signup.Email); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			WriteErrJSON(w, err, http.StatusBadRequest)
-			return
-		}
-		if err := auth.ValidatePassword(signup.Password); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			WriteErrJSON(w, err, http.StatusBadRequest)
-			return
-		}
-
-		if user, _ := repo.GetUserByEmail(ctx, signup.Email); user != nil {
-			WriteErrJSON(w, ErrUserAlreadyExists,
-				http.StatusConflict)
-			return
-		}
-
-		id, err := repo.PutUser(ctx, signup.Email, signup.Password)
+		session, err := authService.Signup(ctx, signup.Email, signup.Password)
 		if err != nil {
-			log.Printf("repository put error: %v", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
+			switch {
+			case errors.Is(err, auth.ErrInvalidEmail),
+				errors.Is(err, auth.ErrInvalidPassword):
+				WriteError(w, err, http.StatusBadRequest)
+				return
+			default:
+				WriteError(w, err, http.StatusInternalServerError)
+				return
+			}
 		}
-		user := &model.User{
-			ID:    id,
-			Email: signup.Email,
-		}
-
-		accessToken, err := auth.GenerateToken(jwtKey, id,
-			auth.TokenAccess, auth.ExpiresInOneDay)
-
-		refreshToken, err := auth.GenerateToken(jwtKey, id,
-			auth.TokenRefresh, auth.ExpiresInOneDay)
-
-		if err != nil {
-			log.Printf("generate token error: %v", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		res := model.LoginResponse{
-			AccessToken:  accessToken,
-			RefreshToken: refreshToken,
-			User:         user,
-		}
-
-		WriteJSON(w, StatusSucess, res, http.StatusOK)
+		WriteJSON(w, session, http.StatusOK)
 	}
 }
 
-func HandleLogin(jwtKey []byte, repo repository.Repository) http.HandlerFunc {
+func HandleLogin(authService *auth.Service, repo repository.Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
+		login, err := model.ReadJSON[model.LoginRequest](r.Body)
+		if err != nil {
+			WriteError(w, err, http.StatusBadRequest)
+		}
 		ctx := r.Context()
 
-		email := r.FormValue("email")
-		password := r.FormValue("password")
-
-		if email == "" || password == "" {
-			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintln(w, "empty username or password")
-			return
-		}
-
-		user, err := repo.GetUserByEmail(ctx, email)
-
+		session, err := authService.Login(ctx, login.Email, login.Password)
 		if err != nil {
-			if errors.Is(err, repository.ErrNotFound) ||
-				!auth.ComparePassword(password, user.PasswordHash) {
-				w.WriteHeader(http.StatusUnauthorized)
-				fmt.Println("invalid email or password")
-				return
+			switch {
+			//case errors.Is(err, auth.):
+			default:
+				WriteError(w, err, http.StatusInternalServerError)
 			}
-
-			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		WriteJSON(w, session, http.StatusOK)
 
-		tokenString, err := auth.GenerateToken(jwtKey, user.ID,
-			auth.TokenAccess, auth.ExpiresInOneDay)
+		// if err != nil {
+		// 	if errors.Is(err, repository.ErrNotFound) ||
+		// 		!auth.ComparePassword(password, user.PasswordHash) {
+		// 		w.WriteHeader(http.StatusUnauthorized)
+		// 		fmt.Println("invalid email or password")
+		// 		return
+		// 	}
+
+		// 	w.WriteHeader(http.StatusInternalServerError)
+		// 	return
+		// }
+
+		// tokenString, err := auth.GenerateToken(jwtKey, user.ID,
+		// 	auth.TokenAccess, auth.ExpiresInOneDay)
 
 		if err != nil {
 			log.Printf("generate token error: %v", err)
@@ -115,9 +84,7 @@ func HandleLogin(jwtKey []byte, repo repository.Repository) http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/jwt")
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintln(w, tokenString)
+		WriteJSON(w, nil, http.StatusOK)
 	}
 }
 
@@ -138,5 +105,60 @@ func HandleEmailReset() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 		}
+	}
+}
+
+/* Oauth handler functions */
+func HandleOauthLogin(authService *auth.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		url := authService.Google.RedirectURL(w)
+		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+	}
+}
+func HandleOauthGoogleRedirect(authService *auth.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		//code := r.FormValue("code")
+		state := r.FormValue("state")
+
+		stateCookie, err := r.Cookie("oauthState")
+
+		if state != stateCookie.Value || err != nil {
+			log.Println("invalid google oauth state")
+			http.Redirect(w, r, "/", http.StatusFound)
+			return
+		}
+
+		//authService
+		//ctx := context.Background()
+		//token, err := cfg.Exchange(ctx, code)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Printf("unable to extchange token: %v", err)
+			http.Redirect(w, r, "/", http.StatusFound)
+			return
+		}
+
+		// user := &model.User{
+		// 	ID:    id,
+		// 	Email: userInfo.Email,
+		//
+
+		// userInfo, err := authService.GetUserInfoGoogle(ctx, token)
+		// if err != nil {
+		// 	log.Printf("get user info error: %v", err)
+		// 	http.Redirect(w, r, "/", http.StatusFound)
+		// 	return
+		// }
+
+		//tokenString, err := auth.GenerateToken(jwtKey, id, auth.TokenRefresh, auth.ExpiresInOneDay)
+
+		if err != nil {
+			log.Printf("generate token error: %v", err)
+			http.Redirect(w, r, "/", http.StatusFound)
+			return
+		}
+		//authService.GetUserInfoGoogle(ctx, )
+
 	}
 }

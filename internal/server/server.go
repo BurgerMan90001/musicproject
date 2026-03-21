@@ -8,6 +8,7 @@ import (
 	"musicproject.com/internal/handler"
 	"musicproject.com/internal/middleware"
 	"musicproject.com/internal/repository"
+	"musicproject.com/internal/service/auth"
 )
 
 type Server struct {
@@ -21,8 +22,7 @@ func New(mux *http.ServeMux, repo repository.Repository, cfg config.Config) *Ser
 }
 
 func (h *Server) Handle() {
-	jwtAccessKey := h.cfg.JWTAccessKey()
-	oathCfg := h.cfg.GoogleOathConfig()
+	authService := auth.New(h.cfg.API.Auth, h.repo)
 
 	// setup routes
 	h.handleFunc("/health", handleHealth)
@@ -33,13 +33,13 @@ func (h *Server) Handle() {
 	h.handleFunc("/artists/{id}", handler.HandleArtists())
 
 	// auth routes
-	h.handleFunc("/auth/login", handler.HandleLogin(jwtAccessKey, h.repo))
-	h.handleFunc("/auth/signup", handler.HandleSignup(jwtAccessKey, h.repo))
+	h.handleFunc("/auth/login", handler.HandleLogin(authService, h.repo))
+	h.handleFunc("/auth/signup", handler.HandleSignup(authService, h.repo))
 	h.handleFunc("/auth/refresh", handler.HandleRefresh())
 	h.handleFunc("/auth/email/reset", handler.HandleEmailReset())
 
-	h.handleFunc("/auth/google/login", handler.HandleOauthGoogleLogin(oathCfg))
-	h.handleFunc("/auth/google/redirect", handler.HandleOauthGoogleRedirect(jwtAccessKey, oathCfg))
+	h.handleFunc("/auth/google/login", handler.HandleOauthLogin(authService))
+	h.handleFunc("/auth/google/redirect", handler.HandleOauthGoogleRedirect(authService))
 
 	h.handleFunc("/secret", middleware.JWTMiddleware(nil, handleSecret))
 	// static file server
@@ -48,8 +48,11 @@ func (h *Server) Handle() {
 	// add middleware
 	//middleware.Logger(mux)
 }
-func (h *Server) handleFunc(pattern string, function http.HandlerFunc) {
-	h.mux.HandleFunc(fmt.Sprintf("/%s/%s", h.cfg.API.Version, pattern), function)
+func (s *Server) handleFunc(route string, function http.HandlerFunc) {
+	s.mux.HandleFunc(s.URL(route), function)
+}
+func (s *Server) URL(route string) string {
+	return fmt.Sprintf("/%s/%s", s.cfg.API.Version, route)
 }
 
 /*

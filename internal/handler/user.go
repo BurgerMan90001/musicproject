@@ -22,14 +22,14 @@ func HandleUserID(repo repository.Repository) http.HandlerFunc {
 			user, err := repo.GetUserByID(ctx, id)
 			if err != nil {
 				if errors.Is(err, repository.ErrNotFound) {
-					WriteErrJSON(w, ErrUserNotFound, http.StatusNotFound)
+					WriteError(w, ErrUserNotFound, http.StatusNotFound)
 					return
 				}
 				InternalServerError(w, r, err)
 				return
 			}
 
-			WriteJSON(w, "success", user, http.StatusOK)
+			WriteJSON(w, user, http.StatusOK)
 		case http.MethodPut:
 
 		case http.MethodDelete:
@@ -46,7 +46,7 @@ func HandleUserID(repo repository.Repository) http.HandlerFunc {
 			err := repo.DeleteUserByID(ctx, id)
 			if err != nil && errors.Is(err, repository.ErrNotFound) {
 
-				WriteErrJSON(w, err, http.StatusNotFound)
+				WriteError(w, err, http.StatusNotFound)
 				return
 			}
 

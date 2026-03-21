@@ -3,11 +3,8 @@ package model
 import "encoding/json"
 
 type Response struct {
-	Status  string          `json:"status"`
+	Success bool            `json:"success"`
 	Data    json.RawMessage `json:"data,omitempty"`
 	Message string          `json:"message,omitempty"`
 }
 
-// func Marshal(w http.ResponseWriter, v any) error {
-
-// }

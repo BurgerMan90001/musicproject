@@ -11,7 +11,7 @@ type Repository interface {
 	// User methods
 	GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
-	PutUser(ctx context.Context, email string, password string) (uuid.UUID, error)
+	PutUser(ctx context.Context, email string, passwordHash string) (uuid.UUID, error)
 	DeleteUserByID(ctx context.Context, id uuid.UUID) error
 
 	// Song methods
@@ -22,4 +22,6 @@ type Repository interface {
 	// Song racting methods
 	GetRatings(ctx context.Context, songId uuid.UUID) ([]model.Rating, error)
 	PutRating(ctx context.Context, songId uuid.UUID, userId uuid.UUID, value float64) (uuid.UUID, error)
+
+	// 
 }

@@ -1,6 +1,16 @@
 package main
 
+import (
+	"log"
+	"os"
+
+	"musicproject.com/config"
+)
+
 func main() {
+	log.Println(os.Getwd())
+	cfg := config.ReadConfigFile("dev")
+	log.Println(cfg.ApiUrl())
 	//flag.
 	//cfg := config.ReadConfigFile("config/base.yml")
 	//auth.GenerateToken()
@@ -20,7 +30,7 @@ func main() {
 	// fmt.Println(oauthCfg.ClientSecret)
 	// fmt.Println(oauthCfg.RedirectURL)
 	// fmt.Println(oauthCfg.Scopes)
-	
+
 	// token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 	// 	ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * -10)),
 	// })

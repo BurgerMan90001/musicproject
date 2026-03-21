@@ -1,0 +1,65 @@
+package auth
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/json"
+	"net/http"
+
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"musicproject.com/config"
+	"musicproject.com/pkg/model"
+)
+
+type GoogleOauth struct {
+	cfg *oauth2.Config
+}
+
+func NewGoogle(cfg config.Google) *GoogleOauth {
+	return &GoogleOauth{&oauth2.Config{
+		ClientID:     cfg.ClientID,
+		ClientSecret: cfg.ClientSecret,
+		RedirectURL:  cfg.RedirectURL,
+		Scopes:       cfg.Scopes,
+		Endpoint:     google.Endpoint,
+	}}
+}
+
+// Generates state cookie and returns redirect url
+func (s *GoogleOauth) RedirectURL(w http.ResponseWriter) string {
+	state := generateStateCookie(w)
+	url := s.cfg.AuthCodeURL(state, oauth2.AccessTypeOffline)
+	return url
+}
+func (s *GoogleOauth) GetUserInfo(ctx context.Context, token *oauth2.Token) (*model.OauthUserInfo, error) {
+	client := s.cfg.Client(ctx, token)
+
+	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var userInfo model.OauthUserInfo
+	if err := json.NewDecoder(resp.Body).Decode(&userInfo); err != nil {
+		return nil, err
+	}
+
+	return &userInfo, nil
+}
+
+func generateStateCookie(w http.ResponseWriter) string {
+	b := make([]byte, 128)
+	rand.Read(b)
+	state := base64.URLEncoding.EncodeToString(b)
+	http.SetCookie(w, &http.Cookie{
+		Name:  "oauthState",
+		Value: state,
+	})
+	return state
+}
+func validateStateCookie() {
+
+}

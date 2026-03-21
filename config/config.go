@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"os"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -10,44 +9,65 @@ import (
 )
 
 type Config struct {
-	API struct {
-		Port    int    `yaml:"port"`
-		Host    string `yaml:"host"`
-		Version string `yaml:"version"`
-		Jwt     struct {
-			AccessKey  string `yaml:"accessKey"`
-			RefreshKey string `yaml:"refreshKey"`
-			Issuer     string `yaml:"issuer"`
-		} `yaml:"jwt"`
-	} `yaml:"api"`
-	Repository struct {
-		Type string `yaml:"type"`
-		URL  string `yaml:"url"`
-	} `yaml:"repository"`
-	Oauth struct {
-		Google struct {
-			ClientID     string   `yaml:"clientId"`
-			ClientSecret string   `yaml:"clientSecret"`
-			RedirectURL  string   `yaml:"redirectUrl"`
-			Scopes       []string `yaml:"scopes"`
-		} `yaml:"google"`
-	} `yaml:"oauth"`
+	API        API        `yaml:"api"`
+	Repository Repository `yaml:"repository"`
+}
+type JWT struct {
+	AccessKey  string `yaml:"accessKey"`
+	RefreshKey string `yaml:"refreshKey"`
+	Issuer     string `yaml:"issuer"`
+}
+type Google struct {
+	ClientID     string   `yaml:"clientID"`
+	ClientSecret string   `yaml:"clientSecret"`
+	RedirectURL  string   `yaml:"redirectURL"`
+	Scopes       []string `yaml:"scopes"`
 }
 
+type Oauth struct {
+	Google Google `yaml:"google"`
+}
+type Auth struct {
+	JWT   JWT   `yaml:"jwt"`
+	Oauth Oauth `yaml:"oauth"`
+}
+type API struct {
+	Port    int    `yaml:"port"`
+	Host    string `yaml:"host"`
+	Version string `yaml:"version"`
+	Auth    Auth   `yaml:"auth"`
+}
+type Repository struct {
+	Type string `yaml:"type"`
+	URL  string `yaml:"url"`
+}
+
+const (
+	TypeDev  = "dev"
+	TypeProd = "prod"
+)
+
 // Reads file from local directory
-func ReadConfigFile() Config {
+func ReadConfigFile(env string) Config {
 	var fileName string
 
-	env := os.Getenv("env")
 	switch env {
-	case "dev", "test":
-		fileName = "./base.dev.yml"
-	case "prod":
-		fileName = "./base.prod.yml"
+	case TypeDev:
+		fileName = "./config/base.dev.yml"
+	case TypeProd:
+		fileName = "./config/base.prod.yml"
 	default:
-		fileName = "./base.dev.yml"
+		fileName = "./config/base.dev.yml"
 	}
 	cfg, err := fileutil.ReadYAML[Config](fileName)
+	if err != nil {
+		panic(err)
+	}
+	return cfg
+}
+
+func DevConfig() Config {
+	cfg, err := fileutil.ReadYAML[Config]("./base.dev.yml")
 	if err != nil {
 		panic(err)
 	}
@@ -58,15 +78,16 @@ func (cfg Config) ApiUrl() string {
 }
 
 func (cfg Config) GoogleOathConfig() *oauth2.Config {
+	googleCfg := cfg.API.Auth.Oauth.Google
 	return &oauth2.Config{
-		ClientID:     cfg.Oauth.Google.ClientID,
-		ClientSecret: cfg.Oauth.Google.ClientSecret,
-		RedirectURL:  cfg.Oauth.Google.RedirectURL,
-		Scopes:       cfg.Oauth.Google.Scopes,
+		ClientID:     googleCfg.ClientID,
+		ClientSecret: googleCfg.ClientSecret,
+		RedirectURL:  googleCfg.RedirectURL,
+		Scopes:       googleCfg.Scopes,
 		Endpoint:     google.Endpoint,
 	}
 }
 
 func (cfg Config) JWTAccessKey() []byte {
-	return []byte(cfg.API.Jwt.AccessKey)
+	return []byte(cfg.API.Auth.JWT.AccessKey)
 }

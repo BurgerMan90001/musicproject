@@ -7,7 +7,7 @@ import (
 )
 
 func TestApi(t *testing.T) {
-	cfg := ReadConfigFile()
+	cfg := ReadConfigFile(TypeDev)
 	t.Run("port number", func(t *testing.T) {
 
 		assert.Equal(t, 8081, cfg.API.Port, "port number")

@@ -1,7 +1,6 @@
 package model
 
 type SignupRequest struct {
-	ID       string `json:"id"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
@@ -10,8 +9,12 @@ type SignupRequest struct {
 // 	AccessToken string `json:"accessToken"`
 // }
 
-type LoginResponse struct {
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+type TokenPair struct {
 	AccessToken  string `json:"accessToken"`
 	RefreshToken string `json:"refreshToken"`
-	User         *User  `json:"user"`
+	//User         *User  `json:"user"`
 }

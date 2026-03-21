@@ -8,7 +8,7 @@ type User struct {
 	PasswordHash string    `json:"passwordHash,omitempty"`
 }
 
-type GoogleUserInfo struct {
+type OauthUserInfo struct {
 	Email   string `json:"email"`
 	Picture string `json:"picture"`
 }
