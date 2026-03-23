@@ -3,14 +3,11 @@ package main
 import (
 	"log"
 	"os"
-
-	"musicproject.com/config"
 )
 
 func main() {
 	log.Println(os.Getwd())
-	cfg := config.ReadConfigFile("dev")
-	log.Println(cfg.ApiUrl())
+	//cfg := config.ReadConfigFile("dev")
 	//flag.
 	//cfg := config.ReadConfigFile("config/base.yml")
 	//auth.GenerateToken()

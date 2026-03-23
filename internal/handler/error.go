@@ -1,10 +1,26 @@
 package handler
 
-import "errors"
+import (
+	"errors"
+	"log"
+	"net/http"
+)
 
 var (
-	ErrUserNotFound      = errors.New("user not found")
-
 	ErrInvalidMethod       = errors.New("method not allowed")
 	ErrInternalServerError = errors.New("internal server error")
 )
+
+func MethodNotAllowedError(w http.ResponseWriter) {
+	WriteError(w, ErrInvalidMethod, http.StatusMethodNotAllowed)
+}
+
+func NotFoundError(w http.ResponseWriter, reason error) {
+	WriteError(w, reason, http.StatusNotFound)
+}
+
+func InternalServerError(w http.ResponseWriter, err error) {
+	log.Printf("internal server error: %v", err)
+
+	WriteError(w, ErrInternalServerError, http.StatusInternalServerError)
+}

@@ -8,7 +8,7 @@ import (
 	"musicproject.com/internal/repository"
 )
 
-func HandleSongs(repo repository.Repository) http.HandlerFunc {
+func HandleSongs(repo repository.Song) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(r.FormValue("id"))
 		if err != nil {
@@ -26,7 +26,6 @@ func HandleSongs(repo repository.Repository) http.HandlerFunc {
 					return
 				}
 				WriteError(w, ErrInternalServerError, http.StatusInternalServerError)
-				
 				return
 			}
 			WriteJSON(w, song, http.StatusOK)
@@ -34,10 +33,11 @@ func HandleSongs(repo repository.Repository) http.HandlerFunc {
 		case http.MethodPut:
 			_, err := repo.PutSong(ctx, id, nil)
 			if err != nil {
-				InternalServerError(w, r, err)
+				InternalServerError(w, err)
+				return
 			}
 		default:
-			MethodNotAllowedError(w, r)
+			MethodNotAllowedError(w)
 		}
 	}
 }

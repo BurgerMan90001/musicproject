@@ -10,7 +10,11 @@ import (
 	"musicproject.com/pkg/model"
 )
 
-func (r *Repository) GetSongByID(ctx context.Context, id uuid.UUID) (*model.Song, error) {
+type Song struct {
+	db *sql.DB
+}
+
+func (r *Song) GetSongByID(ctx context.Context, songId uuid.UUID) (*model.Song, error) {
 	var (
 		name         string
 		genre        string
@@ -20,8 +24,8 @@ func (r *Repository) GetSongByID(ctx context.Context, id uuid.UUID) (*model.Song
 		creationDate string
 		src          string
 	)
-	query := "SELECT name, genre, streams, duration, image, creation_date FROM songs WHERE id=$1"
-	row := r.db.QueryRowContext(ctx, query, id)
+	query := "SELECT name, genre, streams, duration, image, creation_date FROM songs WHERE song_id=$1"
+	row := r.db.QueryRowContext(ctx, query, songId)
 	if err := row.Scan(&name, &genre, &streams, &duration, &image, &creationDate, &src); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, sql.ErrNoRows
@@ -29,7 +33,7 @@ func (r *Repository) GetSongByID(ctx context.Context, id uuid.UUID) (*model.Song
 		return nil, err
 	}
 	song := &model.Song{
-		ID:       id,
+		ID:       songId,
 		Name:     name,
 		Genre:    genre,
 		Streams:  streams,
@@ -39,7 +43,7 @@ func (r *Repository) GetSongByID(ctx context.Context, id uuid.UUID) (*model.Song
 	}
 	return song, nil
 }
-func (r *Repository) GetSongsByGenre(ctx context.Context, genre string) ([]model.Song, error) {
+func (r *Song) GetSongsByGenre(ctx context.Context, genre string) ([]model.Song, error) {
 	query := "SELECT id, WHERE genre=$1"
 	rows, err := r.db.QueryContext(ctx, query, genre)
 	if err != nil {
@@ -49,13 +53,15 @@ func (r *Repository) GetSongsByGenre(ctx context.Context, genre string) ([]model
 		return nil, err
 	}
 	defer rows.Close()
+
 	var songs []model.Song
 	for rows.Next() {
+		var ()
 		//rows.Scan(&)
-		songs = append(songs)
+		songs = append(songs, model.Song{})
 	}
 	return nil, nil
 }
-func (r *Repository) PutSong(ctx context.Context, id uuid.UUID, u *model.Song) (uuid.UUID, error) {
+func (r *Song) PutSong(ctx context.Context, id uuid.UUID, u *model.Song) (uuid.UUID, error) {
 	return uuid.Nil, nil
 }

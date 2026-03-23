@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"errors"
 	"log"
 	"net/http"
 
@@ -10,10 +9,14 @@ import (
 	"musicproject.com/pkg/model"
 )
 
-func HandleSignup(authService *auth.Service, repo repository.Repository) http.HandlerFunc {
+const (
+	AccessCookie  = "accessKey"
+	RefreshCookie = "refreshKey"
+)
+
+func HandleSignup(authService *auth.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			//MethodNotAllowedError(w, r)
 			WriteError(w, ErrInvalidMethod, http.StatusMethodNotAllowed)
 			return
 		}
@@ -24,67 +27,55 @@ func HandleSignup(authService *auth.Service, repo repository.Repository) http.Ha
 			WriteError(w, err, http.StatusBadRequest)
 			return
 		}
-		session, err := authService.Signup(ctx, signup.Email, signup.Password)
+
+		tokenPair, err := authService.Signup(ctx, signup.Email, signup.Password)
 		if err != nil {
-			switch {
-			case errors.Is(err, auth.ErrInvalidEmail),
-				errors.Is(err, auth.ErrInvalidPassword):
+			switch err {
+			case auth.ErrInvalidEmail,
+				auth.ErrInvalidPassword:
 				WriteError(w, err, http.StatusBadRequest)
 				return
+			case auth.ErrUserAlreadyExists:
+				WriteError(w, err, http.StatusConflict)
 			default:
 				WriteError(w, err, http.StatusInternalServerError)
 				return
 			}
 		}
-		WriteJSON(w, session, http.StatusOK)
+
+		WriteJSON(w, tokenPair, http.StatusOK)
 	}
 }
 
-func HandleLogin(authService *auth.Service, repo repository.Repository) http.HandlerFunc {
+func HandleLogin(authService *auth.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
+			MethodNotAllowedError(w)
 			return
-		}
-		login, err := model.ReadJSON[model.LoginRequest](r.Body)
-		if err != nil {
-			WriteError(w, err, http.StatusBadRequest)
 		}
 		ctx := r.Context()
 
-		session, err := authService.Login(ctx, login.Email, login.Password)
+		login, err := model.ReadJSON[model.LoginRequest](r.Body)
 		if err != nil {
-			switch {
-			//case errors.Is(err, auth.):
+			WriteError(w, err, http.StatusBadRequest)
+			return
+		}
+
+		tokenPair, err := authService.Login(ctx, login.Email, login.Password)
+		if err != nil {
+			switch err {
+			case auth.ErrInvalidPassword,
+				auth.ErrInvalidEmail:
+				WriteError(w, err, http.StatusUnauthorized)
+			case repository.ErrNotFound:
+				WriteError(w, err, http.StatusNotFound)
 			default:
 				WriteError(w, err, http.StatusInternalServerError)
 			}
 			return
 		}
-		WriteJSON(w, session, http.StatusOK)
+		WriteJSON(w, tokenPair, http.StatusOK)
 
-		// if err != nil {
-		// 	if errors.Is(err, repository.ErrNotFound) ||
-		// 		!auth.ComparePassword(password, user.PasswordHash) {
-		// 		w.WriteHeader(http.StatusUnauthorized)
-		// 		fmt.Println("invalid email or password")
-		// 		return
-		// 	}
-
-		// 	w.WriteHeader(http.StatusInternalServerError)
-		// 	return
-		// }
-
-		// tokenString, err := auth.GenerateToken(jwtKey, user.ID,
-		// 	auth.TokenAccess, auth.ExpiresInOneDay)
-
-		if err != nil {
-			log.Printf("generate token error: %v", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		WriteJSON(w, nil, http.StatusOK)
 	}
 }
 
@@ -153,11 +144,11 @@ func HandleOauthGoogleRedirect(authService *auth.Service) http.HandlerFunc {
 
 		//tokenString, err := auth.GenerateToken(jwtKey, id, auth.TokenRefresh, auth.ExpiresInOneDay)
 
-		if err != nil {
-			log.Printf("generate token error: %v", err)
-			http.Redirect(w, r, "/", http.StatusFound)
-			return
-		}
+		// if err != nil {
+		// 	log.Printf("generate token error: %v", err)
+		// 	http.Redirect(w, r, "/", http.StatusFound)
+		// 	return
+		// }
 		//authService.GetUserInfoGoogle(ctx, )
 
 	}

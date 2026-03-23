@@ -10,8 +10,12 @@ import (
 	"musicproject.com/pkg/model"
 )
 
+type User struct {
+	db *sql.DB
+}
+
 // Gets a user's email and password hash by their uuid
-func (r *Repository) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
+func (r *User) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	var (
 		email        string
 		passwordHash string
@@ -31,7 +35,7 @@ func (r *Repository) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User
 	}, nil
 }
 
-func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
+func (r *User) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	var (
 		id           uuid.UUID
 		passwordHash string
@@ -50,7 +54,7 @@ func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*model.U
 		PasswordHash: passwordHash,
 	}, nil
 }
-func (r *Repository) PutUser(ctx context.Context, email string, passwordHash string) (uuid.UUID, error) {
+func (r *User) PutUser(ctx context.Context, email string, passwordHash string) (uuid.UUID, error) {
 	query := "INSERT INTO users (email, password_hash) VALUES($1, $2) RETURNING id"
 
 	row := r.db.QueryRowContext(ctx, query, email, passwordHash)
@@ -61,7 +65,7 @@ func (r *Repository) PutUser(ctx context.Context, email string, passwordHash str
 	return id, nil
 }
 
-func (r *Repository) DeleteUserByID(ctx context.Context, id uuid.UUID) error {
+func (r *User) DeleteUserByID(ctx context.Context, id uuid.UUID) error {
 	query := "DELETE FROM users WHERE id=$1"
 	_, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {

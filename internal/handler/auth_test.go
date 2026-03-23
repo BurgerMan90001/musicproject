@@ -1,107 +1,107 @@
 package handler
 
 import (
-	"context"
-	"io"
+	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
-	"musicproject.com/config"
-	mock_repository "musicproject.com/gen/mocks"
 	"musicproject.com/internal/repository"
 	"musicproject.com/internal/service/auth"
 	authService "musicproject.com/internal/service/auth"
 	"musicproject.com/pkg/model"
-	"musicproject.com/pkg/util/fileutil"
 )
 
 func TestLogin(t *testing.T) {
-	t.Skip()
-	cfg := config.Auth{
-		JWT: config.JWT{
-			AccessKey:  "test",
-			RefreshKey: "test",
-			Issuer:     "test",
-		},
-		// Oauth: config.Oauth{
-		// 	Google: config.Google{},
-		// },
-	}
+	//url := "/v1/auth"
 	tests := []HandlerTest{
 		{
 			Name:     "successful login",
-			Method:   http.MethodGet,
+			Method:   http.MethodPost,
 			WantCode: http.StatusOK,
+
 			Body: map[string]any{
-				"email": "paul@pol.com",
+				"email":    "paulcasigay@gmail.com",
+				"password": "Dirtycash@123!",
 			},
+
+			RepoItem: &model.User{
+				ID:           id,
+				Email:        "paulcasigay@gmail.com",
+				PasswordHash: "Dirtycash@123!",
+			},
+		},
+		{
+			Name:     "incorect password or email",
+			Method:   http.MethodPost,
+			WantCode: http.StatusBadRequest,
+			Body: map[string]any{
+				"email":    "paulcasigay@gmail.com",
+				"password": "Dirtycash@123!",
+			},
+		},
+		{
+			Name:     "user not found",
+			Method:   http.MethodPost,
+			WantCode: http.StatusNotFound,
+			Body: map[string]any{
+				"email":    "paulcasigay@gmail.com",
+				"password": "Dirtycash@123!",
+			},
+			RepoErr:     repository.ErrNotFound,
+			WantMessage: repository.ErrUserNotFound.Error(),
+		},
+		{
+			Name:     "method not allowed",
+			Method:   http.MethodDelete,
+			WantCode: http.StatusMethodNotAllowed,
+
+			WantMessage: ErrInvalidMethod.Error(),
 		},
 	}
 
-	t.Skip()
 	for _, tt := range tests {
+		t.Run(tt.Name, testCase(func(t *testing.T, c *testContext) {
 
-		t.Run(tt.Name, func(t *testing.T) {
-			ctx := context.Background()
-			id, err := uuid.NewV7()
-			if err != nil {
-				t.Error(err)
-			}
+			c.userRepo.EXPECT().GetUserByEmail(ctx, tt.Body["email"]).Return(tt.RepoItem, tt.RepoErr).AnyTimes()
 
-			mockController := gomock.NewController(t)
-			defer mockController.Finish()
+			// w := httptest.NewRecorder()
 
-			repoMock := mock_repository.NewMockRepository(mockController)
-			authService := auth.New(cfg, repoMock)
-
-			repoMock.EXPECT().GetUserByID(ctx, id).Return(tt.RepoItem, tt.RepoErr)
-
-			w := httptest.NewRecorder()
-
-			body, err := NewRequestBody(tt.Body)
-			if err != nil {
-				t.Error(err)
-			}
-
-			r := httptest.NewRequestWithContext(ctx, tt.Method, "/user", body)
-			r.SetPathValue("id", id.String())
-
-			HandleLogin(authService, repoMock).ServeHTTP(w, r)
-			//HandleUser(repoMock).ServeHTTP(w, r)
-
-			// var user *model.User
-			// if err := json.NewDecoder(w.Body).Decode(&user); err != nil {
-			// 	t.Error(err)
-			// }
-			//res := w.Result()
-			// resBody, err := io.ReadAll(res.Body)
+			// body, err := NewRequestBody(tt.Body)
 			// if err != nil {
 			// 	t.Error(err)
 			// }
 
-			assert.Equal(t, tt.WantCode, w.Code, tt.Name)
-			//assert.Equal(t, tt.WantRes, string(resBody))
+			//r := httptest.NewRequestWithContext(ctx, tt.Method, "/user", body)
 
-			//assert.Equal(t, tt.)
-			//assert.Equal(t, tt.wantUser, user, tt.name)
-			//repoMock.EXPECT().PutUser(ctx, id, user, )
-		})
+			//r.SetPathValue("id", id.String())
+			w, err := newRequest(ctx, tt.Method, tt.URL, tt.Body, false)
+			if err != nil {
+				t.Error(err)
+			}
+
+			//HandleLogin(c.authService).ServeHTTP(w, r)
+
+			resBody, err := model.ReadJSON[model.Response](w.Result().Body)
+			if err != nil {
+				t.Error(err)
+			}
+
+			var data map[string]string
+			json.Unmarshal(w.Body.Bytes(), &data)
+			_, exists := data["jwt"]
+
+			assert.Equal(t, tt.WantMessage, resBody.Message)
+			assert.Equal(t, tt.WantCode, w.Code, tt.Name)
+
+			assert.Equal(t, tt.WantSuccess, exists)
+
+		}))
 	}
 }
 func TestSignup(t *testing.T) {
 
-	id, err := uuid.NewV7()
-	if err != nil {
-		t.Error(err)
-	}
-	cfg, err := fileutil.ReadYAML[config.Config]("../../config/base.dev.yml")
-	if err != nil {
-		t.Error(err)
-	}
+	// booleans will default to false if not assigned
 	tests := []HandlerTest{
 		{
 			Name:     "successful signup",
@@ -111,6 +111,8 @@ func TestSignup(t *testing.T) {
 				"email":    "paulcasigay@gmail.com",
 				"password": "Dirtycash@123!",
 			},
+
+			WantSuccess: true,
 
 			// The user is new and has not previously signed up
 			RepoErr: repository.ErrNotFound,
@@ -164,45 +166,26 @@ func TestSignup(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.Name, func(t *testing.T) {
-			mockController := gomock.NewController(t)
-			defer mockController.Finish()
+		t.Run(tt.Name, testCase(func(t *testing.T, c *testContext) {
 
-			repoMock := mock_repository.NewMockRepository(mockController)
-			authService := auth.New(cfg.API.Auth, repoMock)
+			c.userRepo.EXPECT().GetUserByEmail(ctx, tt.Body["email"]).Return(tt.RepoItem, tt.RepoErr).AnyTimes()
+			c.userRepo.EXPECT().PutUser(ctx, tt.Body["email"], tt.Body["password"]).Return(id, nil).AnyTimes()
 
-			ctx := context.Background()
-
-			repoMock.EXPECT().GetUserByEmail(ctx, tt.Body["email"]).Return(tt.RepoItem, tt.RepoErr).AnyTimes()
-
-			repoMock.EXPECT().PutUser(ctx, tt.Body["email"], tt.Body["password"]).Return(id, nil).AnyTimes()
-
-			w := httptest.NewRecorder()
-
-			body, err := NewRequestBody(tt.Body)
+			w, err := newRequest(ctx, tt.Method, "/auth/signup", tt.Body, false)
 			if err != nil {
 				t.Error(err)
 			}
 
-			r := httptest.NewRequestWithContext(ctx, tt.Method, "/user", body)
-			r.Header.Set("Content-Type", "application/json")
+			//HandleSignup(c.authService).ServeHTTP(w, r)
 
-			HandleSignup(authService, repoMock).ServeHTTP(w, r)
-
-			t1, err := model.MarshalJSON(tt.WantData, tt.WantCode, tt.WantMessage)
+			resBody, err := model.ReadJSON[model.Response](w.Result().Body)
 			if err != nil {
 				t.Error(err)
 			}
 
-			t2, err := io.ReadAll(w.Body)
-			if err != nil {
-				t.Error(err)
-			}
-			if tt.WantData != nil {
-				assert.JSONEq(t, string(t1), string(t2), tt.Name)
-			}
+			assert.Equal(t, tt.WantMessage, resBody.Message)
 			assert.Equal(t, tt.WantCode, w.Code, tt.Name)
-		})
+		}))
 	}
 }
 
@@ -217,29 +200,18 @@ func TestHandleOathGoogleLogin(t *testing.T) {
 		},
 	}
 	t.Skip()
-	cfg := config.ReadConfigFile(config.TypeDev)
 
 	for _, tt := range tests {
-		//t.Skip()
 		t.Run(tt.Name, func(t *testing.T) {
-			mockController := gomock.NewController(t)
-			defer mockController.Finish()
 
-			repoMock := mock_repository.NewMockRepository(mockController)
-
-			authService := auth.New(cfg.API.Auth, repoMock)
-
-			ctx := context.Background()
-
-			w := httptest.NewRecorder()
-			body, err := NewRequestBody(tt.Body)
+			w, err := newRequest(ctx, tt.Method, tt.URL, tt.Body, false)
 			if err != nil {
 				t.Error(err)
 			}
 
-			r := httptest.NewRequestWithContext(ctx, tt.Method, "/user", body)
+			// r := httptest.NewRequestWithContext(ctx, tt.Method, "/user", body)
 
-			HandleOauthLogin(authService).ServeHTTP(w, r)
+			// HandleOauthLogin(authService).ServeHTTP(w, r)
 
 			//handleOathGoogleRedirect([]byte("test"), oauthCfg).ServeHTTP(w, r)
 			// body, err := io.ReadAll(resp.Body)
@@ -251,9 +223,7 @@ func TestHandleOathGoogleLogin(t *testing.T) {
 			// 	t.Errorf("read error: %v", err)
 			// }
 
-			assert.Equal(t, tt.WantCode, 123, tt.Name)
-
-			//assert.Equal(t, tt.wantRes, userInfo, tt.name)
+			assert.Equal(t, tt.WantCode, w.Code, tt.Name)
 		})
 	}
 

@@ -1,16 +1,12 @@
 package handler
 
 import (
-	"context"
 	"io"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
-	mock_repository "musicproject.com/gen/mocks"
 	"musicproject.com/internal/repository"
 	"musicproject.com/pkg/model"
 )
@@ -45,7 +41,7 @@ func TestHandleGet(t *testing.T) {
 			WantCode: http.StatusNotFound,
 			RepoErr:  repository.ErrNotFound,
 
-			WantMessage: ErrUserNotFound.Error(),
+			WantMessage: repository.ErrUserNotFound.Error(),
 		},
 
 		{
@@ -59,29 +55,14 @@ func TestHandleGet(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.Name, func(t *testing.T) {
-			mockController := gomock.NewController(t)
-			defer mockController.Finish()
+		t.Run(tt.Name, testCase(func(t *testing.T, c *testContext) {
 
-			repoMock := mock_repository.NewMockRepository(mockController)
+			c.userRepo.EXPECT().GetUserByID(ctx, id).Return(tt.RepoItem, tt.RepoErr).AnyTimes()
 
-			ctx := context.Background()
-
-			repoMock.EXPECT().GetUserByID(ctx, id).Return(tt.RepoItem, tt.RepoErr).AnyTimes()
-
-			w := httptest.NewRecorder()
-
-			body, err := NewRequestBody(tt.Body)
+			w, err := newRequest(ctx, tt.Method, tt.URL, tt.Body, false)
 			if err != nil {
 				t.Error(err)
 			}
-
-			r := httptest.NewRequestWithContext(ctx, tt.Method, "/user", body)
-			r.Header.Set("Content-Type", "application/json")
-
-			r.SetPathValue("id", id.String())
-
-			HandleUserID(repoMock).ServeHTTP(w, r)
 
 			t1, err := model.MarshalJSON(tt.WantData, tt.WantCode, tt.WantMessage)
 			if err != nil {
@@ -95,7 +76,7 @@ func TestHandleGet(t *testing.T) {
 
 			assert.JSONEq(t, string(t1), string(t2), tt.Name)
 			assert.Equal(t, tt.WantCode, w.Code, tt.Name)
-		})
+		}))
 	}
 }
 func TestPut(t *testing.T) {

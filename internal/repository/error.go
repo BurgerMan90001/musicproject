@@ -1,8 +1,11 @@
 package repository
 
-import "errors"
+import (
+	"errors"
+)
 
 var (
 	ErrNotFound = errors.New("not found")
+
+	ErrUserNotFound = errors.New("user not found")
 )
-//var ErrAlreadExists = errors.New("already exists")

@@ -3,7 +3,6 @@ package fileutil
 import (
 	"context"
 	"database/sql"
-	"log"
 	"os"
 
 	"go.yaml.in/yaml/v4"
@@ -11,7 +10,7 @@ import (
 
 func ReadYAML[T any](fileName string) (T, error) {
 	var v T
-	log.Println(os.Getwd)
+	//log.Println(os.Getwd())
 	f, err := os.Open(fileName)
 
 	if err != nil {

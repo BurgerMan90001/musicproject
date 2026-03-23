@@ -1,8 +1,7 @@
-package middleware
+package handler
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"runtime/debug"
@@ -31,23 +30,26 @@ func PanicRecovery(next http.Handler) http.Handler {
 	})
 }
 
-func JWTMiddleware(authService *auth.Service, next http.HandlerFunc) http.HandlerFunc {
+func AuthMiddleware(authService *auth.Service, next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-		claims, err := authService.ValidateAccessToken("")
-
+		cookie, err := r.Cookie(AccessCookie)
 		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
+			WriteError(w, err, http.StatusUnauthorized)
+			return
+		}
 
-			//fmt.Fprintln(w, "Invalid token:", err)
+		claims, err := authService.ParseAccessToken(cookie.Value)
+		if err != nil {
+			WriteError(w, err, http.StatusUnauthorized)
 			return
 		}
 
 		if claims.TokenType != auth.TokenAccess {
-			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprintln(w, "Invalid token type:", claims.TokenType)
+			WriteError(w, auth.ErrInvalidTokenType, http.StatusUnauthorized)
+			return
 		}
 
+		// Pass claims to the next handler
 		ctx := context.WithValue(r.Context(), "claims", claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

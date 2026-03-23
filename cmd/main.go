@@ -5,8 +5,7 @@ import (
 	"net/http"
 
 	"musicproject.com/config"
-	"musicproject.com/internal/repository/postgres"
-	"musicproject.com/internal/server"
+	"musicproject.com/internal/handler"
 )
 
 func main() {
@@ -14,14 +13,12 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	repo := postgres.New(cfg)
-	server := server.New(mux, repo, cfg)
+	handler.New(mux, cfg)
 
-	server.Handle()
 
 	// start server
-	log.Printf("Server listening at %s", cfg.ApiUrl())
-	if err := http.ListenAndServe(cfg.ApiUrl(), mux); err != nil {
+	log.Printf("Server listening at %s", cfg.URL())
+	if err := http.ListenAndServe(cfg.URL(), mux); err != nil {
 		panic(err)
 	}
 }

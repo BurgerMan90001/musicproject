@@ -2,6 +2,8 @@ api:
   port: 8081
   host: localhost
   version: "1.23"
+
+services:
   auth:
     jwt:
       accessKey: ...

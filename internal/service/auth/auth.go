@@ -3,12 +3,10 @@ package auth
 import (
 	"context"
 	"errors"
-	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"golang.org/x/oauth2"
 	"musicproject.com/config"
 	"musicproject.com/internal/repository"
 	"musicproject.com/pkg/model"
@@ -24,7 +22,7 @@ var ExpiresInOneHour = time.Now().Add(time.Hour * 24)
 
 type Service struct {
 	cfg  config.Auth
-	repo repository.Repository
+	repo repository.User
 
 	Google Oauth
 }
@@ -35,19 +33,13 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-type Oauth interface {
-	GetUserInfo(ctx context.Context, token *oauth2.Token) (*model.OauthUserInfo, error)
-	RedirectURL(w http.ResponseWriter) string
-}
-
-func New(cfg config.Auth, repo repository.Repository) *Service {
-
+func New(cfg config.Auth, repo repository.User) *Service {
 	google := NewGoogle(cfg.Oauth.Google)
 
 	return &Service{cfg, repo, google}
 }
 
-func (s *Service) generateToken(userId uuid.UUID, tokenType string, expireAt time.Time) (string, error) {
+func (s *Service) GenerateToken(userId uuid.UUID, tokenType string, expireAt time.Time) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &Claims{
 		UserID:    userId,
 		TokenType: tokenType,
@@ -69,12 +61,13 @@ func (s *Service) generateToken(userId uuid.UUID, tokenType string, expireAt tim
 
 	return tokenString, nil
 }
-func (s *Service) generateTokenPair(userId uuid.UUID) (*model.TokenPair, error) {
-	accessToken, err := s.generateToken(userId, TokenAccess, ExpiresInOneHour)
+
+func (s *Service) GenerateTokenPair(userId uuid.UUID) (*model.TokenPair, error) {
+	accessToken, err := s.GenerateToken(userId, TokenAccess, ExpiresInOneHour)
 	if err != nil {
 		return nil, err
 	}
-	refreshToken, err := s.generateToken(userId, TokenAccess, ExpiresInOneHour)
+	refreshToken, err := s.GenerateToken(userId, TokenAccess, ExpiresInOneHour)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +78,7 @@ func (s *Service) generateTokenPair(userId uuid.UUID) (*model.TokenPair, error) 
 		RefreshToken: refreshToken,
 	}, nil
 }
-func (s *Service) parseToken(tokenString string, tokenType string) (*jwt.Token, error) {
+func (s *Service) ParseToken(tokenString string, tokenType string) (*jwt.Token, error) {
 	key, err := s.keyType(tokenType)
 	if err != nil {
 		return nil, err
@@ -114,8 +107,9 @@ func (s *Service) keyType(tokenType string) ([]byte, error) {
 		return nil, ErrInvalidTokenType
 	}
 }
-func (s *Service) ValidateAccessToken(tokenString string) (*Claims, error) {
-	token, err := s.parseToken(tokenString, TokenAccess)
+func (s *Service) ParseAccessToken(accessToken string) (*Claims, error) {
+
+	token, err := s.ParseToken(accessToken, TokenAccess)
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			return nil, err
@@ -136,7 +130,7 @@ func (s *Service) ValidateAccessToken(tokenString string) (*Claims, error) {
 }
 
 func (s *Service) RefreshTokens(ctx context.Context, tokenString string) (*model.TokenPair, error) {
-	token, err := s.parseToken(tokenString, TokenRefresh)
+	token, err := s.ParseToken(tokenString, TokenRefresh)
 	if err != nil {
 		return nil, err
 	}
@@ -151,14 +145,7 @@ func (s *Service) RefreshTokens(ctx context.Context, tokenString string) (*model
 		// TODO Check if revoked
 	}
 
-	return s.generateTokenPair(claims.UserID)
-}
-
-func setToken(w http.ResponseWriter) {
-	http.SetCookie(w, &http.Cookie{
-		Name:  "",
-		Value: "",
-	})
+	return s.GenerateTokenPair(claims.UserID)
 }
 
 func (s *Service) Signup(ctx context.Context, email string, password string) (*model.TokenPair, error) {
@@ -186,7 +173,7 @@ func (s *Service) Signup(ctx context.Context, email string, password string) (*m
 	}
 
 	// Generate token pair
-	pair, err := s.generateTokenPair(userId)
+	pair, err := s.GenerateTokenPair(userId)
 	if err != nil {
 		return nil, err
 	}
@@ -199,14 +186,17 @@ func (s *Service) Login(ctx context.Context, email string, password string) (*mo
 	if err != nil {
 		return nil, err
 	}
+	if user == nil {
+		return nil, repository.ErrNotFound
+	}
 	if err := comparePassword(password, user.PasswordHash); err != nil {
 		return nil, err
 	}
-
-	pair := &model.TokenPair{
-		AccessToken:  "",
-		RefreshToken: "",
+	pair, err := s.GenerateTokenPair(user.ID)
+	if err != nil {
+		return nil, err
 	}
+
 	return pair, nil
 }
 

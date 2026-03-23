@@ -18,32 +18,32 @@ import (
 	model "musicproject.com/pkg/model"
 )
 
-// MockRepository is a mock of Repository interface.
-type MockRepository struct {
+// MockUserRepository is a mock of UserRepository interface.
+type MockUserRepository struct {
 	ctrl     *gomock.Controller
-	recorder *MockRepositoryMockRecorder
+	recorder *MockUserRepositoryMockRecorder
 	isgomock struct{}
 }
 
-// MockRepositoryMockRecorder is the mock recorder for MockRepository.
-type MockRepositoryMockRecorder struct {
-	mock *MockRepository
+// MockUserRepositoryMockRecorder is the mock recorder for MockUserRepository.
+type MockUserRepositoryMockRecorder struct {
+	mock *MockUserRepository
 }
 
-// NewMockRepository creates a new mock instance.
-func NewMockRepository(ctrl *gomock.Controller) *MockRepository {
-	mock := &MockRepository{ctrl: ctrl}
-	mock.recorder = &MockRepositoryMockRecorder{mock}
+// NewMockUserRepository creates a new mock instance.
+func NewMockUserRepository(ctrl *gomock.Controller) *MockUserRepository {
+	mock := &MockUserRepository{ctrl: ctrl}
+	mock.recorder = &MockUserRepositoryMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
+func (m *MockUserRepository) EXPECT() *MockUserRepositoryMockRecorder {
 	return m.recorder
 }
 
 // DeleteUserByID mocks base method.
-func (m *MockRepository) DeleteUserByID(ctx context.Context, id uuid.UUID) error {
+func (m *MockUserRepository) DeleteUserByID(ctx context.Context, id uuid.UUID) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteUserByID", ctx, id)
 	ret0, _ := ret[0].(error)
@@ -51,58 +51,13 @@ func (m *MockRepository) DeleteUserByID(ctx context.Context, id uuid.UUID) error
 }
 
 // DeleteUserByID indicates an expected call of DeleteUserByID.
-func (mr *MockRepositoryMockRecorder) DeleteUserByID(ctx, id any) *gomock.Call {
+func (mr *MockUserRepositoryMockRecorder) DeleteUserByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUserByID", reflect.TypeOf((*MockRepository)(nil).DeleteUserByID), ctx, id)
-}
-
-// GetRatings mocks base method.
-func (m *MockRepository) GetRatings(ctx context.Context, songId uuid.UUID) ([]model.Rating, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRatings", ctx, songId)
-	ret0, _ := ret[0].([]model.Rating)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetRatings indicates an expected call of GetRatings.
-func (mr *MockRepositoryMockRecorder) GetRatings(ctx, songId any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRatings", reflect.TypeOf((*MockRepository)(nil).GetRatings), ctx, songId)
-}
-
-// GetSongByID mocks base method.
-func (m *MockRepository) GetSongByID(ctx context.Context, id uuid.UUID) (*model.Song, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSongByID", ctx, id)
-	ret0, _ := ret[0].(*model.Song)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSongByID indicates an expected call of GetSongByID.
-func (mr *MockRepositoryMockRecorder) GetSongByID(ctx, id any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSongByID", reflect.TypeOf((*MockRepository)(nil).GetSongByID), ctx, id)
-}
-
-// GetSongsByGenre mocks base method.
-func (m *MockRepository) GetSongsByGenre(ctx context.Context, genre string) ([]model.Song, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSongsByGenre", ctx, genre)
-	ret0, _ := ret[0].([]model.Song)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSongsByGenre indicates an expected call of GetSongsByGenre.
-func (mr *MockRepositoryMockRecorder) GetSongsByGenre(ctx, genre any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSongsByGenre", reflect.TypeOf((*MockRepository)(nil).GetSongsByGenre), ctx, genre)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUserByID", reflect.TypeOf((*MockUserRepository)(nil).DeleteUserByID), ctx, id)
 }
 
 // GetUserByEmail mocks base method.
-func (m *MockRepository) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
+func (m *MockUserRepository) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserByEmail", ctx, email)
 	ret0, _ := ret[0].(*model.User)
@@ -111,13 +66,13 @@ func (m *MockRepository) GetUserByEmail(ctx context.Context, email string) (*mod
 }
 
 // GetUserByEmail indicates an expected call of GetUserByEmail.
-func (mr *MockRepositoryMockRecorder) GetUserByEmail(ctx, email any) *gomock.Call {
+func (mr *MockUserRepositoryMockRecorder) GetUserByEmail(ctx, email any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByEmail", reflect.TypeOf((*MockRepository)(nil).GetUserByEmail), ctx, email)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByEmail", reflect.TypeOf((*MockUserRepository)(nil).GetUserByEmail), ctx, email)
 }
 
 // GetUserByID mocks base method.
-func (m *MockRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
+func (m *MockUserRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserByID", ctx, id)
 	ret0, _ := ret[0].(*model.User)
@@ -126,13 +81,67 @@ func (m *MockRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*model.
 }
 
 // GetUserByID indicates an expected call of GetUserByID.
-func (mr *MockRepositoryMockRecorder) GetUserByID(ctx, id any) *gomock.Call {
+func (mr *MockUserRepositoryMockRecorder) GetUserByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByID", reflect.TypeOf((*MockRepository)(nil).GetUserByID), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByID", reflect.TypeOf((*MockUserRepository)(nil).GetUserByID), ctx, id)
+}
+
+// PutUser mocks base method.
+func (m *MockUserRepository) PutUser(ctx context.Context, email, passwordHash string) (uuid.UUID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PutUser", ctx, email, passwordHash)
+	ret0, _ := ret[0].(uuid.UUID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PutUser indicates an expected call of PutUser.
+func (mr *MockUserRepositoryMockRecorder) PutUser(ctx, email, passwordHash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutUser", reflect.TypeOf((*MockUserRepository)(nil).PutUser), ctx, email, passwordHash)
+}
+
+// MockRatingRepository is a mock of RatingRepository interface.
+type MockRatingRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockRatingRepositoryMockRecorder
+	isgomock struct{}
+}
+
+// MockRatingRepositoryMockRecorder is the mock recorder for MockRatingRepository.
+type MockRatingRepositoryMockRecorder struct {
+	mock *MockRatingRepository
+}
+
+// NewMockRatingRepository creates a new mock instance.
+func NewMockRatingRepository(ctrl *gomock.Controller) *MockRatingRepository {
+	mock := &MockRatingRepository{ctrl: ctrl}
+	mock.recorder = &MockRatingRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockRatingRepository) EXPECT() *MockRatingRepositoryMockRecorder {
+	return m.recorder
+}
+
+// GetRatings mocks base method.
+func (m *MockRatingRepository) GetRatings(ctx context.Context, songId uuid.UUID) ([]model.Rating, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRatings", ctx, songId)
+	ret0, _ := ret[0].([]model.Rating)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRatings indicates an expected call of GetRatings.
+func (mr *MockRatingRepositoryMockRecorder) GetRatings(ctx, songId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRatings", reflect.TypeOf((*MockRatingRepository)(nil).GetRatings), ctx, songId)
 }
 
 // PutRating mocks base method.
-func (m *MockRepository) PutRating(ctx context.Context, songId, userId uuid.UUID, value float64) (uuid.UUID, error) {
+func (m *MockRatingRepository) PutRating(ctx context.Context, songId, userId uuid.UUID, value float64) (uuid.UUID, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PutRating", ctx, songId, userId, value)
 	ret0, _ := ret[0].(uuid.UUID)
@@ -141,13 +150,67 @@ func (m *MockRepository) PutRating(ctx context.Context, songId, userId uuid.UUID
 }
 
 // PutRating indicates an expected call of PutRating.
-func (mr *MockRepositoryMockRecorder) PutRating(ctx, songId, userId, value any) *gomock.Call {
+func (mr *MockRatingRepositoryMockRecorder) PutRating(ctx, songId, userId, value any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutRating", reflect.TypeOf((*MockRepository)(nil).PutRating), ctx, songId, userId, value)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutRating", reflect.TypeOf((*MockRatingRepository)(nil).PutRating), ctx, songId, userId, value)
+}
+
+// MockSongRepository is a mock of SongRepository interface.
+type MockSongRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockSongRepositoryMockRecorder
+	isgomock struct{}
+}
+
+// MockSongRepositoryMockRecorder is the mock recorder for MockSongRepository.
+type MockSongRepositoryMockRecorder struct {
+	mock *MockSongRepository
+}
+
+// NewMockSongRepository creates a new mock instance.
+func NewMockSongRepository(ctrl *gomock.Controller) *MockSongRepository {
+	mock := &MockSongRepository{ctrl: ctrl}
+	mock.recorder = &MockSongRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockSongRepository) EXPECT() *MockSongRepositoryMockRecorder {
+	return m.recorder
+}
+
+// GetSongByID mocks base method.
+func (m *MockSongRepository) GetSongByID(ctx context.Context, id uuid.UUID) (*model.Song, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSongByID", ctx, id)
+	ret0, _ := ret[0].(*model.Song)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSongByID indicates an expected call of GetSongByID.
+func (mr *MockSongRepositoryMockRecorder) GetSongByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSongByID", reflect.TypeOf((*MockSongRepository)(nil).GetSongByID), ctx, id)
+}
+
+// GetSongsByGenre mocks base method.
+func (m *MockSongRepository) GetSongsByGenre(ctx context.Context, genre string) ([]model.Song, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSongsByGenre", ctx, genre)
+	ret0, _ := ret[0].([]model.Song)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSongsByGenre indicates an expected call of GetSongsByGenre.
+func (mr *MockSongRepositoryMockRecorder) GetSongsByGenre(ctx, genre any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSongsByGenre", reflect.TypeOf((*MockSongRepository)(nil).GetSongsByGenre), ctx, genre)
 }
 
 // PutSong mocks base method.
-func (m *MockRepository) PutSong(ctx context.Context, id uuid.UUID, song *model.Song) (uuid.UUID, error) {
+func (m *MockSongRepository) PutSong(ctx context.Context, id uuid.UUID, song *model.Song) (uuid.UUID, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PutSong", ctx, id, song)
 	ret0, _ := ret[0].(uuid.UUID)
@@ -156,22 +219,7 @@ func (m *MockRepository) PutSong(ctx context.Context, id uuid.UUID, song *model.
 }
 
 // PutSong indicates an expected call of PutSong.
-func (mr *MockRepositoryMockRecorder) PutSong(ctx, id, song any) *gomock.Call {
+func (mr *MockSongRepositoryMockRecorder) PutSong(ctx, id, song any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutSong", reflect.TypeOf((*MockRepository)(nil).PutSong), ctx, id, song)
-}
-
-// PutUser mocks base method.
-func (m *MockRepository) PutUser(ctx context.Context, email, password string) (uuid.UUID, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PutUser", ctx, email, password)
-	ret0, _ := ret[0].(uuid.UUID)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// PutUser indicates an expected call of PutUser.
-func (mr *MockRepositoryMockRecorder) PutUser(ctx, email, password any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutUser", reflect.TypeOf((*MockRepository)(nil).PutUser), ctx, email, password)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutSong", reflect.TypeOf((*MockSongRepository)(nil).PutSong), ctx, id, song)
 }
