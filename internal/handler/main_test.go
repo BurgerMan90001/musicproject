@@ -4,24 +4,22 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/google/uuid"
 	"go.uber.org/mock/gomock"
 	"musicproject.com/config"
 	mock_repository "musicproject.com/gen/mocks"
-	"musicproject.com/internal/repository/postgres"
-	"musicproject.com/internal/service/auth"
-	"musicproject.com/pkg/util/fileutil"
+	"musicproject.com/internal/services"
+	"musicproject.com/internal/services/auth"
 )
 
 var (
-	//server *httptest.Server
-
 	id  uuid.UUID
-	cfg config.Config
+	cfg *config.Config
 	ctx context.Context
 
 	server *Server
@@ -46,6 +44,8 @@ type HandlerTest struct {
 func TestMain(m *testing.M) {
 
 	// Run setup
+	cfg = config.LoadConfig()
+
 	var err error
 	id, err = uuid.NewV7()
 	if err != nil {
@@ -55,35 +55,31 @@ func TestMain(m *testing.M) {
 	ctx = context.Background()
 
 	// Run tests
-	code := m.Run()
+	//code := m.Run()
 
 	// Teardown
 
-	os.Exit(code)
+	//os.Exit(code)
 }
 
 type testContext struct {
+	repo *mock_repository.MockRepository
 
-	//repo repository.Repository
-	repo postgres.Repository
-	userRepo *mock_repository.MockUserRepository
-
-	authService *auth.Service
+	authService services.Auth
 
 	id uuid.UUID
 }
 
 func (c *testContext) beforeEach(t *testing.T) {
-	cfg, err := fileutil.ReadYAML[config.Config]("../../config/base.dev.yml")
-	if err != nil {
-		panic(err)
-	}
+	//t.Parallel()
+
 	ctrl := gomock.NewController(t)
+	repo := mock_repository.NewMockRepository(ctrl)
 
-	//c.repo = postgres.Repository{}
-	c.userRepo = mock_repository.NewMockUserRepository(ctrl)
+	c.authService = auth.New(cfg.Services.Auth, repo)
+	c.repo = repo
 
-	c.authService = auth.New(cfg.Services.Auth, c.userRepo)
+	server = NewServer(cfg, repo)
 
 }
 func (c *testContext) afterEach() {
@@ -92,26 +88,38 @@ func (c *testContext) afterEach() {
 
 func testCase(test func(t *testing.T, c *testContext)) func(*testing.T) {
 	return func(t *testing.T) {
+		//t.Parallel()
 		context := &testContext{}
 		context.beforeEach(t)
 		defer context.afterEach()
+		//t.Parallel()
 		test(t, context)
+		//t.Parallel()
 	}
-
 }
 
-func newRequest(ctx context.Context, method string, url string, body any, requireAuth bool) (*httptest.ResponseRecorder, error) {
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
+func newRequest(ctx context.Context, method string, url string, body any, tokenString string) (*httptest.ResponseRecorder, error) {
+	var (
+		buf []byte
+		err error
+	)
+	if body != nil {
+		buf, err = json.Marshal(body)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	r := httptest.NewRequestWithContext(ctx, method, url, bytes.NewBuffer(buf))
-	//r.SetPathValue()
-	if requireAuth {
-		r.Header.Add("Authorization", "Bearer "+"")
-	}
 	w := httptest.NewRecorder()
+	r := httptest.NewRequestWithContext(ctx, method, url, bytes.NewBuffer(buf))
+
+	if tokenString != "" {
+		r.AddCookie(&http.Cookie{Name: AccessCookie, Value: tokenString})
+	}
+
+	if server == nil {
+		return nil, errors.New("server is nil")
+	}
 	server.ServeHTTP(w, r)
 	return w, nil
 }

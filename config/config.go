@@ -1,11 +1,13 @@
 package config
 
 import (
+	"bytes"
+	"embed"
 	"fmt"
 
+	"go.yaml.in/yaml/v4"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	"musicproject.com/pkg/util/fileutil"
 )
 
 type JWT struct {
@@ -40,32 +42,29 @@ type Services struct {
 	Auth Auth `yaml:"auth"`
 }
 type Repository struct {
-	Type string `yaml:"type"`
-	URL  string `yaml:"url"`
+	URL string `yaml:"url"`
 }
 
+//go:embed config.dev.yml
+var configFS embed.FS
+
 const (
-	TypeDev  = "dev"
-	TypeProd = "prod"
+	DevConfig  = "config.dev.yml"
+	ProdConfig = "config.prod.yml"
 )
 
 // Reads file from local directory
-func ReadConfigFile(env string) Config {
-	var fileName string
+func LoadConfig() *Config {
 
-	switch env {
-	case TypeDev:
-		fileName = "./config/base.dev.yml"
-	case TypeProd:
-		fileName = "./config/base.prod.yml"
-	default:
-		fileName = "./config/base.dev.yml"
-	}
-	cfg, err := fileutil.ReadYAML[Config](fileName)
+	f, err := configFS.ReadFile(DevConfig)
 	if err != nil {
 		panic(err)
 	}
-	return cfg
+	var cfg Config
+	if err := yaml.NewDecoder(bytes.NewReader(f)).Decode(&cfg); err != nil {
+		panic(err)
+	}
+	return &cfg
 }
 
 func (cfg Config) URL() string {

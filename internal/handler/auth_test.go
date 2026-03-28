@@ -6,14 +6,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"musicproject.com/internal/repository"
-	"musicproject.com/internal/service/auth"
-	authService "musicproject.com/internal/service/auth"
+	"musicproject.com/internal/services/auth"
 	"musicproject.com/pkg/model"
 )
 
 func TestLogin(t *testing.T) {
-	//url := "/v1/auth"
+	url := "/v1/auth/login"
 	tests := []HandlerTest{
 		{
 			Name:     "successful login",
@@ -30,14 +30,21 @@ func TestLogin(t *testing.T) {
 				Email:        "paulcasigay@gmail.com",
 				PasswordHash: "Dirtycash@123!",
 			},
+			//WantData: true,
 		},
 		{
-			Name:     "incorect password or email",
-			Method:   http.MethodPost,
-			WantCode: http.StatusBadRequest,
+			Name:        "incorect password or email",
+			Method:      http.MethodPost,
+			WantCode:    http.StatusUnauthorized,
+			WantMessage: "incorrect password or email",
 			Body: map[string]any{
 				"email":    "paulcasigay@gmail.com",
 				"password": "Dirtycash@123!",
+			},
+			RepoItem: &model.User{
+				ID:           id,
+				Email:        "paulcasigay@gmail.com",
+				PasswordHash: "Invalidpasswordh@123!",
 			},
 		},
 		{
@@ -49,7 +56,7 @@ func TestLogin(t *testing.T) {
 				"password": "Dirtycash@123!",
 			},
 			RepoErr:     repository.ErrNotFound,
-			WantMessage: repository.ErrUserNotFound.Error(),
+			WantMessage: repository.ErrNotFound.Error(),
 		},
 		{
 			Name:     "method not allowed",
@@ -59,28 +66,22 @@ func TestLogin(t *testing.T) {
 			WantMessage: ErrInvalidMethod.Error(),
 		},
 	}
+	//t.Parallel()
 
 	for _, tt := range tests {
 		t.Run(tt.Name, testCase(func(t *testing.T, c *testContext) {
-
-			c.userRepo.EXPECT().GetUserByEmail(ctx, tt.Body["email"]).Return(tt.RepoItem, tt.RepoErr).AnyTimes()
-
-			// w := httptest.NewRecorder()
-
-			// body, err := NewRequestBody(tt.Body)
-			// if err != nil {
-			// 	t.Error(err)
-			// }
-
-			//r := httptest.NewRequestWithContext(ctx, tt.Method, "/user", body)
-
-			//r.SetPathValue("id", id.String())
-			w, err := newRequest(ctx, tt.Method, tt.URL, tt.Body, false)
-			if err != nil {
-				t.Error(err)
+			user, ok := tt.RepoItem.(*model.User)
+			if ok {
+				passwordHash, err := auth.HashPassword(user.PasswordHash)
+				if err != nil {
+					t.Error(err)
+				}
+				user.PasswordHash = passwordHash
 			}
+			c.repo.EXPECT().GetUserByEmail(ctx, tt.Body["email"]).Return(user, tt.RepoErr).AnyTimes()
 
-			//HandleLogin(c.authService).ServeHTTP(w, r)
+			w, err := newRequest(ctx, tt.Method, url, tt.Body, "")
+			assert.NoError(t.)
 
 			resBody, err := model.ReadJSON[model.Response](w.Result().Body)
 			if err != nil {
@@ -94,12 +95,13 @@ func TestLogin(t *testing.T) {
 			assert.Equal(t, tt.WantMessage, resBody.Message)
 			assert.Equal(t, tt.WantCode, w.Code, tt.Name)
 
-			assert.Equal(t, tt.WantSuccess, exists)
+			assert.Equal(t, tt.WantData, exists)
 
 		}))
 	}
 }
 func TestSignup(t *testing.T) {
+	url := "/v1/auth/signup"
 
 	// booleans will default to false if not assigned
 	tests := []HandlerTest{
@@ -143,7 +145,7 @@ func TestSignup(t *testing.T) {
 				"email":    "paulcasigay@gmail.com",
 				"password": "Dirtsh123",
 			},
-			WantMessage: authService.ErrInvalidPassword.Error(),
+			WantMessage: auth.ErrInvalidPassword.Error(),
 		},
 		{
 			Name:     "invalid email",
@@ -154,7 +156,7 @@ func TestSignup(t *testing.T) {
 				"email":    "paulcasigaygmailcom",
 				"password": "Dirtycash@123!",
 			},
-			WantMessage: authService.ErrInvalidEmail.Error(),
+			WantMessage: auth.ErrInvalidEmail.Error(),
 		},
 		{
 			Name:     "method not allowed",
@@ -167,21 +169,14 @@ func TestSignup(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, testCase(func(t *testing.T, c *testContext) {
+			c.repo.EXPECT().GetUserByEmail(ctx, tt.Body["email"]).Return(tt.RepoItem, tt.RepoErr).AnyTimes()
+			c.repo.EXPECT().PutUser(ctx, tt.Body["email"], gomock.Any()).Return(id, nil).AnyTimes()
 
-			c.userRepo.EXPECT().GetUserByEmail(ctx, tt.Body["email"]).Return(tt.RepoItem, tt.RepoErr).AnyTimes()
-			c.userRepo.EXPECT().PutUser(ctx, tt.Body["email"], tt.Body["password"]).Return(id, nil).AnyTimes()
-
-			w, err := newRequest(ctx, tt.Method, "/auth/signup", tt.Body, false)
-			if err != nil {
-				t.Error(err)
-			}
-
-			//HandleSignup(c.authService).ServeHTTP(w, r)
+			w, err := newRequest(ctx, tt.Method, url, tt.Body, "")
+			assert.NoError(t, err)
 
 			resBody, err := model.ReadJSON[model.Response](w.Result().Body)
-			if err != nil {
-				t.Error(err)
-			}
+			assert.NoError(t, err)
 
 			assert.Equal(t, tt.WantMessage, resBody.Message)
 			assert.Equal(t, tt.WantCode, w.Code, tt.Name)
@@ -204,26 +199,16 @@ func TestHandleOathGoogleLogin(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 
-			w, err := newRequest(ctx, tt.Method, tt.URL, tt.Body, false)
+			w, err := newRequest(ctx, tt.Method, tt.URL, tt.Body, "")
 			if err != nil {
 				t.Error(err)
 			}
 
-			// r := httptest.NewRequestWithContext(ctx, tt.Method, "/user", body)
-
-			// HandleOauthLogin(authService).ServeHTTP(w, r)
-
-			//handleOathGoogleRedirect([]byte("test"), oauthCfg).ServeHTTP(w, r)
-			// body, err := io.ReadAll(resp.Body)
-			// if err != nil {
-			// 	t.Error(err)
-			// }
-			// userInfo, err := ReadJSON[model.GoogleUserInfo](resp.Body)
-			// if err != nil {
-			// 	t.Errorf("read error: %v", err)
-			// }
+			userInfo, err := model.ReadJSON[model.OauthUserInfo](w.Result().Body)
+			assert.NoError(t, err)
 
 			assert.Equal(t, tt.WantCode, w.Code, tt.Name)
+			assert.Equal(t, "", userInfo.Email)
 		})
 	}
 

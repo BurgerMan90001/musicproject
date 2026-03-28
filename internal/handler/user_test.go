@@ -11,11 +11,12 @@ import (
 	"musicproject.com/pkg/model"
 )
 
-func TestHandleGet(t *testing.T) {
+func TestHandleUser(t *testing.T) {
 	id, err := uuid.NewV7()
 	if err != nil {
 		t.Error(err)
 	}
+	url := "/v1/user/"
 
 	tests := []HandlerTest{
 		{
@@ -41,7 +42,7 @@ func TestHandleGet(t *testing.T) {
 			WantCode: http.StatusNotFound,
 			RepoErr:  repository.ErrNotFound,
 
-			WantMessage: repository.ErrUserNotFound.Error(),
+			WantMessage: repository.ErrNotFound.Error(),
 		},
 
 		{
@@ -57,9 +58,9 @@ func TestHandleGet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, testCase(func(t *testing.T, c *testContext) {
 
-			c.userRepo.EXPECT().GetUserByID(ctx, id).Return(tt.RepoItem, tt.RepoErr).AnyTimes()
+			c.repo.EXPECT().GetUserByID(ctx, id).Return(tt.RepoItem, tt.RepoErr).AnyTimes()
 
-			w, err := newRequest(ctx, tt.Method, tt.URL, tt.Body, false)
+			w, err := newRequest(ctx, tt.Method, url+id.String(), tt.Body, "")
 			if err != nil {
 				t.Error(err)
 			}
@@ -77,22 +78,5 @@ func TestHandleGet(t *testing.T) {
 			assert.JSONEq(t, string(t1), string(t2), tt.Name)
 			assert.Equal(t, tt.WantCode, w.Code, tt.Name)
 		}))
-	}
-}
-func TestPut(t *testing.T) {
-	tests := []HandlerTest{
-		{
-			Name:     "success",
-			WantCode: http.StatusOK,
-			//Body:     model.User{},
-			RepoItem: model.User{},
-		},
-	}
-	t.Skip()
-	for _, tt := range tests {
-
-		t.Run(tt.Name, func(t *testing.T) {
-
-		})
 	}
 }

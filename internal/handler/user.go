@@ -7,21 +7,25 @@ import (
 	"musicproject.com/internal/repository"
 )
 
-func HandleUserID(repo repository.User) http.HandlerFunc {
+func HandleUserID(repo repository.Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(r.PathValue("id"))
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			WriteError(w, err, http.StatusBadRequest)
 			return
 		}
 		ctx := r.Context()
 
 		switch r.Method {
 		case http.MethodGet:
+			if repo == nil {
+				InternalServerError(w, ErrNilRepo)
+				return
+			}
 			user, err := repo.GetUserByID(ctx, id)
 			if err != nil {
 				switch err {
-				case repository.ErrUserNotFound:
+				case repository.ErrNotFound:
 					WriteError(w, err, http.StatusNotFound)
 				default:
 					InternalServerError(w, err)
@@ -29,8 +33,6 @@ func HandleUserID(repo repository.User) http.HandlerFunc {
 				return
 			}
 			WriteJSON(w, user, http.StatusOK)
-
-		case http.MethodPut:
 
 		case http.MethodDelete:
 			/*

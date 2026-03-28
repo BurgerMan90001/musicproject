@@ -1,7 +1,7 @@
 api:
   port: 8081
   host: localhost
-  version: "1.23"
+  version: "1"
 
 services:
   auth:
@@ -19,5 +19,4 @@ services:
           - https://www.googleapis.com/auth/userinfo.profile
 
 repository:
-  type: dev
   url: ...

@@ -14,7 +14,7 @@ const (
 	cost = 14
 )
 
-func hashPassword(password string) (string, error) {
+func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), cost)
 
 	if err != nil {
@@ -28,7 +28,14 @@ func comparePassword(password string, passwordHash string) error {
 		[]byte(passwordHash),
 		[]byte(password),
 	)
-	return err
+
+	switch err {
+	case bcrypt.ErrMismatchedHashAndPassword:
+		return ErrMismatchPassword
+	default:
+		return err
+	}
+
 }
 
 func validateCredentials(email string, password string) error {

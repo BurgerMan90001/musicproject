@@ -10,11 +10,11 @@ import (
 	"musicproject.com/pkg/model"
 )
 
-type Song struct {
-	db *sql.DB
-}
+// type Song struct {
+// 	db *sql.DB
+// }
 
-func (r *Song) GetSongByID(ctx context.Context, songId uuid.UUID) (*model.Song, error) {
+func (r *Repository) GetSongByID(ctx context.Context, songId uuid.UUID) (*model.Song, error) {
 	var (
 		name         string
 		genre        string
@@ -43,7 +43,7 @@ func (r *Song) GetSongByID(ctx context.Context, songId uuid.UUID) (*model.Song, 
 	}
 	return song, nil
 }
-func (r *Song) GetSongsByGenre(ctx context.Context, genre string) ([]model.Song, error) {
+func (r *Repository) GetSongsByGenre(ctx context.Context, genre string) ([]model.Song, error) {
 	query := "SELECT id, WHERE genre=$1"
 	rows, err := r.db.QueryContext(ctx, query, genre)
 	if err != nil {
@@ -62,6 +62,6 @@ func (r *Song) GetSongsByGenre(ctx context.Context, genre string) ([]model.Song,
 	}
 	return nil, nil
 }
-func (r *Song) PutSong(ctx context.Context, id uuid.UUID, u *model.Song) (uuid.UUID, error) {
+func (r *Repository) PutSong(ctx context.Context, id uuid.UUID, u *model.Song) (uuid.UUID, error) {
 	return uuid.Nil, nil
 }

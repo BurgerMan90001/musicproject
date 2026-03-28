@@ -4,19 +4,16 @@ import (
 	"context"
 	"database/sql"
 
+	_ "github.com/lib/pq"
 	"musicproject.com/config"
-	"musicproject.com/internal/repository"
 	"musicproject.com/pkg/util/fileutil"
 )
 
 type Repository struct {
-	User   repository.User
-	Song   repository.Song
-	Rating repository.Rating
+	db *sql.DB
 }
 
-func New(cfg config.Config) Repository {
-
+func New(cfg *config.Config) *Repository {
 	ctx := context.Background()
 	db, err := sql.Open("postgres", cfg.Repository.URL)
 	if err != nil {
@@ -30,5 +27,5 @@ func New(cfg config.Config) Repository {
 		panic(err)
 	}
 
-	return Repository{&User{db}, &Song{db}, &Rating{db}}
+	return &Repository{db}
 }

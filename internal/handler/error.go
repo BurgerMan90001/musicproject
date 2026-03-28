@@ -9,6 +9,7 @@ import (
 var (
 	ErrInvalidMethod       = errors.New("method not allowed")
 	ErrInternalServerError = errors.New("internal server error")
+	ErrNilRepo             = errors.New("repository is nil")
 )
 
 func MethodNotAllowedError(w http.ResponseWriter) {

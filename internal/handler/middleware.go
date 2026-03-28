@@ -7,7 +7,9 @@ import (
 	"runtime/debug"
 	"time"
 
-	"musicproject.com/internal/service/auth"
+	"musicproject.com/internal/services"
+	"musicproject.com/internal/services/auth"
+	"musicproject.com/pkg/model"
 )
 
 func Logger(next http.Handler) http.Handler {
@@ -26,15 +28,23 @@ func PanicRecovery(next http.Handler) http.Handler {
 				log.Println(string(debug.Stack()))
 			}
 		}()
+		go func() {
+
+		}()
 		next.ServeHTTP(w, req)
 	})
 }
 
-func AuthMiddleware(authService *auth.Service, next http.HandlerFunc) http.HandlerFunc {
+func AuthMiddleware(authService services.Auth, next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(AccessCookie)
 		if err != nil {
-			WriteError(w, err, http.StatusUnauthorized)
+			switch err {
+			case http.ErrNoCookie:
+				WriteError(w, auth.ErrNoAccessToken, http.StatusUnauthorized)
+			default:
+				WriteError(w, err, http.StatusBadRequest)
+			}
 			return
 		}
 
@@ -54,9 +64,13 @@ func AuthMiddleware(authService *auth.Service, next http.HandlerFunc) http.Handl
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
+func RateLimit(next http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 
-func GetContextClaims(ctx context.Context) (*auth.Claims, bool) {
-	claims, ok := ctx.Value("claims").(*auth.Claims)
-
+		next.ServeHTTP(w, r)
+	}
+}
+func contextClaims(ctx context.Context) (*model.Claims, bool) {
+	claims, ok := ctx.Value("claims").(*model.Claims)
 	return claims, ok
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"musicproject.com/config"
 	"musicproject.com/internal/repository"
+	"musicproject.com/internal/services"
 	"musicproject.com/pkg/model"
 )
 
@@ -22,25 +23,19 @@ var ExpiresInOneHour = time.Now().Add(time.Hour * 24)
 
 type Service struct {
 	cfg  config.Auth
-	repo repository.User
+	repo repository.Repository
 
-	Google Oauth
+	Google services.Oauth
 }
 
-type Claims struct {
-	UserID    uuid.UUID `json:"userId"`
-	TokenType string    `json:"tokenType"`
-	jwt.RegisteredClaims
-}
-
-func New(cfg config.Auth, repo repository.User) *Service {
+func New(cfg config.Auth, repo repository.Repository) *Service {
 	google := NewGoogle(cfg.Oauth.Google)
 
 	return &Service{cfg, repo, google}
 }
 
 func (s *Service) GenerateToken(userId uuid.UUID, tokenType string, expireAt time.Time) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &Claims{
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &model.Claims{
 		UserID:    userId,
 		TokenType: tokenType,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -54,6 +49,7 @@ func (s *Service) GenerateToken(userId uuid.UUID, tokenType string, expireAt tim
 	if err != nil {
 		return "", err
 	}
+
 	tokenString, err := token.SignedString(key)
 	if err != nil {
 		return "", err
@@ -71,7 +67,7 @@ func (s *Service) GenerateTokenPair(userId uuid.UUID) (*model.TokenPair, error) 
 	if err != nil {
 		return nil, err
 	}
-	// Revoke refresh
+	// TODO Revoke refresh
 
 	return &model.TokenPair{
 		AccessToken:  accessToken,
@@ -84,7 +80,7 @@ func (s *Service) ParseToken(tokenString string, tokenType string) (*jwt.Token, 
 		return nil, err
 	}
 	token, err := jwt.ParseWithClaims(tokenString,
-		&Claims{},
+		&model.Claims{},
 		func(t *jwt.Token) (any, error) {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, jwt.ErrSignatureInvalid
@@ -95,29 +91,25 @@ func (s *Service) ParseToken(tokenString string, tokenType string) (*jwt.Token, 
 		jwt.WithValidMethods([]string{"HS256"}),
 		jwt.WithExpirationRequired(),
 	)
-	return token, err
-}
-func (s *Service) keyType(tokenType string) ([]byte, error) {
-	switch tokenType {
-	case TokenAccess:
-		return []byte(s.cfg.JWT.AccessKey), nil
-	case TokenRefresh:
-		return []byte(s.cfg.JWT.RefreshKey), nil
-	default:
-		return nil, ErrInvalidTokenType
+	if err != nil {
+		if errors.Is(err, jwt.ErrTokenMalformed) {
+			return nil, jwt.ErrTokenMalformed
+		}
+		return nil, err
 	}
+	return token, nil
 }
-func (s *Service) ParseAccessToken(accessToken string) (*Claims, error) {
 
+func (s *Service) ParseAccessToken(accessToken string) (*model.Claims, error) {
 	token, err := s.ParseToken(accessToken, TokenAccess)
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
-			return nil, err
+			return nil, jwt.ErrTokenExpired
 		}
 		return nil, err
 	}
 
-	claims, ok := token.Claims.(*Claims)
+	claims, ok := token.Claims.(*model.Claims)
 
 	switch {
 	case !ok || !token.Valid:
@@ -135,7 +127,7 @@ func (s *Service) RefreshTokens(ctx context.Context, tokenString string) (*model
 		return nil, err
 	}
 
-	claims, ok := token.Claims.(*Claims)
+	claims, ok := token.Claims.(*model.Claims)
 	switch {
 	case !ok || !token.Valid:
 		return nil, jwt.ErrTokenInvalidClaims
@@ -146,6 +138,9 @@ func (s *Service) RefreshTokens(ctx context.Context, tokenString string) (*model
 	}
 
 	return s.GenerateTokenPair(claims.UserID)
+}
+func (s *Service) RevokeToken(ctx context.Context, tokenString string) error {
+	return nil
 }
 
 func (s *Service) Signup(ctx context.Context, email string, password string) (*model.TokenPair, error) {
@@ -165,9 +160,12 @@ func (s *Service) Signup(ctx context.Context, email string, password string) (*m
 	if err := validatePassword(password); err != nil {
 		return nil, err
 	}
-
+	passwordHash, err := HashPassword(password)
+	if err != nil {
+		return nil, err
+	}
 	// Create new user
-	userId, err := s.repo.PutUser(ctx, email, password)
+	userId, err := s.repo.PutUser(ctx, email, passwordHash)
 	if err != nil {
 		return nil, err
 	}
@@ -202,4 +200,15 @@ func (s *Service) Login(ctx context.Context, email string, password string) (*mo
 
 func (s *Service) Logout(ctx context.Context) {
 
+}
+
+func (s *Service) keyType(tokenType string) ([]byte, error) {
+	switch tokenType {
+	case TokenAccess:
+		return []byte(s.cfg.JWT.AccessKey), nil
+	case TokenRefresh:
+		return []byte(s.cfg.JWT.RefreshKey), nil
+	default:
+		return nil, ErrInvalidTokenType
+	}
 }

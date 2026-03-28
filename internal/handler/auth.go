@@ -1,11 +1,13 @@
 package handler
 
 import (
+	"errors"
 	"log"
 	"net/http"
 
 	"musicproject.com/internal/repository"
-	"musicproject.com/internal/service/auth"
+	"musicproject.com/internal/services"
+	"musicproject.com/internal/services/auth"
 	"musicproject.com/pkg/model"
 )
 
@@ -14,7 +16,7 @@ const (
 	RefreshCookie = "refreshKey"
 )
 
-func HandleSignup(authService *auth.Service) http.HandlerFunc {
+func HandleSignup(authService services.Auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			WriteError(w, ErrInvalidMethod, http.StatusMethodNotAllowed)
@@ -34,20 +36,19 @@ func HandleSignup(authService *auth.Service) http.HandlerFunc {
 			case auth.ErrInvalidEmail,
 				auth.ErrInvalidPassword:
 				WriteError(w, err, http.StatusBadRequest)
-				return
 			case auth.ErrUserAlreadyExists:
 				WriteError(w, err, http.StatusConflict)
 			default:
 				WriteError(w, err, http.StatusInternalServerError)
-				return
 			}
+			return
 		}
 
 		WriteJSON(w, tokenPair, http.StatusOK)
 	}
 }
 
-func HandleLogin(authService *auth.Service) http.HandlerFunc {
+func HandleLogin(authService services.Auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			MethodNotAllowedError(w)
@@ -64,9 +65,9 @@ func HandleLogin(authService *auth.Service) http.HandlerFunc {
 		tokenPair, err := authService.Login(ctx, login.Email, login.Password)
 		if err != nil {
 			switch err {
-			case auth.ErrInvalidPassword,
+			case auth.ErrMismatchPassword,
 				auth.ErrInvalidEmail:
-				WriteError(w, err, http.StatusUnauthorized)
+				WriteError(w, errors.New("incorrect password or email"), http.StatusUnauthorized)
 			case repository.ErrNotFound:
 				WriteError(w, err, http.StatusNotFound)
 			default:
@@ -75,21 +76,46 @@ func HandleLogin(authService *auth.Service) http.HandlerFunc {
 			return
 		}
 		WriteJSON(w, tokenPair, http.StatusOK)
-
 	}
 }
 
-func HandleRefresh() http.HandlerFunc {
+func HandleRefresh(authService services.Auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
+			MethodNotAllowedError(w)
+			return
 		}
+
+		cookie, err := r.Cookie(RefreshCookie)
+		if err != nil {
+			switch err {
+			case http.ErrNoCookie:
+				WriteError(w, auth.ErrNoRefeshToken, http.StatusBadRequest)
+			default:
+				WriteError(w, err, http.StatusBadRequest)
+			}
+			return
+		}
+		ctx := r.Context()
+
+		tokenPair, err := authService.RefreshTokens(ctx, cookie.Value)
+		if err != nil {
+			WriteError(w, err, http.StatusBadRequest)
+			return
+		}
+		WriteJSON(w, tokenPair, http.StatusOK)
 	}
 }
 
-func HandleLogout() http.HandlerFunc {
+func HandleLogout(authService services.Auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
+			MethodNotAllowedError(w)
+			return
 		}
+		ctx := r.Context()
+		authService.Logout(ctx)
+		WriteJSON(w, nil, http.StatusOK)
 	}
 }
 func HandleEmailReset() http.HandlerFunc {
@@ -100,13 +126,13 @@ func HandleEmailReset() http.HandlerFunc {
 }
 
 /* Oauth handler functions */
-func HandleOauthLogin(authService *auth.Service) http.HandlerFunc {
+func HandleOauthLogin(oauth services.Oauth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		url := authService.Google.RedirectURL(w)
+		url := oauth.RedirectURL(w)
 		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 	}
 }
-func HandleOauthGoogleRedirect(authService *auth.Service) http.HandlerFunc {
+func HandleOauthGoogleRedirect(authService services.Auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		//code := r.FormValue("code")
 		state := r.FormValue("state")

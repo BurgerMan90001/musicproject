@@ -9,10 +9,10 @@ import (
 )
 
 type Service struct {
-	repo repository.Rating
+	repo repository.Repository
 }
 
-func New(repo repository.Rating) *Service {
+func New(repo repository.Repository) *Service {
 	return &Service{repo: repo}
 }
 
@@ -32,8 +32,6 @@ func (s *Service) GetAggregatedRating(ctx context.Context, songId uuid.UUID) (fl
 	return aggregatedRating, nil
 }
 
-/*
 func (c *Service) PutRating(ctx context.Context, songId uuid.UUID, userId uuid.UUID, value float64) error {
 	return c.repo.PutRating(ctx, songId, userId, value)
 }
-*/

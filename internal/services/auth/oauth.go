@@ -13,11 +13,6 @@ import (
 	"musicproject.com/pkg/model"
 )
 
-type Oauth interface {
-	GetUserInfo(ctx context.Context, token *oauth2.Token) (*model.OauthUserInfo, error)
-	RedirectURL(w http.ResponseWriter) string
-}
-
 type GoogleOauth struct {
 	cfg *oauth2.Config
 }
