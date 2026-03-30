@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"golang.org/x/oauth2"
@@ -26,6 +27,10 @@ func NewGoogle(cfg config.Google) *GoogleOauth {
 		Endpoint:     google.Endpoint,
 	}}
 }
+func (s *GoogleOauth) Login(ctx context.Context, code string) (*model.User, *model.TokenPair, error) {
+
+	return nil, nil, nil
+}
 
 // Generates state cookie and returns redirect url
 func (s *GoogleOauth) RedirectURL(w http.ResponseWriter) string {
@@ -33,7 +38,12 @@ func (s *GoogleOauth) RedirectURL(w http.ResponseWriter) string {
 	url := s.cfg.AuthCodeURL(state, oauth2.AccessTypeOffline)
 	return url
 }
-func (s *GoogleOauth) GetUserInfo(ctx context.Context, token *oauth2.Token) (*model.OauthUserInfo, error) {
+
+// func (s *GoogleOauth) exchange(ctx context.Context, code string) (*oauth2.Token, error) {
+// 	return s.cfg.Exchange(ctx, code)
+// }
+
+func (s *GoogleOauth) getUserInfo(ctx context.Context, token *oauth2.Token) (*model.OauthUserInfo, error) {
 	client := s.cfg.Client(ctx, token)
 
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
@@ -63,6 +73,15 @@ func generateStateCookie(w http.ResponseWriter) string {
 	})
 	return state
 }
-func validateStateCookie() {
-
+func (s *GoogleOauth) validateStateCookie(r *http.Request) error {
+	//code := r.FormValue("code")
+	state := r.FormValue("state")
+	stateCookie, err := r.Cookie("oauthState")
+	if state != stateCookie.Value || err != nil {
+		return errors.New("invalid google oauth state")
+		// log.Println("invalid google oauth state")
+		// http.Redirect(w, r, "/", http.StatusFound)
+		// return
+	}
+	return nil
 }

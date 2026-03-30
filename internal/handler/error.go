@@ -10,6 +10,8 @@ var (
 	ErrInvalidMethod       = errors.New("method not allowed")
 	ErrInternalServerError = errors.New("internal server error")
 	ErrNilRepo             = errors.New("repository is nil")
+	ErrInvalidRequestBody  = errors.New("Invalid request body")
+	ErrRateLimit           = errors.New("Rate limit exceeded")
 )
 
 func MethodNotAllowedError(w http.ResponseWriter) {
@@ -22,6 +24,5 @@ func NotFoundError(w http.ResponseWriter, reason error) {
 
 func InternalServerError(w http.ResponseWriter, err error) {
 	log.Printf("internal server error: %v", err)
-
-	WriteError(w, ErrInternalServerError, http.StatusInternalServerError)
+	WriteError(w, err, http.StatusInternalServerError)
 }

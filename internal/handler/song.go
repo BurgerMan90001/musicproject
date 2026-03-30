@@ -18,6 +18,7 @@ func HandleSongs(repo repository.Repository) http.HandlerFunc {
 			return
 		}
 		ctx := r.Context()
+		// claims, ok := contextClaims(ctx)
 
 		switch r.Method {
 		case http.MethodGet:

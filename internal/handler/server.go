@@ -1,90 +1,105 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 
 	"musicproject.com/config"
+	"musicproject.com/internal/handler/ratelimit"
 	"musicproject.com/internal/repository"
 	"musicproject.com/internal/services/auth"
 	"musicproject.com/internal/services/file"
+	"musicproject.com/pkg/model"
 )
 
 type Server struct {
-	mux *http.ServeMux
+	*http.ServeMux
 	cfg *config.Config
 }
 
 func NewServer(cfg *config.Config, repo repository.Repository) *Server {
 	mux := http.NewServeMux()
 
+	rl := ratelimit.NewTokenBucket(15, 30)
+
 	authService := auth.New(cfg.Services.Auth, repo)
 	fileService := file.New()
 
-	//mux.Handle("")
 	// setup routes
-	mux.HandleFunc("/v1/health", HandleHealth)
-	// use routes
-	mux.HandleFunc("/v1/user/{id}", HandleUserID(repo))
+	mux.HandleFunc("/", HandleNotFound)
+	mux.HandleFunc("/health", HandleHealth)
 
-	mux.HandleFunc("/v1/songs/{id}", HandleSongs(repo))
-	mux.HandleFunc("/v1/songs/upload", HandleSongUpload(fileService))
-	mux.HandleFunc("/v1/artists/{id}", HandleArtists())
+	http.HandleFunc("/users", HandleUsers(repo))
+	mux.HandleFunc("/users/{id}", HandleUsersID(repo))
+
+	mux.HandleFunc("/songs/{id}", HandleSongs(repo))
+	mux.HandleFunc("/songs/upload", HandleSongUpload(fileService))
+
+	mux.HandleFunc("/artists/{id}", HandleArtists())
 
 	// auth routes
-	mux.HandleFunc("/v1/auth/login", HandleLogin(authService))
-	mux.HandleFunc("/v1/auth/signup", HandleSignup(authService))
-	mux.HandleFunc("/v1/auth/refresh", HandleRefresh(authService))
-	mux.HandleFunc("/v1/auth/reset", HandleEmailReset())
+	mux.HandleFunc("/auth/login", HandleLogin(authService))
+	mux.HandleFunc("/auth/signup", HandleSignup(authService))
+
+	mux.HandleFunc("/auth/refresh", HandleRefresh(authService.JWT))
+	mux.HandleFunc("/auth/reset", HandleEmailReset())
 
 	// oauth routes
-	mux.HandleFunc("/v1/auth/google/login", HandleOauthLogin(authService.Google))
-	mux.HandleFunc("/v1/auth/google/redirect", HandleOauthGoogleRedirect(authService))
+	mux.HandleFunc("/auth/google/login", HandleOauthLogin(authService.Google))
+	mux.HandleFunc("/auth/google/redirect", HandleOauthGoogleRedirect(authService.Google))
 
-	mux.HandleFunc("/v1/protected", AuthMiddleware(authService, HandleTest))
+	mux.HandleFunc("/protected", AuthMiddleware(authService.JWT, HandleTest))
 	// static file server
 	mux.Handle("/static", http.FileServer(http.Dir("public")))
 
-	//root := http.NewServeMux()
+	var api http.Handler = mux
+	if cfg.Middleware.Ratelimit {
+		api = Logger(PanicRecovery(RateLimitMiddleware(rl, mux)))
+	}
 
-	//root.Handle("/v1/", http.StripPrefix("/v1/", mux))
+	root := http.NewServeMux()
 
-	s := &Server{mux, cfg}
+	root.Handle("/v1/", http.StripPrefix("/v1", api))
+	root.Handle("/", http.HandlerFunc(HandleNotFound))
 
-	// add middleware
-	//middleware.Logger(mux)
+	s := &Server{root, cfg}
+
 	return s
 }
-func (s *Server) root() string {
-	return fmt.Sprintf("/v%s", s.cfg.API.Version)
+
+func (s *Server) url() string {
+	return fmt.Sprintf("%v:%d", s.cfg.API.Host, s.cfg.API.Port)
 }
 
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.mux.ServeHTTP(w, r)
+func (s *Server) Run() {
+	
 }
-
-//	func (s *Server) URL(route string) string {
-//		return fmt.Sprintf("/%s%s", s.cfg.API.Version, route)
-//	}
 func (s *Server) Listen() {
-	log.Printf("Server listening at %s", s.cfg.URL())
-	if err := http.ListenAndServe(s.cfg.URL(), s.mux); err != nil {
+	log.Printf("Server listening at %s. v1", s.url())
+	if err := http.ListenAndServe(s.url(), s); err != nil {
 		panic(err)
 	}
 }
 
-// func (s *Server) handleFunc(route string, function http.HandlerFunc) {
-// 	s.mux.HandleFunc(s.URL(route), function)
-// }
-
 func HandleHealth(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "alive")
+	WriteJSON(w, model.Health{
+		Message: "alive",
+	}, http.StatusOK)
+}
+
+func HandleNotFound(w http.ResponseWriter, r *http.Request) {
+	WriteError(w, errors.New("not found"), http.StatusNotFound)
 }
 
 func HandleTest(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
+	ctx := r.Context()
+	claims, ok := contextClaims(ctx)
+	if ok {
+		WriteJSON(w, claims, http.StatusOK)
+	}
 	WriteJSON(w, nil, http.StatusOK)
 }
 

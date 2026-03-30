@@ -3,27 +3,25 @@ package config
 import (
 	"bytes"
 	"embed"
-	"fmt"
 
 	"go.yaml.in/yaml/v4"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 )
 
-type JWT struct {
-	AccessKey  string `yaml:"accessKey"`
-	RefreshKey string `yaml:"refreshKey"`
-	Issuer     string `yaml:"issuer"`
-}
 type Config struct {
 	API        API        `yaml:"api"`
 	Services   Services   `yaml:"services"`
+	Middleware Middleware `yaml:"middleware"`
 	Repository Repository `yaml:"repository"`
 }
 type API struct {
 	Port    int    `yaml:"port"`
 	Host    string `yaml:"host"`
 	Version string `yaml:"version"`
+}
+type JWT struct {
+	AccessKey  string `yaml:"accessKey"`
+	RefreshKey string `yaml:"refreshKey"`
+	Issuer     string `yaml:"issuer"`
 }
 type Google struct {
 	ClientID     string   `yaml:"clientID"`
@@ -41,8 +39,17 @@ type Auth struct {
 type Services struct {
 	Auth Auth `yaml:"auth"`
 }
+type Middleware struct {
+	Ratelimit bool `yaml:"ratelimit"`
+}
+type Postgres struct {
+	Image    string `yaml:"image"`
+	Database string `yaml:"database"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+}
 type Repository struct {
-	URL string `yaml:"url"`
+	Postgres Postgres `yaml:"postgres"`
 }
 
 //go:embed config.dev.yml
@@ -65,19 +72,4 @@ func LoadConfig() *Config {
 		panic(err)
 	}
 	return &cfg
-}
-
-func (cfg Config) URL() string {
-	return fmt.Sprintf("%v:%d", cfg.API.Host, cfg.API.Port)
-}
-
-func (cfg Config) GoogleOathConfig() *oauth2.Config {
-	googleCfg := cfg.Services.Auth.Oauth.Google
-	return &oauth2.Config{
-		ClientID:     googleCfg.ClientID,
-		ClientSecret: googleCfg.ClientSecret,
-		RedirectURL:  googleCfg.RedirectURL,
-		Scopes:       googleCfg.Scopes,
-		Endpoint:     google.Endpoint,
-	}
 }

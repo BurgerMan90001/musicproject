@@ -42,6 +42,20 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 	return m.recorder
 }
 
+// DeleteToken mocks base method.
+func (m *MockRepository) DeleteToken(ctx context.Context, tokenString string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteToken", ctx, tokenString)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteToken indicates an expected call of DeleteToken.
+func (mr *MockRepositoryMockRecorder) DeleteToken(ctx, tokenString any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteToken", reflect.TypeOf((*MockRepository)(nil).DeleteToken), ctx, tokenString)
+}
+
 // DeleteUserByID mocks base method.
 func (m *MockRepository) DeleteUserByID(ctx context.Context, userId uuid.UUID) error {
 	m.ctrl.T.Helper()
@@ -201,4 +215,19 @@ func (m *MockRepository) PutUser(ctx context.Context, email, passwordHash string
 func (mr *MockRepositoryMockRecorder) PutUser(ctx, email, passwordHash any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutUser", reflect.TypeOf((*MockRepository)(nil).PutUser), ctx, email, passwordHash)
+}
+
+// SearchSongs mocks base method.
+func (m *MockRepository) SearchSongs(ctx context.Context) ([]model.Song, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchSongs", ctx)
+	ret0, _ := ret[0].([]model.Song)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchSongs indicates an expected call of SearchSongs.
+func (mr *MockRepositoryMockRecorder) SearchSongs(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchSongs", reflect.TypeOf((*MockRepository)(nil).SearchSongs), ctx)
 }

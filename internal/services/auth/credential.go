@@ -15,38 +15,26 @@ const (
 )
 
 func HashPassword(password string) (string, error) {
+	if err := validatePassword(password); err != nil {
+		return "", err
+	}
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), cost)
-
 	if err != nil {
 		return "", err
 	}
+	
 
 	return string(bytes), nil
 }
-func comparePassword(password string, passwordHash string) error {
+func ComparePassword(password string, passwordHash string) error {
 	err := bcrypt.CompareHashAndPassword(
 		[]byte(passwordHash),
 		[]byte(password),
 	)
-
-	switch err {
-	case bcrypt.ErrMismatchedHashAndPassword:
-		return ErrMismatchPassword
-	default:
-		return err
-	}
-
+	return err
 }
 
-func validateCredentials(email string, password string) error {
-	if err := validateEmail(email); err != nil {
-		return err
-	}
-	if err := validatePassword(password); err != nil {
-		return err
-	}
-	return nil
-}
+
 func validateEmail(email string) error {
 	valid, err := regexp.MatchString(`^[\w\-\.]+@([\w-]+\.)+[\w-]{2,}$`, email)
 	if !valid {

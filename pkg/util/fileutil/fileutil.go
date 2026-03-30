@@ -1,8 +1,6 @@
 package fileutil
 
 import (
-	"context"
-	"database/sql"
 	"os"
 
 	"go.yaml.in/yaml/v4"
@@ -22,15 +20,4 @@ func ReadYAML[T any](fileName string) (T, error) {
 		return v, err
 	}
 	return v, nil
-}
-
-func ExecSql(ctx context.Context, db *sql.DB, filePath string) error {
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return err
-	}
-	if _, err := db.ExecContext(ctx, string(data)); err != nil {
-		return err
-	}
-	return nil
 }

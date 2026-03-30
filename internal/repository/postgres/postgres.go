@@ -5,17 +5,16 @@ import (
 	"database/sql"
 
 	_ "github.com/lib/pq"
-	"musicproject.com/config"
-	"musicproject.com/pkg/util/fileutil"
+	"musicproject.com/schema"
 )
 
 type Repository struct {
 	db *sql.DB
 }
 
-func New(cfg *config.Config) *Repository {
+func New(url string) *Repository {
 	ctx := context.Background()
-	db, err := sql.Open("postgres", cfg.Repository.URL)
+	db, err := sql.Open("postgres", url)
 	if err != nil {
 		panic(err)
 	}
@@ -23,9 +22,16 @@ func New(cfg *config.Config) *Repository {
 		panic(err)
 	}
 
-	if err := fileutil.ExecSql(ctx, db, "schema/schema.sql"); err != nil {
+	if err := schema.LoadSchema(ctx, db); err != nil {
+		panic(err)
+	}
+	if err := schema.LoadTestData(ctx, db); err != nil {
 		panic(err)
 	}
 
 	return &Repository{db}
+}
+
+func (r *Repository) Close() {
+	r.db.Close()
 }

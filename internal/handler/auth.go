@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"errors"
 	"log"
 	"net/http"
 
@@ -12,9 +11,31 @@ import (
 )
 
 const (
-	AccessCookie  = "accessKey"
-	RefreshCookie = "refreshKey"
+	AccessCookie  = "accessToken"
+	RefreshCookie = "refreshToken"
 )
+
+func setTokenPair(w http.ResponseWriter, tokenPair *model.TokenPair) {
+	
+	accessCookie := &http.Cookie{
+		Name:  AccessCookie,
+		Value: tokenPair.AccessToken,
+
+		Path: "/",
+		HttpOnly: true,
+		Secure: true,
+	}
+	refreshCookie := &http.Cookie{
+		Name:  RefreshCookie,
+		Value: tokenPair.RefreshToken,
+
+		Path: "/",
+		HttpOnly: true,
+		Secure: true,
+	}
+	http.SetCookie(w, accessCookie)
+	http.SetCookie(w, refreshCookie)
+}
 
 func HandleSignup(authService services.Auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -26,11 +47,11 @@ func HandleSignup(authService services.Auth) http.HandlerFunc {
 
 		signup, err := model.ReadJSON[model.SignupRequest](r.Body)
 		if err != nil {
-			WriteError(w, err, http.StatusBadRequest)
+			WriteError(w, ErrInvalidRequestBody, http.StatusBadRequest)
 			return
 		}
 
-		tokenPair, err := authService.Signup(ctx, signup.Email, signup.Password)
+		user, tokenPair, err := authService.Signup(ctx, signup.Email, signup.Password)
 		if err != nil {
 			switch err {
 			case auth.ErrInvalidEmail,
@@ -39,12 +60,13 @@ func HandleSignup(authService services.Auth) http.HandlerFunc {
 			case auth.ErrUserAlreadyExists:
 				WriteError(w, err, http.StatusConflict)
 			default:
-				WriteError(w, err, http.StatusInternalServerError)
+				InternalServerError(w, err)
 			}
 			return
 		}
 
-		WriteJSON(w, tokenPair, http.StatusOK)
+		setTokenPair(w, tokenPair)
+		WriteJSON(w, user, http.StatusCreated)
 	}
 }
 
@@ -58,28 +80,29 @@ func HandleLogin(authService services.Auth) http.HandlerFunc {
 
 		login, err := model.ReadJSON[model.LoginRequest](r.Body)
 		if err != nil {
-			WriteError(w, err, http.StatusBadRequest)
+			WriteError(w, ErrInvalidRequestBody, http.StatusBadRequest)
 			return
 		}
 
-		tokenPair, err := authService.Login(ctx, login.Email, login.Password)
+		user, tokenPair, err := authService.Login(ctx, login.Email, login.Password)
 		if err != nil {
 			switch err {
-			case auth.ErrMismatchPassword,
-				auth.ErrInvalidEmail:
-				WriteError(w, errors.New("incorrect password or email"), http.StatusUnauthorized)
+			case auth.ErrIncorrectLogin:
+				WriteError(w, err, http.StatusUnauthorized)
 			case repository.ErrNotFound:
 				WriteError(w, err, http.StatusNotFound)
 			default:
-				WriteError(w, err, http.StatusInternalServerError)
+				InternalServerError(w, err)
 			}
 			return
 		}
-		WriteJSON(w, tokenPair, http.StatusOK)
+
+		setTokenPair(w, tokenPair)
+		WriteJSON(w, user, http.StatusOK)
 	}
 }
 
-func HandleRefresh(authService services.Auth) http.HandlerFunc {
+func HandleRefresh(jwtService services.JWT) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			MethodNotAllowedError(w)
@@ -98,7 +121,7 @@ func HandleRefresh(authService services.Auth) http.HandlerFunc {
 		}
 		ctx := r.Context()
 
-		tokenPair, err := authService.RefreshTokens(ctx, cookie.Value)
+		tokenPair, err := jwtService.RefreshTokens(ctx, cookie.Value)
 		if err != nil {
 			WriteError(w, err, http.StatusBadRequest)
 			return
@@ -132,50 +155,43 @@ func HandleOauthLogin(oauth services.Oauth) http.HandlerFunc {
 		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 	}
 }
-func HandleOauthGoogleRedirect(authService services.Auth) http.HandlerFunc {
+func HandleOauthGoogleRedirect(oauth services.Oauth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//code := r.FormValue("code")
+		code := r.FormValue("code")
 		state := r.FormValue("state")
 
 		stateCookie, err := r.Cookie("oauthState")
-
 		if state != stateCookie.Value || err != nil {
 			log.Println("invalid google oauth state")
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
 
-		//authService
-		//ctx := context.Background()
-		//token, err := cfg.Exchange(ctx, code)
+		ctx := r.Context()
 
+		user, tokenPair, err := oauth.Login(ctx, code)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			log.Printf("unable to extchange token: %v", err)
+			//w.WriteHeader(http.StatusInternalServerError)
+			//log.Printf("unable to extchange token: %v", err)
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
-
-		// user := &model.User{
-		// 	ID:    id,
-		// 	Email: userInfo.Email,
-		//
-
-		// userInfo, err := authService.GetUserInfoGoogle(ctx, token)
+		setTokenPair(w, tokenPair)
+		WriteJSON(w, user, http.StatusOK)
+		// userInfo, err := oauth.GetUserInfo(ctx, token)
 		// if err != nil {
 		// 	log.Printf("get user info error: %v", err)
 		// 	http.Redirect(w, r, "/", http.StatusFound)
 		// 	return
 		// }
 
-		//tokenString, err := auth.GenerateToken(jwtKey, id, auth.TokenRefresh, auth.ExpiresInOneDay)
+		// tokenPair, err := authService.GenerateTokenPair()
 
 		// if err != nil {
 		// 	log.Printf("generate token error: %v", err)
 		// 	http.Redirect(w, r, "/", http.StatusFound)
 		// 	return
 		// }
-		//authService.GetUserInfoGoogle(ctx, )
 
 	}
 }

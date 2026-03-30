@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255)
 );
 
+
 CREATE TABLE IF NOT EXISTS artists (
     artist_id UUID PRIMARY KEY DEFAULT uuidv7()
 );
@@ -24,7 +25,7 @@ CREATE TABLE IF NOT EXISTS songs (
 	duration INT,
 	image VARCHAR(255),
     creation_date VARCHAR(255),
-    src VARCHAR(255)
+    url VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS albums (
@@ -34,10 +35,10 @@ CREATE TABLE IF NOT EXISTS albums (
     creation_date VARCHAR(255)
 );
 
-CREATE TABLE IF NOT EXISTS genres {
+CREATE TABLE IF NOT EXISTS genres (
     genre_id UUID PRIMARY KEY DEFAULT uuidv7(),
     genre VARCHAR(255)
-}
+);
 
 CREATE TABLE IF NOT EXISTS ratings (
     song_id VARCHAR(255),

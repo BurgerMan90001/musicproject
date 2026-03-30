@@ -11,25 +11,30 @@ func WriteJSON(w http.ResponseWriter, data any, code int, args ...string) error 
 	w.Header().Set("Content-type", "application/json")
 	w.WriteHeader(code)
 
-	var en []byte
-	var err error
+	var res any
+	success := code >= 200 && code < 300
 
-	if data != nil {
-		en, err = json.Marshal(data)
-		if err != nil {
-			return err
+	if success || data != nil {
+		res = data
+	} else {
+		var (
+			message string
+			details []string
+		)
+		if len(args) > 0 {
+			message = args[0]
+			if len(args) > 10 {
+				details = args[1:10]
+			} else {
+				details = args[1:]
+			}
 		}
-	}
 
-	var message string
-	if len(args) > 0 {
-		message = args[0]
-	}
-
-	res := model.Response{
-		Success: code >= 200 && code < 300,
-		Data:    en,
-		Message: message, // fix later
+		res = model.Error{
+			Code:    code,
+			Message: message,
+			Details: details,
+		}
 	}
 	return json.NewEncoder(w).Encode(res)
 }

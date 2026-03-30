@@ -65,3 +65,7 @@ func (r *Repository) GetSongsByGenre(ctx context.Context, genre string) ([]model
 func (r *Repository) PutSong(ctx context.Context, id uuid.UUID, u *model.Song) (uuid.UUID, error) {
 	return uuid.Nil, nil
 }
+
+func (r *Repository) SearchSongs(ctx context.Context) ([]model.Song, error) {
+	return nil, nil
+}

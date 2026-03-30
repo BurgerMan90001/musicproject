@@ -33,3 +33,16 @@ type SongPlayer struct {
 	SongID    int     `json:"songId"`
 	TimeStamp float64 `json:"timeStamp"`
 }
+
+
+
+
+
+
+
+
+
+
+
+
+

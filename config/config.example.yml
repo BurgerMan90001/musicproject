@@ -13,10 +13,17 @@ services:
       google:
         clientID: ...
         clientSecret: ...
-        redirectURL: http://localhost:8081/auth/google/redirect
+        redirectURL: http://localhost:8081/v1/auth/google/redirect
         scopes:
           - https://www.googleapis.com/auth/userinfo.email
           - https://www.googleapis.com/auth/userinfo.profile
 
+middleware:
+  ratelimit: true
+
 repository:
-  url: ...
+  postgres:
+    image: postgres:alpine
+    database: musicproject
+    username: postgres
+    password: ...

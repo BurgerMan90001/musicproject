@@ -7,16 +7,17 @@ import (
 )
 
 var (
-	ErrInvalidPassword  = errors.New("password must be at least 8 characters, contain uppercase, lowercase, number, and special character")
-	ErrMismatchPassword = errors.New("incorrect password")
-	ErrInvalidEmail     = errors.New("invalid email")
+	ErrInvalidPassword  = errors.New("Password must be at least 8 characters, contain uppercase, lowercase, number, and special character")
+	ErrMismatchPassword = errors.New("Incorrect password")
+	ErrInvalidEmail     = errors.New("Invalid email")
+	ErrIncorrectLogin   = errors.New("Incorrect password or email")
 
-	ErrInvalidToken            = errors.New("invalid token")
-	ErrNoAccessToken           = errors.New("no access token cookie")
-	ErrNoRefeshToken           = errors.New("no access token cookie")
+	ErrInvalidToken            = errors.New("Invalid token")
+	ErrNoAccessToken           = errors.New("No access token cookie")
+	ErrNoRefeshToken           = errors.New("No access token cookie")
 	ErrTokenExpired            = jwt.ErrTokenExpired
-	ErrInvalidTokenType        = errors.New("invalid token type")
-	ErrUnexpectedSigningMethod = errors.New("unexpected signing method")
+	ErrInvalidTokenType        = errors.New("Invalid token type")
+	ErrUnexpectedSigningMethod = errors.New("Unexpected signing method")
 
-	ErrUserAlreadyExists = errors.New("user already exists")
+	ErrUserAlreadyExists = errors.New("User already exists")
 )

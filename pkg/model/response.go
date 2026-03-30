@@ -1,10 +1,11 @@
 package model
 
-import "encoding/json"
-
-type Response struct {
-	Success bool            `json:"success"`
-	Data    json.RawMessage `json:"data,omitempty"`
-	Message string          `json:"message,omitempty"`
+type Error struct {
+	Code    int      `json:"code"`
+	Message string   `json:"message,omitempty"`
+	Details []string `json:"details,omitempty"`
 }
 
+type Health struct {
+	Message string `json:"message,omitempty"`
+}

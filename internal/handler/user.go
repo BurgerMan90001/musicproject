@@ -7,7 +7,15 @@ import (
 	"musicproject.com/internal/repository"
 )
 
-func HandleUserID(repo repository.Repository) http.HandlerFunc {
+func HandleUsers(repo repository.Repository) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			MethodNotAllowedError(w)
+			return
+		}
+	}
+}
+func HandleUsersID(repo repository.Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(r.PathValue("id"))
 		if err != nil {
@@ -32,6 +40,7 @@ func HandleUserID(repo repository.Repository) http.HandlerFunc {
 				}
 				return
 			}
+			user.PasswordHash = ""
 			WriteJSON(w, user, http.StatusOK)
 
 		case http.MethodDelete:

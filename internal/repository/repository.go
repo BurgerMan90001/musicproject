@@ -21,6 +21,9 @@ type Repository interface {
 	GetSongsByGenre(ctx context.Context, genre string) ([]model.Song, error)
 	PutSong(ctx context.Context, songId uuid.UUID, song *model.Song) (uuid.UUID, error)
 
+	SearchSongs(ctx context.Context) ([]model.Song, error)
+
 	GetToken(ctx context.Context, tokenString string) error
 	PutToken(ctx context.Context, tokenString string) error
+	DeleteToken(ctx context.Context, tokenString string) error
 }
