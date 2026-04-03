@@ -7,7 +7,6 @@ import (
 
 	"musicproject.com/config"
 	"musicproject.com/internal/repository"
-	"musicproject.com/internal/services"
 	"musicproject.com/pkg/model"
 )
 
@@ -20,21 +19,22 @@ var ExpiresInOneDay = time.Now().Add(time.Hour * 24)
 var ExpiresInOneHour = time.Now().Add(time.Hour * 24)
 
 type Service struct {
-	cfg  config.Auth
-	repo repository.Repository
+	cfg      config.Auth
+	userRepo repository.User
 
-	JWT    services.JWT
-	Google services.Oauth
+	JWT    *JWTService
+	Google Oauth
 }
 
-func New(cfg config.Auth, repo repository.Repository) *Service {
+func New(cfg config.Auth, repo repository.User) *Service {
 	google := NewGoogle(cfg.Oauth.Google)
-	JWT := NewJWTService(cfg.JWT)
+
+	JWT := NewJWTService(cfg.Jwt)
 	return &Service{cfg, repo, JWT, google}
 }
 
 func (s *Service) Signup(ctx context.Context, email string, password string) (*model.User, *model.TokenPair, error) {
-	u, err := s.repo.GetUserByEmail(ctx, email)
+	u, err := s.userRepo.GetByEmail(ctx, email)
 	// if a user with that email is found
 	if u != nil {
 		return nil, nil, ErrUserAlreadyExists
@@ -51,27 +51,30 @@ func (s *Service) Signup(ctx context.Context, email string, password string) (*m
 	if err != nil {
 		return nil, nil, ErrInvalidPassword
 	}
+	user := &model.User{
+		Email:        email,
+		PasswordHash: passwordHash,
+	}
 	// Add the new user
-	userId, err := s.repo.PutUser(ctx, email, passwordHash)
+	userId, err := s.userRepo.Put(ctx, user)
 	if err != nil {
 		return nil, nil, err
 	}
+	// Set password to empty and set user id
+	user.ID = userId
+	user.PasswordHash = ""
 
 	// Generate token pair
 	tokenPair, err := s.JWT.GenerateTokenPair(userId)
 	if err != nil {
 		return nil, nil, err
 	}
-	user := &model.User{
-		ID:    userId,
-		Email: email,
-	}
 
 	return user, tokenPair, nil
 }
 
 func (s *Service) Login(ctx context.Context, email string, password string) (*model.User, *model.TokenPair, error) {
-	user, err := s.repo.GetUserByEmail(ctx, email)
+	user, err := s.userRepo.GetByEmail(ctx, email)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -91,6 +94,16 @@ func (s *Service) Login(ctx context.Context, email string, password string) (*mo
 	return user, pair, nil
 }
 
-func (s *Service) Logout(ctx context.Context) {
+func (s *Service) Logout(ctx context.Context, refeshToken string) error {
 
+	return nil
+}
+
+func (s *Service) Refresh(ctx context.Context, refeshToken string) (*model.TokenPair, error) {
+	tokenPair, err := s.JWT.refreshTokens(ctx, refeshToken)
+	if err != nil {
+		return nil, err
+	}
+
+	return tokenPair, nil
 }

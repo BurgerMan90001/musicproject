@@ -14,7 +14,7 @@ func WriteJSON(w http.ResponseWriter, data any, code int, args ...string) error 
 	var res any
 	success := code >= 200 && code < 300
 
-	if success || data != nil {
+	if success {
 		res = data
 	} else {
 		var (

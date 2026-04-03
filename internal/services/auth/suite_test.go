@@ -6,38 +6,31 @@ import (
 
 	"github.com/stretchr/testify/suite"
 	"musicproject.com/config"
-	"musicproject.com/internal/repository"
-	"musicproject.com/internal/repository/postgres"
-	"musicproject.com/internal/services"
-	"musicproject.com/pkg/testutil"
+	"musicproject.com/internal/repository/memory"
 )
 
 type testSuite struct {
 	suite.Suite
 	ctx context.Context
-	pg          *testutil.PostgresContainer
-	repo        repository.Repository
-	authService services.Auth
+	//pg          *testutil.PostgresContainer
+	authService *Service
 }
 
 func (s *testSuite) SetupTest() {
+	//t := s.T()
 
 	s.ctx = context.Background()
 
-	cfg := config.LoadConfig()
+	cfg, err := config.LoadConfig()
+	s.Require().NoError(err)
 
-	pg, err := testutil.NewPostgresContainer(s.ctx, cfg.Repository.Postgres)
-	if err != nil {
-		panic(err)
-	}
-	s.pg = pg
-	s.repo = postgres.New(s.pg.URL)
+	//db, _ := postgres.NewTestDB(t, s.ctx, cfg.Repository.Postgres)
 
-	s.authService = New(cfg.Services.Auth, s.repo)
+	userRepo := memory.NewUser()
+	s.authService = New(cfg.Services.Auth, userRepo)
 }
 func (s *testSuite) TearDownSuite() {
-	err := s.pg.Terminate(s.ctx)
-	s.Require().NoError(err)
+
 }
 func TestSuite(t *testing.T) {
 	suite.Run(t, new(testSuite))

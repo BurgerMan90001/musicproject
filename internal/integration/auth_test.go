@@ -144,7 +144,7 @@ func (s *testSuite) TestSignup() {
 			if tt.WantMessage != "" || resBody["message"] != nil {
 				s.Equal(tt.WantMessage, resBody["message"], tt.Name)
 			}
-			
+
 			s.Empty(resBody["password"], tt.Name)
 			s.Equal(tt.WantCode, w.Code, tt.Name)
 

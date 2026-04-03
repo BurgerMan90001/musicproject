@@ -9,8 +9,8 @@ func HandleArtists() http.HandlerFunc {
 		case http.MethodGet:
 			//artist, err
 		default:
-			w.WriteHeader(http.StatusMethodNotAllowed)
 
+			MethodNotAllowedError(w)
 		}
 	}
 }

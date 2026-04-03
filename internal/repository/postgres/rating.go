@@ -10,12 +10,16 @@ import (
 	"musicproject.com/pkg/model"
 )
 
-// type Rating struct {
-// 	db *sql.DB
-// }
+type Rating struct {
+	db *sql.DB
+}
+
+func NewRating(db *sql.DB) *Rating {
+	return &Rating{db}
+}
 
 // Song rating methods
-func (r *Repository) GetRatings(ctx context.Context, songId uuid.UUID) ([]model.Rating, error) {
+func (r *Rating) GetRatings(ctx context.Context, songId uuid.UUID) ([]model.Rating, error) {
 	query := "SELECT user_id, value FROM ratings WHERE song_id=$1"
 	rows, err := r.db.QueryContext(ctx, query, songId)
 	if err != nil {
@@ -51,7 +55,7 @@ func (r *Repository) GetRatings(ctx context.Context, songId uuid.UUID) ([]model.
 
 	return ratings, nil
 }
-func (r *Repository) PutRating(ctx context.Context, songId uuid.UUID, userId uuid.UUID, value float64) error {
+func (r *Rating) PutRating(ctx context.Context, songId uuid.UUID, userId uuid.UUID, value float64) error {
 	query := "INSERT INTO ratings (song_id, user_id, value) VALUES($1, $2, $3) RETURNING  "
 	_, err := r.db.ExecContext(ctx, query, songId, userId, value)
 

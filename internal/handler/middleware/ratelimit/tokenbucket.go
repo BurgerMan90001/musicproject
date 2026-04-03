@@ -1,21 +1,9 @@
 package ratelimit
 
 import (
-	"net/http"
 	"sync"
 	"time"
 )
-
-type RateLimiter interface {
-	Allow(key string) Result
-}
-
-type Result struct {
-	Allowed   bool
-	Remaining int
-	ResetAt   time.Time
-	RetryAt   time.Time
-}
 
 type TokenBucket struct {
 	sync.Mutex
@@ -71,10 +59,4 @@ func (tb *TokenBucket) Allow(key string) Result {
 		Allowed:   true,
 		Remaining: int(b.tokens),
 	}
-}
-func KeyFunc(r *http.Request) string {
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		return xff
-	}
-	return r.RemoteAddr
 }

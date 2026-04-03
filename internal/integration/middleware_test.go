@@ -11,9 +11,8 @@ import (
 )
 
 func (s *testSuite) TestAuthMiddleware() {
-
 	url := "/v1/protected"
-	jwtService := auth.NewJWTService(s.cfg.Services.Auth.JWT)
+	jwtService := auth.NewJWTService(s.cfg.Services.Auth.Jwt)
 
 	tests := []struct {
 		name        string
@@ -47,7 +46,6 @@ func (s *testSuite) TestAuthMiddleware() {
 	}
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-
 			tokenString, err := jwtService.GenerateToken(tt.userId, tt.tokenType, tt.tokenExpireAt)
 			s.Require().NoError(err)
 

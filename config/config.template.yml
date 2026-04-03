@@ -17,6 +17,11 @@ services:
         scopes:
           - https://www.googleapis.com/auth/userinfo.email
           - https://www.googleapis.com/auth/userinfo.profile
+  smtp:
+    host: ...
+    port: ...
+    email: ...
+    password: ...
 
 middleware:
   ratelimit: true
@@ -24,6 +29,9 @@ middleware:
 repository:
   postgres:
     image: postgres:alpine
-    database: musicproject
     username: postgres
     password: ...
+    host: localhost
+    database: musicproject
+
+aws:

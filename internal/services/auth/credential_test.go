@@ -1,6 +1,13 @@
 package auth
 
-func (s *testSuite) TestValidatePassword() {
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestValidatePassword(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		password string
@@ -14,14 +21,15 @@ func (s *testSuite) TestValidatePassword() {
 	}
 
 	for _, tt := range tests {
-		s.Run(tt.name, func() {
+		t.Run(tt.name, func(t *testing.T) {
 			err := validatePassword(tt.password)
-			s.Equal(tt.wantErr, err, tt.name)
+			assert.ErrorIs(t, tt.wantErr, err, tt.name)
 		})
 	}
 }
 
-func (s *testSuite) TestValidateEmail() {
+func TestValidateEmail(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		email   string
@@ -33,9 +41,9 @@ func (s *testSuite) TestValidateEmail() {
 	}
 
 	for _, tt := range tests {
-		s.Run(tt.name, func() {
+		t.Run(tt.name, func(t *testing.T) {
 			err := validateEmail(tt.email)
-			s.Equal(tt.wantErr, err, tt.name)
+			assert.ErrorIs(t, tt.wantErr, err, tt.name)
 		})
 	}
 }

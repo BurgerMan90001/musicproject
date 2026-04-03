@@ -10,7 +10,6 @@ import (
 )
 
 func (s *testSuite) TestHandleUserID() {
-
 	URL := "/v1/users/"
 	validId, err := uuid.Parse("019d34f7-0124-7cd5-8e49-cbfce4c76de4")
 	s.Require().NoError(err)
@@ -52,17 +51,12 @@ func (s *testSuite) TestHandleUserID() {
 			resBody, err := model.ReadJSON[map[string]any](w.Result().Body)
 			s.Require().NoError(err)
 
-			// var data map[string]string
-			// json.Unmarshal(resBody.Data, &data)
-
-			//s.HTTPBodyContains(handler.HandleUserID(s.repo), tt.method, URL +, v, tt.wantMessage)
-			//s.Contains(resBody["message"], tt.wantMessage)
 			if resBody["message"] != nil {
 				s.Equal(tt.wantMessage, resBody["message"])
 			}
 			s.Nil(resBody["password"])
-			if resBody["userId"] != nil {
 
+			if resBody["userId"] != nil {
 				s.Equal(tt.userId.String(), resBody["userId"])
 			}
 

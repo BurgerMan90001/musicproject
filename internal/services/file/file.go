@@ -2,23 +2,16 @@ package file
 
 import (
 	"context"
-
-	"musicproject.com/internal/repository"
-	"musicproject.com/pkg/model"
 )
 
-type Service struct {
-	repo repository.Repository
-}
+const (
+	ContentTypeTextPlain = "text/plain"
+	ContentTypeZip       = "application/zip"
+)
 
-func New() *Service {
-	return &Service{}
-}
-
-func (s *Service) UploadSong(ctx context.Context, song *model.Song) error {
-	return nil
-}
-func (s *Service) Backup(ctx context.Context) error {
-	return nil
-
+type Blobstore interface {
+	CreateObject(ctx context.Context, parent string, name string,
+		contents []byte, cacheble bool, contentType string) error
+	GetObject(ctx context.Context, parent string, name string) ([]byte, error)
+	DeleteObject(Ctx context.Context, parrent string, name string) error
 }

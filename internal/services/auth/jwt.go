@@ -11,20 +11,20 @@ import (
 	"musicproject.com/pkg/model"
 )
 
-type JWT struct {
+type JWTService struct {
 	issuer     string
 	accessKey  []byte
 	refreshKey []byte
 }
 
-func NewJWTService(cfg config.JWT) *JWT {
-	return &JWT{
+func NewJWTService(cfg config.Jwt) *JWTService {
+	return &JWTService{
 		issuer:     cfg.Issuer,
 		accessKey:  []byte(cfg.AccessKey),
 		refreshKey: []byte(cfg.RefreshKey),
 	}
 }
-func (s *JWT) GenerateToken(userId uuid.UUID, tokenType string, expireAt time.Time) (string, error) {
+func (s *JWTService) GenerateToken(userId uuid.UUID, tokenType string, expireAt time.Time) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &model.Claims{
 		UserID:    userId,
 		TokenType: tokenType,
@@ -39,6 +39,11 @@ func (s *JWT) GenerateToken(userId uuid.UUID, tokenType string, expireAt time.Ti
 	if err != nil {
 		return "", err
 	}
+	day := time.Now().Weekday()
+	switch day {
+	case time.Thursday:
+
+	}
 
 	tokenString, err := token.SignedString(key)
 	if err != nil {
@@ -48,7 +53,7 @@ func (s *JWT) GenerateToken(userId uuid.UUID, tokenType string, expireAt time.Ti
 	return tokenString, nil
 }
 
-func (s *JWT) GenerateTokenPair(userId uuid.UUID) (*model.TokenPair, error) {
+func (s *JWTService) GenerateTokenPair(userId uuid.UUID) (*model.TokenPair, error) {
 	accessToken, err := s.GenerateToken(userId, TokenAccess, ExpiresInOneHour)
 	if err != nil {
 		return nil, err
@@ -64,7 +69,7 @@ func (s *JWT) GenerateTokenPair(userId uuid.UUID) (*model.TokenPair, error) {
 		RefreshToken: refreshToken,
 	}, nil
 }
-func (s *JWT) ParseToken(tokenString string, tokenType string) (*jwt.Token, error) {
+func (s *JWTService) ParseToken(tokenString string, tokenType string) (*jwt.Token, error) {
 	key, err := s.keyFunc(tokenType)
 	if err != nil {
 		return nil, err
@@ -90,7 +95,7 @@ func (s *JWT) ParseToken(tokenString string, tokenType string) (*jwt.Token, erro
 	return token, nil
 }
 
-func (s *JWT) ParseAccessToken(accessToken string) (*model.Claims, error) {
+func (s *JWTService) ParseAccessToken(accessToken string) (*model.Claims, error) {
 	token, err := s.ParseToken(accessToken, TokenAccess)
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
@@ -111,8 +116,8 @@ func (s *JWT) ParseAccessToken(accessToken string) (*model.Claims, error) {
 	}
 }
 
-func (s *JWT) RefreshTokens(ctx context.Context, tokenString string) (*model.TokenPair, error) {
-	token, err := s.ParseToken(tokenString, TokenRefresh)
+func (s *JWTService) refreshTokens(ctx context.Context, refeshToken string) (*model.TokenPair, error) {
+	token, err := s.ParseToken(refeshToken, TokenRefresh)
 	if err != nil {
 		return nil, err
 	}
@@ -130,11 +135,11 @@ func (s *JWT) RefreshTokens(ctx context.Context, tokenString string) (*model.Tok
 
 	return s.GenerateTokenPair(claims.UserID)
 }
-func (s *JWT) RevokeToken(ctx context.Context, tokenString string) error {
+func (s *JWTService) RevokeToken(ctx context.Context, tokenString string) error {
 	return nil
 }
 
-func (s *JWT) keyFunc(tokenType string) ([]byte, error) {
+func (s *JWTService) keyFunc(tokenType string) ([]byte, error) {
 	switch tokenType {
 	case TokenAccess:
 		return s.accessKey, nil

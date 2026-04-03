@@ -6,13 +6,14 @@ import (
 
 	"github.com/google/uuid"
 	"musicproject.com/internal/repository"
+	"musicproject.com/pkg/model"
 )
 
 type Service struct {
-	repo repository.Repository
+	repo repository.Rating
 }
 
-func New(repo repository.Repository) *Service {
+func New(repo repository.Rating) *Service {
 	return &Service{repo: repo}
 }
 
@@ -33,5 +34,11 @@ func (s *Service) GetAggregatedRating(ctx context.Context, songId uuid.UUID) (fl
 }
 
 func (c *Service) PutRating(ctx context.Context, songId uuid.UUID, userId uuid.UUID, value float64) error {
-	return c.repo.PutRating(ctx, songId, userId, value)
+	song := &model.Rating{
+		SongID: songId,
+		UserID: userId,
+		Value:  value,
+	}
+	_, err := c.repo.Put(ctx, song)
+	return err
 }

@@ -8,6 +8,3 @@ build:
 run:
 	docker run -p 8081:8081 musicproject/server
 #cd config && sh ./main
-
-test:
-	go test ./...

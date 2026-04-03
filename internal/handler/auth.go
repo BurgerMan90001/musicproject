@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"musicproject.com/internal/repository"
-	"musicproject.com/internal/services"
 	"musicproject.com/internal/services/auth"
 	"musicproject.com/pkg/model"
 )
@@ -16,28 +15,28 @@ const (
 )
 
 func setTokenPair(w http.ResponseWriter, tokenPair *model.TokenPair) {
-	
+
 	accessCookie := &http.Cookie{
 		Name:  AccessCookie,
 		Value: tokenPair.AccessToken,
 
-		Path: "/",
+		Path:     "/v1/auth/refresh",
 		HttpOnly: true,
-		Secure: true,
+		Secure:   true,
 	}
 	refreshCookie := &http.Cookie{
 		Name:  RefreshCookie,
 		Value: tokenPair.RefreshToken,
 
-		Path: "/",
+		Path:     "/",
 		HttpOnly: true,
-		Secure: true,
+		Secure:   true,
 	}
 	http.SetCookie(w, accessCookie)
 	http.SetCookie(w, refreshCookie)
 }
 
-func HandleSignup(authService services.Auth) http.HandlerFunc {
+func handleSignup(authService *auth.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			WriteError(w, ErrInvalidMethod, http.StatusMethodNotAllowed)
@@ -70,7 +69,7 @@ func HandleSignup(authService services.Auth) http.HandlerFunc {
 	}
 }
 
-func HandleLogin(authService services.Auth) http.HandlerFunc {
+func HandleLogin(authService *auth.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			MethodNotAllowedError(w)
@@ -102,26 +101,34 @@ func HandleLogin(authService services.Auth) http.HandlerFunc {
 	}
 }
 
-func HandleRefresh(jwtService services.JWT) http.HandlerFunc {
+func HandleRefresh(authService *auth.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			MethodNotAllowedError(w)
 			return
 		}
 
+		var refreshToken string
+
 		cookie, err := r.Cookie(RefreshCookie)
-		if err != nil {
-			switch err {
-			case http.ErrNoCookie:
+		if err == nil {
+			refreshToken = cookie.Value
+		} else {
+			body, err := model.ReadJSON[model.RefreshRequest](r.Body)
+			if err != nil {
 				WriteError(w, auth.ErrNoRefeshToken, http.StatusBadRequest)
-			default:
-				WriteError(w, err, http.StatusBadRequest)
 			}
-			return
+			refreshToken = body.RefreshToken
 		}
+
+		// if refreshToken == "" {
+		// 	WriteError(w, auth.ErrNoRefeshToken, http.StatusBadRequest)
+		// 	return
+		// }
+
 		ctx := r.Context()
 
-		tokenPair, err := jwtService.RefreshTokens(ctx, cookie.Value)
+		tokenPair, err := authService.Refresh(ctx, refreshToken)
 		if err != nil {
 			WriteError(w, err, http.StatusBadRequest)
 			return
@@ -130,32 +137,58 @@ func HandleRefresh(jwtService services.JWT) http.HandlerFunc {
 	}
 }
 
-func HandleLogout(authService services.Auth) http.HandlerFunc {
+func HandleLogout(authService auth.JWTService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			MethodNotAllowedError(w)
 			return
 		}
 		ctx := r.Context()
-		authService.Logout(ctx)
-		WriteJSON(w, nil, http.StatusOK)
+		cookie, err := r.Cookie(AccessCookie)
+		if err != nil {
+			WriteError(w, err, http.StatusBadRequest)
+			return
+		}
+
+		if err := authService.RevokeToken(ctx, cookie.Value); err != nil {
+			WriteError(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		//authService.Logout(ctx)
+
+		// Clear the cookie
+		http.SetCookie(w, &http.Cookie{
+			Name:     RefreshCookie,
+			Value:    "",
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteStrictMode,
+			Path:     "/v1/auth/refresh",
+			MaxAge:   -1,
+		})
+
+		WriteJSON(w, nil, http.StatusNoContent)
 	}
 }
 func HandleEmailReset() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
+			MethodNotAllowedError(w)
+			return
 		}
+
 	}
 }
 
 /* Oauth handler functions */
-func HandleOauthLogin(oauth services.Oauth) http.HandlerFunc {
+func HandleOauthLogin(oauth auth.Oauth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		url := oauth.RedirectURL(w)
 		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 	}
 }
-func HandleOauthGoogleRedirect(oauth services.Oauth) http.HandlerFunc {
+func HandleOauthGoogleRedirect(oauth auth.Oauth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		code := r.FormValue("code")
 		state := r.FormValue("state")
@@ -171,8 +204,6 @@ func HandleOauthGoogleRedirect(oauth services.Oauth) http.HandlerFunc {
 
 		user, tokenPair, err := oauth.Login(ctx, code)
 		if err != nil {
-			//w.WriteHeader(http.StatusInternalServerError)
-			//log.Printf("unable to extchange token: %v", err)
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}

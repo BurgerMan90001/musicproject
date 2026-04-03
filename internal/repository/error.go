@@ -6,4 +6,5 @@ import (
 
 var (
 	ErrNotFound = errors.New("not found")
+	ErrNilRepo  = errors.New("repo in context is nil")
 )

@@ -10,11 +10,15 @@ import (
 	"musicproject.com/pkg/model"
 )
 
-// type Song struct {
-// 	db *sql.DB
-// }
+type Song struct {
+	db *sql.DB
+}
 
-func (r *Repository) GetSongByID(ctx context.Context, songId uuid.UUID) (*model.Song, error) {
+func NewSong(db *sql.DB) *Song {
+	return &Song{db}
+}
+
+func (r *Song) GetByID(ctx context.Context, songId uuid.UUID) (*model.Song, error) {
 	var (
 		name         string
 		genre        string
@@ -43,7 +47,7 @@ func (r *Repository) GetSongByID(ctx context.Context, songId uuid.UUID) (*model.
 	}
 	return song, nil
 }
-func (r *Repository) GetSongsByGenre(ctx context.Context, genre string) ([]model.Song, error) {
+func (r *Song) GetSongsByGenre(ctx context.Context, genre string) ([]model.Song, error) {
 	query := "SELECT id, WHERE genre=$1"
 	rows, err := r.db.QueryContext(ctx, query, genre)
 	if err != nil {
@@ -62,10 +66,14 @@ func (r *Repository) GetSongsByGenre(ctx context.Context, genre string) ([]model
 	}
 	return nil, nil
 }
-func (r *Repository) PutSong(ctx context.Context, id uuid.UUID, u *model.Song) (uuid.UUID, error) {
+func (r *Song) Put(ctx context.Context, song *model.Song) (uuid.UUID, error) {
 	return uuid.Nil, nil
 }
+func (r *Song) DeleteByID(ctx context.Context, id uuid.UUID) error {
 
-func (r *Repository) SearchSongs(ctx context.Context) ([]model.Song, error) {
+	return nil
+}
+
+func (r *Song) SearchSongs(ctx context.Context) ([]model.Song, error) {
 	return nil, nil
 }

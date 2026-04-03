@@ -7,7 +7,7 @@ import (
 	"musicproject.com/internal/repository"
 )
 
-func HandleUsers(repo repository.Repository) http.HandlerFunc {
+func HandleUsers(repo repository.User) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			MethodNotAllowedError(w)
@@ -15,7 +15,7 @@ func HandleUsers(repo repository.Repository) http.HandlerFunc {
 		}
 	}
 }
-func HandleUsersID(repo repository.Repository) http.HandlerFunc {
+func HandleUsersID(repo repository.User) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(r.PathValue("id"))
 		if err != nil {
@@ -30,7 +30,8 @@ func HandleUsersID(repo repository.Repository) http.HandlerFunc {
 				InternalServerError(w, ErrNilRepo)
 				return
 			}
-			user, err := repo.GetUserByID(ctx, id)
+			user, err := repo.GetByID(ctx, id)
+
 			if err != nil {
 				switch err {
 				case repository.ErrNotFound:
@@ -54,7 +55,7 @@ func HandleUsersID(repo repository.Repository) http.HandlerFunc {
 				}
 			*/
 
-			err := repo.DeleteUserByID(ctx, id)
+			err := repo.DeleteByID(ctx, id)
 			if err != nil {
 				switch err {
 				case repository.ErrNotFound:

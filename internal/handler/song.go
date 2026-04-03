@@ -6,11 +6,12 @@ import (
 
 	"github.com/google/uuid"
 	"musicproject.com/internal/repository"
-	"musicproject.com/internal/services"
+	"musicproject.com/internal/services/file"
+	"musicproject.com/internal/services/rating"
 	"musicproject.com/pkg/model"
 )
 
-func HandleSongs(repo repository.Repository) http.HandlerFunc {
+func HandleSongs(repo repository.Song) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(r.PathValue("id"))
 		if err != nil {
@@ -18,11 +19,12 @@ func HandleSongs(repo repository.Repository) http.HandlerFunc {
 			return
 		}
 		ctx := r.Context()
+
 		// claims, ok := contextClaims(ctx)
 
 		switch r.Method {
 		case http.MethodGet:
-			song, err := repo.GetSongByID(ctx, id)
+			song, err := repo.GetByID(ctx, id)
 			if err != nil {
 				if errors.Is(err, repository.ErrNotFound) {
 					http.Error(w, err.Error(), http.StatusNotFound)
@@ -34,7 +36,7 @@ func HandleSongs(repo repository.Repository) http.HandlerFunc {
 			WriteJSON(w, song, http.StatusOK)
 
 		case http.MethodPut:
-			_, err := repo.PutSong(ctx, id, nil)
+			_, err := repo.Put(ctx, nil)
 			if err != nil {
 				InternalServerError(w, err)
 				return
@@ -45,9 +47,9 @@ func HandleSongs(repo repository.Repository) http.HandlerFunc {
 	}
 }
 
-func HandleSongRating(ratingService services.Rating) http.HandlerFunc {
+func HandleSongRating(ratingService *rating.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		songId, err := uuid.Parse(r.PathValue("id"))
+		songId, err := uuid.Parse(r.PathValue("songId"))
 		if err != nil {
 			WriteError(w, err, http.StatusBadRequest)
 			return
@@ -56,9 +58,24 @@ func HandleSongRating(ratingService services.Rating) http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodGet:
-			ratingService.GetAggregatedRating(ctx, songId)
+			aggregated, err := ratingService.GetAggregatedRating(ctx, songId)
+			if err != nil {
+				WriteError(w, err, http.StatusInternalServerError)
+				return
+			}
+			WriteJSON(w, aggregated, http.StatusOK)
 		case http.MethodPut:
-			//ratingService.PutRating(ctx, songId, uuid.Nil)
+			rating, err := model.ReadJSON[model.Rating](r.Body)
+			if err != nil {
+				WriteError(w, err, http.StatusBadRequest)
+				return
+			}
+			if err := ratingService.PutRating(ctx, songId, uuid.Nil, 0); err != nil {
+				WriteError(w, err, http.StatusInternalServerError)
+				return
+			}
+
+			WriteJSON(w, rating, http.StatusOK)
 
 		default:
 			MethodNotAllowedError(w)
@@ -66,29 +83,26 @@ func HandleSongRating(ratingService services.Rating) http.HandlerFunc {
 	}
 
 }
-func HandleSongUpload(fileService services.File) http.HandlerFunc {
+func HandleSongUpload(fileService *file.Song) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			MethodNotAllowedError(w)
 			return
 		}
-		ctx := r.Context()
-		file, _, err := r.FormFile("")
+		file, handler, err := r.FormFile("file")
 		if err != nil {
 			WriteError(w, err, http.StatusBadRequest)
 			return
 		}
 		defer file.Close()
 
-		song := &model.Song{
-			ID: uuid.Nil,
-		}
-		//handler.Header
+		ctx := r.Context()
 
-		if err := fileService.UploadSong(ctx, song); err != nil {
+		if err := fileService.UploadSong(ctx, file, handler); err != nil {
 			WriteError(w, err, http.StatusOK)
 			return
 		}
+		
 		// repo.PutSong(ctx, uuid.Nil, &model.Song{
 		// 	ID:     uuid.Nil,
 		// 	Source: "",

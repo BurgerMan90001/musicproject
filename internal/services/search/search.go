@@ -1,19 +1,16 @@
 package search
 
-import (
-	"context"
+import "context"
 
-	"musicproject.com/internal/repository"
-)
-
-type Service struct {
-	repo repository.Repository
+type Service interface {
+	Filter(ctx context.Context) error
 }
 
-func New(repo repository.Repository) *Service {
-	return &Service{repo: repo}
-}
+// func New(repo repository.Song) *Service {
 
-func (s *Service) Filter(ctx context.Context, query ...string) {
+// 	return &Service{repo: repo}
+// }
 
-}
+// func (s *Service) Filter(ctx context.Context, query ...string) {
+
+// }

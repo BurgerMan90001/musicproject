@@ -14,6 +14,11 @@ import (
 	"musicproject.com/pkg/model"
 )
 
+type Oauth interface {
+	Login(ctx context.Context, code string) (*model.User, *model.TokenPair, error)
+	RedirectURL(w http.ResponseWriter) string
+}
+
 type GoogleOauth struct {
 	cfg *oauth2.Config
 }
@@ -38,10 +43,6 @@ func (s *GoogleOauth) RedirectURL(w http.ResponseWriter) string {
 	url := s.cfg.AuthCodeURL(state, oauth2.AccessTypeOffline)
 	return url
 }
-
-// func (s *GoogleOauth) exchange(ctx context.Context, code string) (*oauth2.Token, error) {
-// 	return s.cfg.Exchange(ctx, code)
-// }
 
 func (s *GoogleOauth) getUserInfo(ctx context.Context, token *oauth2.Token) (*model.OauthUserInfo, error) {
 	client := s.cfg.Client(ctx, token)
@@ -79,9 +80,7 @@ func (s *GoogleOauth) validateStateCookie(r *http.Request) error {
 	stateCookie, err := r.Cookie("oauthState")
 	if state != stateCookie.Value || err != nil {
 		return errors.New("invalid google oauth state")
-		// log.Println("invalid google oauth state")
-		// http.Redirect(w, r, "/", http.StatusFound)
-		// return
+
 	}
 	return nil
 }

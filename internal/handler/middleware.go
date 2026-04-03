@@ -9,11 +9,12 @@ import (
 	"strconv"
 	"time"
 
-	"musicproject.com/internal/handler/ratelimit"
-	"musicproject.com/internal/services"
+	"musicproject.com/internal/handler/middleware/ratelimit"
 	"musicproject.com/internal/services/auth"
 	"musicproject.com/pkg/model"
 )
+
+//type Middleware func(next http.HandlerFunc) http.HandlerFunc
 
 func Logger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -37,20 +38,15 @@ func PanicRecovery(next http.Handler) http.Handler {
 	})
 }
 
-func AuthMiddleware(authService services.JWT, next http.HandlerFunc) http.HandlerFunc {
+func AuthMiddleware(jwtService *auth.JWTService, next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(AccessCookie)
 		if err != nil {
-			switch err {
-			case http.ErrNoCookie:
-				WriteError(w, auth.ErrNoAccessToken, http.StatusUnauthorized)
-			default:
-				WriteError(w, err, http.StatusBadRequest)
-			}
+			WriteError(w, auth.ErrNoAccessToken, http.StatusUnauthorized)
 			return
 		}
 
-		claims, err := authService.ParseAccessToken(cookie.Value)
+		claims, err := jwtService.ParseAccessToken(cookie.Value)
 		if err != nil {
 			WriteError(w, err, http.StatusUnauthorized)
 			return
@@ -68,7 +64,12 @@ func AuthMiddleware(authService services.JWT, next http.HandlerFunc) http.Handle
 }
 func RateLimitMiddleware(rl ratelimit.RateLimiter, next http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if rl == nil {
+			next.ServeHTTP(w, r)
+			return
+		}
 		key := ratelimit.KeyFunc(r)
+
 		result := rl.Allow(key)
 
 		w.Header().Set("X-RateLimit-Remaining", strconv.Itoa(result.Remaining))
@@ -77,15 +78,18 @@ func RateLimitMiddleware(rl ratelimit.RateLimiter, next http.Handler) http.Handl
 		}
 		if !result.Allowed {
 			w.Header().Set("Retry-After", fmt.Sprintf("%.0f", time.Until(result.RetryAt).Seconds()))
-			WriteError(w, ErrRateLimit, http.StatusTooManyRequests)
+			WriteError(w, ratelimit.ErrRateLimit, http.StatusTooManyRequests)
 			return
 		}
 		next.ServeHTTP(w, r)
 	}
 }
-func chainMiddleware(mw func(http.Handler) http.Handler) {
 
-}
+// type middleware func(next http.Handler) http.Handler
+
+// func chainMiddleware(mw middleware) {
+
+// }
 func contextClaims(ctx context.Context) (*model.Claims, bool) {
 	claims, ok := ctx.Value("claims").(*model.Claims)
 	return claims, ok
