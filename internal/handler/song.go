@@ -5,17 +5,18 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"musicproject.com/internal/jsonutil"
 	"musicproject.com/internal/repository"
-	"musicproject.com/internal/services/file"
 	"musicproject.com/internal/services/rating"
+	"musicproject.com/internal/services/song"
 	"musicproject.com/pkg/model"
 )
 
-func HandleSongs(repo repository.Song) http.HandlerFunc {
+func HandleSongsMetadata(repo repository.Song) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(r.PathValue("id"))
 		if err != nil {
-			WriteError(w, err, http.StatusBadRequest)
+			jsonutil.WriteError(w, err, http.StatusBadRequest)
 			return
 		}
 		ctx := r.Context()
@@ -30,10 +31,10 @@ func HandleSongs(repo repository.Song) http.HandlerFunc {
 					http.Error(w, err.Error(), http.StatusNotFound)
 					return
 				}
-				WriteError(w, ErrInternalServerError, http.StatusInternalServerError)
+				InternalServerError(w, err)
 				return
 			}
-			WriteJSON(w, song, http.StatusOK)
+			jsonutil.WriteJSON(w, song, http.StatusOK)
 
 		case http.MethodPut:
 			_, err := repo.Put(ctx, nil)
@@ -51,7 +52,7 @@ func HandleSongRating(ratingService *rating.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		songId, err := uuid.Parse(r.PathValue("songId"))
 		if err != nil {
-			WriteError(w, err, http.StatusBadRequest)
+			jsonutil.WriteError(w, err, http.StatusBadRequest)
 			return
 		}
 		ctx := r.Context()
@@ -60,30 +61,30 @@ func HandleSongRating(ratingService *rating.Service) http.HandlerFunc {
 		case http.MethodGet:
 			aggregated, err := ratingService.GetAggregatedRating(ctx, songId)
 			if err != nil {
-				WriteError(w, err, http.StatusInternalServerError)
+				jsonutil.WriteError(w, err, http.StatusInternalServerError)
 				return
 			}
-			WriteJSON(w, aggregated, http.StatusOK)
+			jsonutil.WriteJSON(w, aggregated, http.StatusOK)
 		case http.MethodPut:
-			rating, err := model.ReadJSON[model.Rating](r.Body)
+			rating, err := jsonutil.ReadJSON[model.Rating](r.Body)
 			if err != nil {
-				WriteError(w, err, http.StatusBadRequest)
+				jsonutil.WriteError(w, err, http.StatusBadRequest)
 				return
 			}
 			if err := ratingService.PutRating(ctx, songId, uuid.Nil, 0); err != nil {
-				WriteError(w, err, http.StatusInternalServerError)
+				jsonutil.WriteError(w, err, http.StatusInternalServerError)
 				return
 			}
 
-			WriteJSON(w, rating, http.StatusOK)
+			jsonutil.WriteJSON(w, rating, http.StatusOK)
 
 		default:
 			MethodNotAllowedError(w)
 		}
 	}
-
 }
-func HandleSongUpload(fileService *file.Song) http.HandlerFunc {
+
+func HandleSongUpload(songService *song.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			MethodNotAllowedError(w)
@@ -91,23 +92,20 @@ func HandleSongUpload(fileService *file.Song) http.HandlerFunc {
 		}
 		file, handler, err := r.FormFile("file")
 		if err != nil {
-			WriteError(w, err, http.StatusBadRequest)
+			jsonutil.WriteError(w, err, http.StatusBadRequest)
 			return
 		}
 		defer file.Close()
 
+		songRequest, err := jsonutil.ReadJSON[model.UploadSongRequest](r.Body)
+
 		ctx := r.Context()
 
-		if err := fileService.UploadSong(ctx, file, handler); err != nil {
-			WriteError(w, err, http.StatusOK)
+		song, err := songService.UploadSong(ctx, file, handler, songRequest)
+		if err != nil {
+			jsonutil.WriteError(w, err, http.StatusOK)
 			return
 		}
-		
-		// repo.PutSong(ctx, uuid.Nil, &model.Song{
-		// 	ID:     uuid.Nil,
-		// 	Source: "",
-		// })
-
-		// Save file
+		jsonutil.WriteJSON(w, song, http.StatusCreated)
 	}
 }

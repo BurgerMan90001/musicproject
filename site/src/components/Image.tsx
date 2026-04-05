@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+
 function useImgURL(URL: string) {
   const [imgURL, setImgURL] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -18,7 +19,7 @@ function useImgURL(URL: string) {
       .catch((error) => setError(error))
       .finally(() => setLoading(false));
   }, []);
-  
+
   return { imgURL, error, loading };
 }
 function Image({ URL }: { URL: string }) {

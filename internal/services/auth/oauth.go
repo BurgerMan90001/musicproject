@@ -10,7 +10,8 @@ import (
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	"musicproject.com/config"
+	"musicproject.com/internal/config"
+	"musicproject.com/internal/config/secrets"
 	"musicproject.com/pkg/model"
 )
 
@@ -23,17 +24,24 @@ type GoogleOauth struct {
 	cfg *oauth2.Config
 }
 
-func NewGoogle(cfg config.Google) *GoogleOauth {
+func NewGoogle(ctx context.Context, cfg config.Google, sm secrets.Manager) (*GoogleOauth, error) {
+	var (
+		clientId, clientErr     = sm.Get(ctx, "GOOGLE_OAUTH_CLIENT_ID")
+		clientSecret, secretErr = sm.Get(ctx, "GOOGLE_OAUTH_CLIENT_SECRET")
+	)
+	if err := errors.Join(clientErr, secretErr); err != nil {
+		return nil, err
+	}
 	return &GoogleOauth{&oauth2.Config{
-		ClientID:     cfg.ClientID,
-		ClientSecret: cfg.ClientSecret,
+		ClientID:     clientId,
+		ClientSecret: clientSecret,
 		RedirectURL:  cfg.RedirectURL,
 		Scopes:       cfg.Scopes,
 		Endpoint:     google.Endpoint,
-	}}
+	}}, nil
 }
 func (s *GoogleOauth) Login(ctx context.Context, code string) (*model.User, *model.TokenPair, error) {
-
+	s.getUserInfo(ctx, &oauth2.Token{})
 	return nil, nil, nil
 }
 

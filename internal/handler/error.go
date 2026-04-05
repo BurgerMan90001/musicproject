@@ -4,24 +4,26 @@ import (
 	"errors"
 	"log"
 	"net/http"
+
+	"musicproject.com/internal/jsonutil"
 )
 
 var (
 	ErrInvalidMethod       = errors.New("method not allowed")
 	ErrInternalServerError = errors.New("internal server error")
-	ErrNilRepo             = errors.New("repository is nil")
+	//ErrNilRepo             = errors.New("repository is nil")
 	ErrInvalidRequestBody  = errors.New("Invalid request body")
 )
 
 func MethodNotAllowedError(w http.ResponseWriter) {
-	WriteError(w, ErrInvalidMethod, http.StatusMethodNotAllowed)
+	jsonutil.WriteError(w, ErrInvalidMethod, http.StatusMethodNotAllowed)
 }
 
 func NotFoundError(w http.ResponseWriter, reason error) {
-	WriteError(w, reason, http.StatusNotFound)
+	jsonutil.WriteError(w, reason, http.StatusNotFound)
 }
 
 func InternalServerError(w http.ResponseWriter, err error) {
 	log.Printf("internal server error: %v", err)
-	WriteError(w, err, http.StatusInternalServerError)
+	jsonutil.WriteError(w, err, http.StatusInternalServerError)
 }

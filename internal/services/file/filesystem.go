@@ -2,12 +2,14 @@ package file
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 )
 
-type FileSystem struct {
-}
+var _ Blobstore = (*FileSystem)(nil)
+
+type FileSystem struct{}
 
 func NewFileSystem() *FileSystem {
 	return &FileSystem{}
@@ -17,7 +19,7 @@ func (s *FileSystem) CreateObject(ctx context.Context, folder string, filename s
 	contents []byte, cacheble bool, contentType string) error {
 	path := filepath.Join(folder, filename)
 	if err := os.WriteFile(path, contents, 0o600); err != nil {
-		return err
+		return fmt.Errorf("Create object: %w", err)
 	}
 	return nil
 }

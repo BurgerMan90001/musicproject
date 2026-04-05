@@ -19,7 +19,7 @@ type RefreshRequest struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
-type ResetRequest struct {
+type EmailResetRequest struct {
 	Email string `json:"email"`
 }
 

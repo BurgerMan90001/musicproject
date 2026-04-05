@@ -3,11 +3,12 @@ package handler
 import (
 	"net/http"
 
+	"musicproject.com/internal/jsonutil"
 	"musicproject.com/pkg/model"
 )
 
 func HandleHealth(w http.ResponseWriter, r *http.Request) {
-	WriteJSON(w, model.Health{
+	jsonutil.WriteJSON(w, model.Health{
 		Message: "alive",
 	}, http.StatusOK)
 }

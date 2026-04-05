@@ -39,6 +39,8 @@ func (s *Server) ServeHTTP(ctx context.Context, srv *http.Server) error {
 		errCh <- srv.Shutdown(shutDownCtx)
 	}()
 
+	//srv.Handler = middleware.WithLogger(srv.Handler)
+
 	log.Printf("Server listening at %s. v1\n", s.ip)
 	if err := srv.Serve(s.listener); err != nil {
 		return err
@@ -50,9 +52,9 @@ func (s *Server) ServeHTTP(ctx context.Context, srv *http.Server) error {
 
 	return nil
 }
+
 func (s *Server) ServeHTTPHandler(ctx context.Context, handler http.Handler) error {
 	return s.ServeHTTP(ctx, &http.Server{
 		Handler: handler,
 	})
 }
-

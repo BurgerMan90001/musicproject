@@ -2,7 +2,6 @@ package auth
 
 import (
 	"musicproject.com/internal/repository"
-	"musicproject.com/pkg/model"
 )
 
 // func TestGenerateToken(t *testing.T) {
@@ -16,31 +15,17 @@ import (
 //		}
 //	}
 func (s *testSuite) TestLogin() {
-	
-	s.T().Skip()
 	tests := []struct {
 		name     string
 		email    string
 		password string
 
-		wantUser *model.User
-		wantErr  error
-
-		repoErr error
+		wantErr error
 	}{
-		{
-			name:     "success",
-			email:    "paulcasigay@gmail.com",
-			password: "Dirtycash@123!",
-			wantUser: &model.User{
-				Email: "paulcasigay@gmail.com",
-			},
-		},
 		{
 			name:     "no email",
 			password: "Dirtycash@123!",
-
-			wantErr: repository.ErrNotFound,
+			wantErr:  repository.ErrNotFound,
 		},
 		{
 			name:    "no password",
@@ -54,14 +39,19 @@ func (s *testSuite) TestLogin() {
 			user, _, err := s.authService.Login(s.ctx, tt.email, tt.password)
 
 			s.Equal(tt.wantErr, err)
-
-			if tt.wantUser != nil {
-				s.Equal(tt.wantUser.Email, user.Email)
-				s.Empty(user.PasswordHash)
-			}
-
+			s.Nil(user)
 		})
 	}
+	s.Run("login success", func() {
+		user, tokenPair, err := s.authService.Login(s.ctx, "paulcasigay@gmail.com", "Dirtycash@123!")
+		s.NoError(err)
+
+		s.Equal("paulcasigay@gmail.com", user.Email)
+		s.Empty(user.PasswordHash)
+		s.NotEmpty(tokenPair)
+		s.NotEmpty(tokenPair.AccessToken)
+		s.NotEmpty(tokenPair.RefreshToken)
+	})
 }
 
 // func TestParseToken(t *testing.T) {

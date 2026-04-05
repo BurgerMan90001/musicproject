@@ -4,23 +4,23 @@ services:
     build: .
     ports:
       - 8081:8081
-    environment:
-      - env=dev
-    depends_on:
-      - db
+    #environment:
+    #  - env=dev
+    #depends_on:
+    #  - db
   site:
     container_name: site
     build: site
     ports:
       - 8080:80
-  db:
-    container_name: musicproject-db
-    image: postgres:alpine
-    ports:
-      - 5432:5432
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: musicproject
-    volumes:
-      - ./schema:/docker-entrypoint-initdb.d/schema
+#  db:
+#    container_name: musicproject-db
+#    image: postgres:alpine
+#    ports:
+#      - 5432:5432
+#    environment:
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: admin
+#      POSTGRES_DB: musicproject
+#    volumes:
+#      - ./schema:/docker-entrypoint-initdb.d/schema

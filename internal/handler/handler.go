@@ -6,74 +6,110 @@ import (
 	"errors"
 	"net/http"
 
-	"musicproject.com/config"
-	"musicproject.com/internal/handler/middleware/ratelimit"
+	"musicproject.com/internal/config"
+	"musicproject.com/internal/config/secrets"
+	"musicproject.com/internal/jsonutil"
+	"musicproject.com/internal/middleware"
 	"musicproject.com/internal/repository/postgres"
 	"musicproject.com/internal/services/auth"
+	"musicproject.com/internal/services/email"
 	"musicproject.com/internal/services/file"
+	"musicproject.com/internal/services/song"
 )
 
-func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB) (*http.ServeMux, error) {
+func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB, sm secrets.Manager) (http.Handler, error) {
 	mux := http.NewServeMux()
 
-	// setup middleware
-	var rl ratelimit.RateLimiter
-	if cfg.Middleware.Ratelimit {
-		rl = ratelimit.NewTokenBucket(15, 30)
-	}
+	// if db == nil {
+	// 	return nil, errors.New("repository is nil")
+	// }
 
 	userRepo := postgres.NewUser(db)
 	songRepo := postgres.NewSong(db)
-	api := Logger(PanicRecovery(RateLimitMiddleware(rl, mux)))
-	//ratingRepo := postgres.NewRating(db)
 
-	store, err := file.NewS3(ctx)
+	//ratingRepo := postgres.NewRating(db)
+	store := file.NewFileSystem()
+	// store, err := file.NewS3(ctx)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	authService, err := auth.New(ctx, cfg.Services.Auth, userRepo, sm)
 	if err != nil {
 		return nil, err
 	}
+	userHandler := &userHandler{userRepo}
+	authHandler := &authHandler{authService: authService}
 
-	authService := auth.New(cfg.Services.Auth, userRepo)
-	fileService := file.NewSong(store)
+	songService := song.NewSong(store, songRepo)
+	//store := file.NewFileSystem()
+
+	emailService, err := email.New(ctx, sm)
+	if err != nil {
+		return nil, err
+	}
 
 	// setup routes
 	mux.HandleFunc("/", HandleNotFound)
 	mux.HandleFunc("/health", HandleHealth)
 
-	mux.HandleFunc("/users", HandleUsers(userRepo))
-	mux.HandleFunc("/users/{id}", HandleUsersID(userRepo))
+	mux.HandleFunc("/users", userHandler.handleUsers())
+	mux.HandleFunc("/users/{id}", userHandler.handleUsersID())
 
-	mux.HandleFunc("/songs/{id}", HandleSongs(songRepo))
-	mux.HandleFunc("POST /songs/upload", HandleSongUpload(fileService))
+	mux.HandleFunc("/songs/{id}", HandleSongsMetadata(songRepo))
+	mux.Handle("POST /songs/upload", HandleSongUpload(songService))
 
-	mux.HandleFunc("/artists/{id}", HandleArtists())
+	// maybe
+	//mux.HandleFunc("/artists/{id}", HandleArtists())
 
 	// auth routes
-	mux.HandleFunc("/auth/login", HandleLogin(authService))
-	mux.HandleFunc("/auth/signup", handleSignup(authService))
+	mux.HandleFunc("/auth/login", authHandler.handleLogin())
+	mux.HandleFunc("/auth/signup", authHandler.handleSignup())
 
-	mux.HandleFunc("/auth/refresh", HandleRefresh(authService))
-	mux.HandleFunc("/auth/reset", HandleEmailReset())
+	mux.HandleFunc("/auth/refresh", authHandler.handleRefresh())
+	mux.HandleFunc("/auth/reset", authHandler.handleEmailReset(emailService))
 
 	// oauth routes
 	mux.HandleFunc("/auth/google/login", HandleOauthLogin(authService.Google))
 	mux.HandleFunc("/auth/google/redirect", HandleOauthGoogleRedirect(authService.Google))
 
-	mux.HandleFunc("/protected", AuthMiddleware(authService.JWT, HandleTest))
-	// static file server
-	mux.Handle("/static", http.FileServer(http.Dir("public")))
+	// Test routes
+	mux.Handle("/protected", middleware.WithAuth(authService.JWT, HandleTest))
+	mux.HandleFunc("/audio", handleAudio(songService))
 
-	//var api http.Handler = mux
+	// file server
+	// mux.HandleFunc("/audio/", func(w http.ResponseWriter, r *http.Request) {
+	// 	// ServeFile handles Range headers, 206 responses, ETags, and If-Modified-Since.
+	// 	// The path after /video/ maps to the file system.
+
+	// 	// fsys := fstest.MapFS{
+	// 	// 	"hello.txt": {
+	// 	// 		Data: []byte("Hello, World!\n"),
+	// 	// 	},
+	// 	// }
+	// 	//os.DirFS("../")
+	// 	path := "audio/" + r.URL.Path[len("/audio/"):]
+	// 	http.ServeFile(w, r, path)
+
+	// })
+	// os.UserCacheDir()
+	// fsys := http.FileServer(http.FS(os.DirFS()))
+	// mux.Handle()
 
 	root := http.NewServeMux()
 
-	root.Handle("/v1/", http.StripPrefix("/v1", api))
-	root.Handle("/", http.HandlerFunc(HandleNotFound))
-	//test := root.(*http.Handler)
+	root.Handle("/v1/", http.StripPrefix("/v1", mux))
+	//root.Handle("/", http.HandlerFunc(HandleNotFound))
+
+	// var handler http.Handler = root
+	// if cfg.Middleware.Logger {
+	// 	handler = middleware.WithLogger(root)
+	// }
 	return root, nil
 }
 
 func HandleNotFound(w http.ResponseWriter, r *http.Request) {
-	WriteError(w, errors.New("route not found"), http.StatusNotFound)
+	jsonutil.WriteError(w, errors.New("route not found"), http.StatusNotFound)
 }
 
 func HandleTest(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +117,7 @@ func HandleTest(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	claims, ok := contextClaims(ctx)
 	if ok {
-		WriteJSON(w, claims, http.StatusOK)
+		jsonutil.WriteJSON(w, claims, http.StatusOK)
 	}
-	WriteJSON(w, nil, http.StatusOK)
+	jsonutil.WriteJSON(w, nil, http.StatusOK)
 }

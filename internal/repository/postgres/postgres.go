@@ -3,66 +3,60 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"testing"
-	"time"
 
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/wait"
-	"musicproject.com/config"
+
+	"musicproject.com/internal/config"
+	"musicproject.com/internal/config/secrets"
 	"musicproject.com/schema"
 )
 
-func NewDB(ctx context.Context, url string) (*sql.DB, error) {
-	db, err := sql.Open("postgres", url)
+func NewDB(ctx context.Context, sm secrets.Manager) (*sql.DB, error) {
+	s, err := secrets.GetSecrets(ctx, sm, "PG_USERNAME",
+		"PG_PASSWORD", "PG_DATABASE",
+	)
 	if err != nil {
 		return nil, err
 	}
-	if err := db.PingContext(ctx); err != nil {
-		return nil, err
-	}
-
-	if err := schema.LoadSchema(ctx, db); err != nil {
+	db, err := newDBFromUrl(ctx, url(s[0], s[1], s[2]))
+	if err != nil {
 		return nil, err
 	}
 	return db, nil
 }
-func NewTestDB(t *testing.T, ctx context.Context, cfg config.Postgres) (*sql.DB, *PostgresContainer) {
-	t.Helper()
-	pg := newPostgresContainer(t, ctx, cfg)
 
-	db, err := NewDB(ctx, pg.URL)
+func NewTestDB(t *testing.T, ctx context.Context, cfg config.Postgres, sm secrets.Manager) *sql.DB {
+	t.Helper()
+	pg := newPostgresContainer(t, ctx, cfg, sm)
+
+	db, err := newDBFromUrl(ctx, pg.URL)
 	require.NoError(t, err)
 
 	err = schema.LoadTestData(ctx, db)
 	require.NoError(t, err)
 
-	return db, pg
+	return db
 }
 
-type PostgresContainer struct {
-	*postgres.PostgresContainer
-	URL string
+func newDBFromUrl(ctx context.Context, url string) (*sql.DB, error) {
+	db, err := sql.Open("postgres", url)
+	if err != nil {
+		return nil, fmt.Errorf("Pg open: %v", err)
+	}
+
+	if err := schema.LoadSchema(ctx, db); err != nil {
+		return nil, err
+	}
+	if err := db.PingContext(ctx); err != nil {
+		return nil, fmt.Errorf("Pg ping: %v", err)
+	}
+
+	return db, nil
 }
 
-func newPostgresContainer(t *testing.T, ctx context.Context, cfg config.Postgres) *PostgresContainer {
-	t.Helper()
-
-	pg, err := postgres.Run(ctx, cfg.Image,
-		postgres.WithDatabase(cfg.Database),
-		postgres.WithUsername(cfg.Username),
-		postgres.WithPassword(cfg.Password),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).WithStartupTimeout(5*time.Second)),
-	)
-	require.NoError(t, err)
-	testcontainers.CleanupContainer(t, pg)
-
-	url, err := pg.ConnectionString(ctx, "sslmode=disable")
-	require.NoError(t, err)
-
-	return &PostgresContainer{PostgresContainer: pg, URL: url}
+func url(username, password, database string) string {
+	return fmt.Sprintf("postgres://%s:%s@localhost/%s?sslmode=disable", username, password, database)
 }

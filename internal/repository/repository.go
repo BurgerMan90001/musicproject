@@ -7,6 +7,7 @@ import (
 	"musicproject.com/pkg/model"
 )
 
+// TODO NOT USED
 //go:generate mockgen -destination=../../gen/mocks/repository.go -package=mocks  -source=repository.go
 
 type Repo[T any] interface {
@@ -25,6 +26,8 @@ type Rating interface {
 	Repo[*model.Rating]
 	GetRatings(ctx context.Context, songId uuid.UUID) ([]model.Rating, error)
 }
+
+// Metadata repository for songs
 type Song interface {
 	Repo[*model.Song]
 	GetSongsByGenre(ctx context.Context, genre string) ([]model.Song, error)

@@ -23,6 +23,12 @@ type Song struct {
 	Source   string    `json:"src"`
 }
 
+type UploadSongRequest struct {
+	Name  string `json:"name"`
+	Genre string `json:"genre"`
+	Image    string    `json:"image"`
+}
+
 type Rating struct {
 	SongID uuid.UUID `json:"songId"`
 	UserID uuid.UUID `json:"userId"`
@@ -33,16 +39,3 @@ type SongPlayer struct {
 	SongID    int     `json:"songId"`
 	TimeStamp float64 `json:"timeStamp"`
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

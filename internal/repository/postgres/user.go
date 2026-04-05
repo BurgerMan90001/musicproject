@@ -14,6 +14,8 @@ type User struct {
 	db *sql.DB
 }
 
+var _ repository.User = (*User)(nil)
+
 func NewUser(db *sql.DB) *User {
 	return &User{db}
 }

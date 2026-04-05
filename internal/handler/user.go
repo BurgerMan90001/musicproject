@@ -4,10 +4,15 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"musicproject.com/internal/jsonutil"
 	"musicproject.com/internal/repository"
 )
 
-func HandleUsers(repo repository.User) http.HandlerFunc {
+type userHandler struct {
+	repo repository.User
+}
+
+func (h *userHandler) handleUsers() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			MethodNotAllowedError(w)
@@ -15,34 +20,34 @@ func HandleUsers(repo repository.User) http.HandlerFunc {
 		}
 	}
 }
-func HandleUsersID(repo repository.User) http.HandlerFunc {
+func (h *userHandler) handleUsersID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(r.PathValue("id"))
 		if err != nil {
-			WriteError(w, err, http.StatusBadRequest)
+			jsonutil.WriteError(w, err, http.StatusBadRequest)
 			return
 		}
 		ctx := r.Context()
 
 		switch r.Method {
 		case http.MethodGet:
-			if repo == nil {
-				InternalServerError(w, ErrNilRepo)
-				return
-			}
-			user, err := repo.GetByID(ctx, id)
+			// if repo == nil {
+			// 	InternalServerError(w, ErrNilRepo)
+			// 	return
+			// }
+			user, err := h.repo.GetByID(ctx, id)
 
 			if err != nil {
 				switch err {
 				case repository.ErrNotFound:
-					WriteError(w, err, http.StatusNotFound)
+					jsonutil.WriteError(w, err, http.StatusNotFound)
 				default:
 					InternalServerError(w, err)
 				}
 				return
 			}
 			user.PasswordHash = ""
-			WriteJSON(w, user, http.StatusOK)
+			jsonutil.WriteJSON(w, user, http.StatusOK)
 
 		case http.MethodDelete:
 			/*
@@ -55,11 +60,11 @@ func HandleUsersID(repo repository.User) http.HandlerFunc {
 				}
 			*/
 
-			err := repo.DeleteByID(ctx, id)
+			err := h.repo.DeleteByID(ctx, id)
 			if err != nil {
 				switch err {
 				case repository.ErrNotFound:
-					WriteError(w, err, http.StatusNotFound)
+					jsonutil.WriteError(w, err, http.StatusNotFound)
 
 				default:
 					InternalServerError(w, err)

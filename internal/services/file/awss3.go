@@ -10,12 +10,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
+var _ Blobstore = (*AWSS3)(nil)
+
 type AWSS3 struct {
 	client *s3.Client
 }
 
 func NewS3(ctx context.Context) (*AWSS3, error) {
-	cfg := aws.Config{}
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return nil, err

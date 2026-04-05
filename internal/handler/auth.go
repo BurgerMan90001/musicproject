@@ -4,72 +4,18 @@ import (
 	"log"
 	"net/http"
 
+	"musicproject.com/internal/jsonutil"
 	"musicproject.com/internal/repository"
 	"musicproject.com/internal/services/auth"
+	"musicproject.com/internal/services/email"
 	"musicproject.com/pkg/model"
 )
 
-const (
-	AccessCookie  = "accessToken"
-	RefreshCookie = "refreshToken"
-)
-
-func setTokenPair(w http.ResponseWriter, tokenPair *model.TokenPair) {
-
-	accessCookie := &http.Cookie{
-		Name:  AccessCookie,
-		Value: tokenPair.AccessToken,
-
-		Path:     "/v1/auth/refresh",
-		HttpOnly: true,
-		Secure:   true,
-	}
-	refreshCookie := &http.Cookie{
-		Name:  RefreshCookie,
-		Value: tokenPair.RefreshToken,
-
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   true,
-	}
-	http.SetCookie(w, accessCookie)
-	http.SetCookie(w, refreshCookie)
+type authHandler struct {
+	authService *auth.Service
 }
 
-func handleSignup(authService *auth.Service) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			WriteError(w, ErrInvalidMethod, http.StatusMethodNotAllowed)
-			return
-		}
-		ctx := r.Context()
-
-		signup, err := model.ReadJSON[model.SignupRequest](r.Body)
-		if err != nil {
-			WriteError(w, ErrInvalidRequestBody, http.StatusBadRequest)
-			return
-		}
-
-		user, tokenPair, err := authService.Signup(ctx, signup.Email, signup.Password)
-		if err != nil {
-			switch err {
-			case auth.ErrInvalidEmail,
-				auth.ErrInvalidPassword:
-				WriteError(w, err, http.StatusBadRequest)
-			case auth.ErrUserAlreadyExists:
-				WriteError(w, err, http.StatusConflict)
-			default:
-				InternalServerError(w, err)
-			}
-			return
-		}
-
-		setTokenPair(w, tokenPair)
-		WriteJSON(w, user, http.StatusCreated)
-	}
-}
-
-func HandleLogin(authService *auth.Service) http.HandlerFunc {
+func (h *authHandler) handleSignup() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			MethodNotAllowedError(w)
@@ -77,31 +23,67 @@ func HandleLogin(authService *auth.Service) http.HandlerFunc {
 		}
 		ctx := r.Context()
 
-		login, err := model.ReadJSON[model.LoginRequest](r.Body)
+		signup, err := jsonutil.ReadJSON[model.SignupRequest](r.Body)
 		if err != nil {
-			WriteError(w, ErrInvalidRequestBody, http.StatusBadRequest)
+			jsonutil.WriteError(w, ErrInvalidRequestBody, http.StatusBadRequest)
 			return
 		}
 
-		user, tokenPair, err := authService.Login(ctx, login.Email, login.Password)
+		user, tokenPair, err := h.authService.Signup(ctx, signup.Email, signup.Password)
 		if err != nil {
 			switch err {
-			case auth.ErrIncorrectLogin:
-				WriteError(w, err, http.StatusUnauthorized)
-			case repository.ErrNotFound:
-				WriteError(w, err, http.StatusNotFound)
+			case auth.ErrInvalidEmail,
+				auth.ErrInvalidPassword:
+				jsonutil.WriteError(w, err, http.StatusBadRequest)
+			case auth.ErrUserAlreadyExists:
+				jsonutil.WriteError(w, err, http.StatusConflict)
 			default:
 				InternalServerError(w, err)
 			}
 			return
 		}
 
-		setTokenPair(w, tokenPair)
-		WriteJSON(w, user, http.StatusOK)
+		http.SetCookie(w, accessCookie(tokenPair.AccessToken, 1))
+		http.SetCookie(w, refreshCookie(tokenPair.RefreshToken, 1))
+
+		jsonutil.WriteJSON(w, user, http.StatusCreated)
 	}
 }
 
-func HandleRefresh(authService *auth.Service) http.HandlerFunc {
+func (h *authHandler) handleLogin() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			MethodNotAllowedError(w)
+			return
+		}
+		ctx := r.Context()
+
+		login, err := jsonutil.ReadJSON[model.LoginRequest](r.Body)
+		if err != nil {
+			jsonutil.WriteError(w, ErrInvalidRequestBody, http.StatusBadRequest)
+			return
+		}
+
+		user, tokenPair, err := h.authService.Login(ctx, login.Email, login.Password)
+		if err != nil {
+			switch err {
+			case auth.ErrIncorrectLogin:
+				jsonutil.WriteError(w, err, http.StatusUnauthorized)
+			case repository.ErrNotFound:
+				jsonutil.WriteError(w, err, http.StatusNotFound)
+			default:
+				InternalServerError(w, err)
+			}
+			return
+		}
+
+		http.SetCookie(w, accessCookie(tokenPair.AccessToken, 1))
+		http.SetCookie(w, refreshCookie(tokenPair.RefreshToken, 1))
+		jsonutil.WriteJSON(w, user, http.StatusOK)
+	}
+}
+
+func (h *authHandler) handleRefresh() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			MethodNotAllowedError(w)
@@ -110,30 +92,30 @@ func HandleRefresh(authService *auth.Service) http.HandlerFunc {
 
 		var refreshToken string
 
-		cookie, err := r.Cookie(RefreshCookie)
+		cookie, err := r.Cookie(auth.TokenRefresh)
 		if err == nil {
 			refreshToken = cookie.Value
 		} else {
-			body, err := model.ReadJSON[model.RefreshRequest](r.Body)
+			body, err := jsonutil.ReadJSON[model.RefreshRequest](r.Body)
 			if err != nil {
-				WriteError(w, auth.ErrNoRefeshToken, http.StatusBadRequest)
+				jsonutil.WriteError(w, auth.ErrNoRefeshToken, http.StatusBadRequest)
 			}
 			refreshToken = body.RefreshToken
 		}
 
-		// if refreshToken == "" {
-		// 	WriteError(w, auth.ErrNoRefeshToken, http.StatusBadRequest)
-		// 	return
-		// }
+		if refreshToken == "" {
+			jsonutil.WriteError(w, auth.ErrNoRefeshToken, http.StatusBadRequest)
+			return
+		}
 
 		ctx := r.Context()
 
-		tokenPair, err := authService.Refresh(ctx, refreshToken)
+		tokenPair, err := h.authService.Refresh(ctx, refreshToken)
 		if err != nil {
-			WriteError(w, err, http.StatusBadRequest)
+			jsonutil.WriteError(w, err, http.StatusBadRequest)
 			return
 		}
-		WriteJSON(w, tokenPair, http.StatusOK)
+		jsonutil.WriteJSON(w, tokenPair, http.StatusOK)
 	}
 }
 
@@ -144,34 +126,27 @@ func HandleLogout(authService auth.JWTService) http.HandlerFunc {
 			return
 		}
 		ctx := r.Context()
-		cookie, err := r.Cookie(AccessCookie)
+		cookie, err := r.Cookie(auth.TokenAccess)
 		if err != nil {
-			WriteError(w, err, http.StatusBadRequest)
+			jsonutil.WriteError(w, err, http.StatusBadRequest)
 			return
 		}
 
 		if err := authService.RevokeToken(ctx, cookie.Value); err != nil {
-			WriteError(w, err, http.StatusInternalServerError)
+			jsonutil.WriteError(w, err, http.StatusInternalServerError)
 			return
 		}
-
+		// TODO USE authService.Logout function
 		//authService.Logout(ctx)
 
 		// Clear the cookie
-		http.SetCookie(w, &http.Cookie{
-			Name:     RefreshCookie,
-			Value:    "",
-			HttpOnly: true,
-			Secure:   true,
-			SameSite: http.SameSiteStrictMode,
-			Path:     "/v1/auth/refresh",
-			MaxAge:   -1,
-		})
+		http.SetCookie(w, accessCookie("", -1))
+		http.SetCookie(w, refreshCookie("", -1))
 
-		WriteJSON(w, nil, http.StatusNoContent)
+		jsonutil.WriteJSON(w, nil, http.StatusNoContent)
 	}
 }
-func HandleEmailReset() http.HandlerFunc {
+func (h *authHandler) handleEmailReset(emailService *email.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			MethodNotAllowedError(w)
@@ -190,25 +165,29 @@ func HandleOauthLogin(oauth auth.Oauth) http.HandlerFunc {
 }
 func HandleOauthGoogleRedirect(oauth auth.Oauth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
 		code := r.FormValue("code")
 		state := r.FormValue("state")
 
 		stateCookie, err := r.Cookie("oauthState")
+
 		if state != stateCookie.Value || err != nil {
 			log.Println("invalid google oauth state")
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
 
-		ctx := r.Context()
-
 		user, tokenPair, err := oauth.Login(ctx, code)
 		if err != nil {
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
-		setTokenPair(w, tokenPair)
-		WriteJSON(w, user, http.StatusOK)
+		// TODO set proper max ages
+		http.SetCookie(w, accessCookie(tokenPair.AccessToken, 1))
+		http.SetCookie(w, refreshCookie(tokenPair.RefreshToken, 1))
+
+		jsonutil.WriteJSON(w, user, http.StatusOK)
 		// userInfo, err := oauth.GetUserInfo(ctx, token)
 		// if err != nil {
 		// 	log.Printf("get user info error: %v", err)

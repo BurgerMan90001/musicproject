@@ -2,7 +2,10 @@
 .vscode
 **/pkg/mod/
 main
+
 .env
+.env.dev
+.env.prod
 
 
 config.dev.yml

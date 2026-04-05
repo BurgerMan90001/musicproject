@@ -1,5 +1,6 @@
 
-/*  */
+/*CREATE DATABASE musicproject;*/
+
 CREATE TABLE IF NOT EXISTS revoked_tokens (
     token VARCHAR(255) PRIMARY KEY,
     revocation_date timestamp default now()

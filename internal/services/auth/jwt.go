@@ -7,7 +7,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"musicproject.com/config"
+	"musicproject.com/internal/config/secrets"
 	"musicproject.com/pkg/model"
 )
 
@@ -17,12 +17,20 @@ type JWTService struct {
 	refreshKey []byte
 }
 
-func NewJWTService(cfg config.Jwt) *JWTService {
-	return &JWTService{
-		issuer:     cfg.Issuer,
-		accessKey:  []byte(cfg.AccessKey),
-		refreshKey: []byte(cfg.RefreshKey),
+func NewJWTService(ctx context.Context, sm secrets.Manager) (*JWTService, error) {
+	var (
+		issuer, issuerErr      = sm.Get(ctx, "JWT_ISSUER")
+		accessKey, accessErr   = sm.Get(ctx, "JWT_ACCESS_KEY")
+		refreshKey, refreshErr = sm.Get(ctx, "JWT_REFRESH_KEY")
+	)
+	if err := errors.Join(issuerErr, accessErr, refreshErr); err != nil {
+		return nil, err
 	}
+	return &JWTService{
+		issuer:     issuer,
+		accessKey:  []byte(accessKey),
+		refreshKey: []byte(refreshKey),
+	}, nil
 }
 func (s *JWTService) GenerateToken(userId uuid.UUID, tokenType string, expireAt time.Time) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &model.Claims{

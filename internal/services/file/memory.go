@@ -5,12 +5,12 @@ import (
 	"sync"
 )
 
+var _ Blobstore = (*Memory)(nil)
+
 type Memory struct {
-	sync.Mutex
+	mu   sync.Mutex
 	data map[string][]byte
 }
-
-var _ Blobstore = (*Memory)(nil)
 
 func NewMemory() *Memory {
 	return &Memory{
@@ -18,8 +18,11 @@ func NewMemory() *Memory {
 	}
 }
 
-func (s *Memory) CreateObject(ctx context.Context, parent string, name string, 
+func (s *Memory) CreateObject(ctx context.Context, parent string, name string,
 	contents []byte, cacheble bool, contentType string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	return nil
 }
 func (s *Memory) GetObject(ctx context.Context, parent string, name string) ([]byte, error) {
