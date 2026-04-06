@@ -30,8 +30,6 @@ func WriteJSON(w http.ResponseWriter, data any, code int, details ...string) {
 
 	jsonEncoder := json.NewEncoder(w)
 
-	//var res any = data
-
 	// Check for invalid status code
 	if http.StatusText(code) == "" {
 		// Is internal server error
@@ -41,7 +39,7 @@ func WriteJSON(w http.ResponseWriter, data any, code int, details ...string) {
 		jsonEncoder.Encode(model.Error{
 			Code:    code,
 			Message: "Internal server error",
-			Details: []string{fmt.Sprintf("Invalid code: %d", code)},
+			Details: append(details, fmt.Sprintf("Invalid code: %d", code)),
 		})
 		return
 	}
@@ -49,12 +47,25 @@ func WriteJSON(w http.ResponseWriter, data any, code int, details ...string) {
 	success := code >= 200 && code < 300
 
 	if success {
+		// Check if data is properly encoded
+		_, err := json.Marshal(data)
+		if err != nil {
+			code = http.StatusInternalServerError
+
+			w.WriteHeader(code)
+			jsonEncoder.Encode(model.Error{
+				Code:    code,
+				Message: "Internal server error",
+				Details: details,
+			})
+			return
+		}
 		w.WriteHeader(code)
-		json.NewEncoder(w).Encode(data)
+		jsonEncoder.Encode(data)
 
 		return
 	}
-	var message string
+	var message string = ""
 	if len(details) > 0 {
 		message = details[0]
 		details = details[1:]

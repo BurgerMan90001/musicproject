@@ -19,6 +19,9 @@ const (
 var ExpiresInOneDay = time.Now().Add(time.Hour * 24)
 var ExpiresInOneHour = time.Now().Add(time.Hour * 24)
 
+type UserRepo struct {
+}
+
 type Service struct {
 	userRepo repository.User
 
@@ -32,6 +35,13 @@ func New(ctx context.Context, cfg config.Auth, repo repository.User, sm secrets.
 		return nil, err
 	}
 
+	if repo == nil {
+		return nil, errors.New("Auth service: nil repo")
+	}
+	if sm == nil {
+		return nil, errors.New("Auth service: nil secret manager")
+	}
+
 	JWT, err := NewJWTService(ctx, sm)
 	if err != nil {
 		return nil, err
@@ -43,7 +53,7 @@ func (s *Service) Signup(ctx context.Context, email string, password string) (*m
 	u, err := s.userRepo.GetByEmail(ctx, email)
 	// if a user with that email is found
 	if u != nil {
-		return nil, nil, err
+		return nil, nil, ErrUserAlreadyExists
 	}
 	if err != nil && !errors.Is(err, repository.ErrNotFound) {
 		return nil, nil, err

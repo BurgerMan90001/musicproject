@@ -38,7 +38,7 @@ func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB, sm secrets.Mana
 	if err != nil {
 		return nil, err
 	}
-	userHandler := &userHandler{userRepo}
+	userHandler := &userHandler{userRepo: userRepo}
 	authHandler := &authHandler{authService: authService}
 
 	songService := song.NewSong(store, songRepo)
@@ -74,7 +74,7 @@ func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB, sm secrets.Mana
 	mux.HandleFunc("/auth/google/redirect", HandleOauthGoogleRedirect(authService.Google))
 
 	// Test routes
-	mux.Handle("/protected", middleware.WithAuth(authService.JWT, HandleTest))
+	mux.Handle("/protected", middleware.RequireAuth(authService.JWT, HandleTest))
 	mux.HandleFunc("/audio", handleAudio(songService))
 
 	// file server

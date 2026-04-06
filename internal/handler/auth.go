@@ -85,7 +85,10 @@ func (h *authHandler) handleLogin() http.HandlerFunc {
 
 func (h *authHandler) handleRefresh() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
+		switch r.Method {
+		// Allowed methods
+		case http.MethodPost, http.MethodGet:
+		default:
 			MethodNotAllowedError(w)
 			return
 		}
@@ -98,13 +101,14 @@ func (h *authHandler) handleRefresh() http.HandlerFunc {
 		} else {
 			body, err := jsonutil.ReadJSON[model.RefreshRequest](r.Body)
 			if err != nil {
-				jsonutil.WriteError(w, auth.ErrNoRefeshToken, http.StatusBadRequest)
+				jsonutil.WriteError(w, auth.ErrNoRefeshToken, http.StatusUnauthorized)
+				return
 			}
 			refreshToken = body.RefreshToken
 		}
 
 		if refreshToken == "" {
-			jsonutil.WriteError(w, auth.ErrNoRefeshToken, http.StatusBadRequest)
+			jsonutil.WriteError(w, auth.ErrNoRefeshToken, http.StatusUnauthorized)
 			return
 		}
 
@@ -112,6 +116,11 @@ func (h *authHandler) handleRefresh() http.HandlerFunc {
 
 		tokenPair, err := h.authService.Refresh(ctx, refreshToken)
 		if err != nil {
+			switch err {
+			case auth.ErrInvalidTokenType:
+				jsonutil.WriteError(w, auth.ErrNoRefeshToken, http.StatusUnauthorized)
+			}
+			
 			jsonutil.WriteError(w, err, http.StatusBadRequest)
 			return
 		}

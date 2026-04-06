@@ -18,21 +18,20 @@ import (
 )
 
 type HandlerTest struct {
-	Name   string
-	Method string
-	Body   map[string]any
+	Name string
+	// Required field
+	Req *request
 
-	WantCode int
-
-	WantData    any
+	WantCode    int
 	WantMessage string
 }
 type testSuite struct {
 	suite.Suite
-	ctx     context.Context
-	cfg     *config.Config
-	handler http.Handler
-	sm      secrets.Manager
+	ctx        context.Context
+	cfg        *config.Config
+	handler    http.Handler
+	sm         secrets.Manager
+	jwtService *auth.JWTService
 }
 
 func TestIntegrationSuite(t *testing.T) {
@@ -52,6 +51,9 @@ func (s *testSuite) SetupSuite() {
 	s.sm, err = secrets.NewEnv()
 	s.Require().NoError(err)
 
+	s.jwtService, err = auth.NewJWTService(s.ctx, s.sm)
+	s.Require().NoError(err)
+
 	db := postgres.NewTestDB(t, s.ctx, cfg.Repository.Postgres, s.sm)
 
 	s.handler, err = handler.NewMux(s.ctx, cfg, db, s.sm)
@@ -61,22 +63,37 @@ func (s *testSuite) TeardownSuite() {
 
 }
 
-func (s *testSuite) newRequest(ctx context.Context, method string, url string, body map[string]any, tokenString string) *httptest.ResponseRecorder {
+type request struct {
+	method string
+	body   map[string]any
+	// Access and refresh tokens are set in cookies
+	// accessKey and refreshKey
+	accessToken  string
+	refreshToken string
+}
+
+func (s *testSuite) newRequest(ctx context.Context, url string, req *request) *httptest.ResponseRecorder {
 	s.T().Helper()
 
+	s.Require().NotNil(req)
+
 	var buf io.Reader
-	if len(body) > 0 {
-		mar, err := json.Marshal(body)
+	if len(req.body) > 0 {
+		mar, err := json.Marshal(req.body)
 		s.Require().NoError(err)
 		buf = bytes.NewBuffer(mar)
 	}
-	r := httptest.NewRequestWithContext(ctx, method, url, buf)
+	r := httptest.NewRequestWithContext(ctx, req.method, url, buf)
 
 	w := httptest.NewRecorder()
 
-	if tokenString != "" {
-		r.AddCookie(&http.Cookie{Name: auth.TokenRefresh, Value: tokenString})
+	if req.accessToken != "" {
+		r.AddCookie(&http.Cookie{Name: auth.TokenAccess, Value: req.accessToken})
 	}
+	if req.refreshToken != "" {
+		r.AddCookie(&http.Cookie{Name: auth.TokenRefresh, Value: req.refreshToken})
+	}
+
 	s.handler.ServeHTTP(w, r)
 
 	return w

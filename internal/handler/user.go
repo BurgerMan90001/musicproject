@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -9,9 +10,16 @@ import (
 )
 
 type userHandler struct {
-	repo repository.User
+	userRepo repository.User
 }
 
+func NewUser(userRepo repository.User) (*userHandler, error) {
+	if userRepo == nil {
+		return nil, fmt.Errorf("nil user repo")
+
+	}
+	return &userHandler{userRepo: userRepo}, nil
+}
 func (h *userHandler) handleUsers() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -31,11 +39,8 @@ func (h *userHandler) handleUsersID() http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodGet:
-			// if repo == nil {
-			// 	InternalServerError(w, ErrNilRepo)
-			// 	return
-			// }
-			user, err := h.repo.GetByID(ctx, id)
+
+			user, err := h.userRepo.GetByID(ctx, id)
 
 			if err != nil {
 				switch err {
@@ -60,7 +65,7 @@ func (h *userHandler) handleUsersID() http.HandlerFunc {
 				}
 			*/
 
-			err := h.repo.DeleteByID(ctx, id)
+			err := h.userRepo.DeleteByID(ctx, id)
 			if err != nil {
 				switch err {
 				case repository.ErrNotFound:

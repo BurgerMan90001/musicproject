@@ -46,7 +46,10 @@ func (s *testSuite) TestHandleUserID() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			w := s.newRequest(s.ctx, tt.method, URL+tt.userId.String(), nil, "")
+			req := &request{
+				method: tt.method,
+			}
+			w := s.newRequest(s.ctx, URL+tt.userId.String(), req)
 
 			resBody, err := jsonutil.ReadJSON[map[string]any](w.Result().Body)
 			s.Require().NoError(err)

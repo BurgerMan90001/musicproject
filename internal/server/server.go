@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -29,25 +31,22 @@ func NewServer(port int) (*Server, error) {
 }
 
 func (s *Server) ServeHTTP(ctx context.Context, srv *http.Server) error {
-	errCh := make(chan error, 1)
 	go func() {
-		<-ctx.Done()
-
-		shutDownCtx, done := context.WithTimeout(context.Background(), 5*time.Second)
-		defer done()
-
-		errCh <- srv.Shutdown(shutDownCtx)
+		slog.Info("v1 server listening at", "addr", s.ip+strconv.Itoa(s.port))
+		if err := srv.Serve(s.listener); !errors.Is(err, http.ErrServerClosed) {
+			slog.Error("server error", "err", err)
+		}
 	}()
 
-	//srv.Handler = middleware.WithLogger(srv.Handler)
+	<-ctx.Done()
+	slog.Info("shutdown signal recieved")
 
-	log.Printf("Server listening at %s. v1\n", s.ip)
-	if err := srv.Serve(s.listener); err != nil {
-		return err
-	}
+	// Give requests 30 seconds to complete
+	shutDownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
-	if err := <-errCh; err != nil {
-		return err
+	if err := srv.Shutdown(shutDownCtx); err != nil {
+		slog.Error("shutdown error", "err", err)
 	}
 
 	return nil
@@ -56,5 +55,10 @@ func (s *Server) ServeHTTP(ctx context.Context, srv *http.Server) error {
 func (s *Server) ServeHTTPHandler(ctx context.Context, handler http.Handler) error {
 	return s.ServeHTTP(ctx, &http.Server{
 		Handler: handler,
+
+		// For request headers
+		ReadHeaderTimeout: 3 * time.Second,
+		// Keep-alive connection time
+		IdleTimeout: 120 * time.Second,
 	})
 }

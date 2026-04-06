@@ -14,7 +14,7 @@ var (
 
 	ErrInvalidToken            = errors.New("Invalid token")
 	ErrNoAccessToken           = errors.New("No access token cookie")
-	ErrNoRefeshToken           = errors.New("No access token cookie")
+	ErrNoRefeshToken           = errors.New("No refresh token cookie")
 	ErrTokenExpired            = jwt.ErrTokenExpired
 	ErrInvalidTokenType        = errors.New("Invalid token type")
 	ErrUnexpectedSigningMethod = errors.New("Unexpected signing method")

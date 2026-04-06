@@ -8,9 +8,9 @@ import (
 	"musicproject.com/internal/services/auth"
 )
 
-func WithAuth(jwtService *auth.JWTService, next http.HandlerFunc) http.Handler {
+func RequireAuth(jwtService *auth.JWTService, next http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie(auth.TokenRefresh)
+		cookie, err := r.Cookie(auth.TokenAccess)
 		if err != nil {
 			jsonutil.WriteError(w, auth.ErrNoAccessToken, http.StatusUnauthorized)
 			return

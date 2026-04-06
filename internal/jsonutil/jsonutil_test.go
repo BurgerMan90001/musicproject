@@ -16,27 +16,34 @@ func TestWriteJSON(t *testing.T) {
 	t.Parallel()
 
 	errorTests := []struct {
-		name string
-		data any
-		code int
-		args []string
+		name    string
+		data    any
+		code    int
+		details []string
 
-		wantCode int
+		wantCode    int
+		wantMessage string
 	}{
 		{
-			name: "no status code / invalid code",
+			name: "invalid status code",
 			data: model.User{
 				ID:    uuid.New(),
 				Email: "paulcasigay@gmail.com",
 			},
 			wantCode: http.StatusInternalServerError,
 		},
+		{
+			name: "much details",
+			details: []string{"asd", "asd", "asd", "asd",
+				"asd", "asd", "asd", "asd", "asd", "asd"},
+			wantMessage: "",
+		},
 	}
 	for _, tt := range errorTests {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
 
-			WriteJSON(w, tt.data, tt.code, tt.args...)
+			WriteJSON(w, tt.data, tt.code, tt.details...)
 
 			var errorRes model.Error
 			err := json.NewDecoder(w.Body).Decode(&errorRes)
@@ -46,7 +53,7 @@ func TestWriteJSON(t *testing.T) {
 			assert.Equal(t, tt.wantCode, w.Code, tt.name)
 			assert.Equal(t, tt.wantCode, errorRes.Code)
 
-			assert.NotEmpty(t, errorRes.Message)
+			assert.Equal(t, tt.wantMessage, errorRes.Message)
 		})
 	}
 	t.Run("status ok", func(t *testing.T) {

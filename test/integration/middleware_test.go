@@ -23,51 +23,52 @@ import (
 func (s *testSuite) TestAuthMiddleware() {
 	url := "/v1/protected"
 
-	jwtService, err := auth.NewJWTService(s.ctx, s.sm)
-	s.Require().NoError(err)
-
 	userId := uuid.Nil
 
-	expired, err := jwtService.GenerateToken(userId, auth.TokenAccess, time.Now().Add(-1*time.Hour))
+	expired, err := s.jwtService.GenerateToken(userId, auth.TokenAccess, time.Now().Add(-1*time.Hour))
 	s.Require().NoError(err)
 
-	invalidType, err := jwtService.GenerateToken(userId, auth.TokenRefresh, auth.ExpiresInOneDay)
+	invalidType, err := s.jwtService.GenerateToken(userId, auth.TokenRefresh, auth.ExpiresInOneDay)
 	s.Require().NoError(err)
 
 	tests := []struct {
 		name        string
 		wantMessage string
 		wantStatus  int
-		tokenString string
+		accessToken string
 	}{
 		{
 			name:        "expired token",
 			wantStatus:  http.StatusUnauthorized,
 			wantMessage: auth.ErrTokenExpired.Error(),
-			tokenString: expired,
+			accessToken: expired,
 		},
 		{
 			name:        "invalid token type",
 			wantMessage: auth.ErrInvalidTokenType.Error(),
 			wantStatus:  http.StatusUnauthorized,
-			tokenString: invalidType,
+			accessToken: invalidType,
 		},
 		{
 			name:        "empty token or no header",
 			wantMessage: jwt.ErrTokenMalformed.Error(),
 			wantStatus:  http.StatusUnauthorized,
-			tokenString: "",
+			accessToken: "",
 		},
 		{
 			name:        "invalid token",
 			wantStatus:  http.StatusUnauthorized,
 			wantMessage: jwt.ErrTokenMalformed.Error(),
-			tokenString: "aksidoajfjsofuijrngukaernngaerjgknne",
+			accessToken: "aksidoajfjsofuijrngukaernngaerjgknne",
 		},
 	}
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			w := s.newRequest(s.ctx, "GET", url, nil, tt.tokenString)
+			req := &request{
+				method:      http.MethodGet,
+				accessToken: tt.accessToken,
+			}
+			w := s.newRequest(s.ctx, url, req)
 
 			resBody, err := jsonutil.ReadJSON[map[string]any](w.Result().Body)
 			s.Require().NoError(err)
@@ -76,11 +77,15 @@ func (s *testSuite) TestAuthMiddleware() {
 			s.NotEmpty(resBody["message"])
 		})
 	}
-	valid, err := jwtService.GenerateToken(userId, auth.TokenAccess, auth.ExpiresInOneDay)
+	valid, err := s.jwtService.GenerateToken(userId, auth.TokenAccess, auth.ExpiresInOneDay)
 	s.Require().NoError(err)
 
 	s.Run("success", func() {
-		w := s.newRequest(s.ctx, "GET", url, nil, valid)
+		req := &request{
+			method:      http.MethodGet,
+			accessToken: valid,
+		}
+		w := s.newRequest(s.ctx, url, req)
 
 		resBody, err := jsonutil.ReadJSON[map[string]any](w.Result().Body)
 		s.Require().NoError(err)

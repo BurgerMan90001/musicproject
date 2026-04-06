@@ -1,5 +1,7 @@
 package integration
 
+import "net/http"
+
 func (s *testSuite) TestAudio() {
 	s.T().Skip()
 
@@ -27,7 +29,10 @@ func (s *testSuite) TestAudio() {
 	}
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			w := s.newRequest(s.ctx, "GET", url+tt.file, nil, "")
+			req := &request{
+				method: http.MethodGet,
+			}
+			w := s.newRequest(s.ctx, url+tt.file, req)
 
 			// resBody, err := jsonutil.ReadJSON[map[string]any](w.Result().Body)
 			// s.Require().NoError(err)
