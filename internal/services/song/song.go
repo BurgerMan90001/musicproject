@@ -15,9 +15,9 @@ import (
 )
 
 type Service struct {
-	store  file.Blobstore
-	repo   repository.Song
-	parent string
+	store file.Blobstore
+	repo  repository.Song
+	root  string
 }
 
 func NewSong(store file.Blobstore, repo repository.Song) *Service {

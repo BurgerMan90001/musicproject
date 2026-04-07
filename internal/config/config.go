@@ -29,5 +29,5 @@ func LoadConfig() (*Config, error) {
 	return &cfg, err
 }
 func (cfg *Config) Write() {
-
+	
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
 	"musicproject.com/internal/config"
 	"musicproject.com/internal/config/secrets"
 	"musicproject.com/internal/repository"
@@ -16,20 +17,24 @@ const (
 	TokenRefresh = "refreshKey"
 )
 
-var ExpiresInOneDay = time.Now().Add(time.Hour * 24)
-var ExpiresInOneHour = time.Now().Add(time.Hour * 24)
+var (
+	ExpiresInOneDay  = time.Now().Add(time.Hour * 24)
+	ExpiresInOneHour = time.Now().Add(time.Hour * 24)
+)
 
-type UserRepo struct {
+type userRepo interface {
+	GetByEmail(ctx context.Context, email string) (*model.User, error)
+	Put(ctx context.Context, user *model.User) (uuid.UUID, error)
 }
 
 type Service struct {
-	userRepo repository.User
+	userRepo userRepo
 
 	JWT    *JWTService
 	Google Oauth
 }
 
-func New(ctx context.Context, cfg config.Auth, repo repository.User, sm secrets.Manager) (*Service, error) {
+func New(ctx context.Context, cfg config.Auth, repo userRepo, sm secrets.Manager) (*Service, error) {
 	google, err := NewGoogle(ctx, cfg.Oauth.Google, sm)
 	if err != nil {
 		return nil, err

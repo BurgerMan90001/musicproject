@@ -10,6 +10,7 @@ import (
 	"musicproject.com/internal/config/secrets"
 	"musicproject.com/internal/jsonutil"
 	"musicproject.com/internal/middleware"
+	"musicproject.com/internal/middleware/ratelimit"
 	"musicproject.com/internal/repository/postgres"
 	"musicproject.com/internal/services/auth"
 	"musicproject.com/internal/services/email"
@@ -20,16 +21,12 @@ import (
 func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB, sm secrets.Manager) (http.Handler, error) {
 	mux := http.NewServeMux()
 
-	// if db == nil {
-	// 	return nil, errors.New("repository is nil")
-	// }
-
 	userRepo := postgres.NewUser(db)
 	songRepo := postgres.NewSong(db)
 
 	//ratingRepo := postgres.NewRating(db)
-	store := file.NewFileSystem()
 	// store, err := file.NewS3(ctx)
+	store := file.NewFileSystem()
 	// if err != nil {
 	// 	return nil, err
 	// }
@@ -78,27 +75,18 @@ func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB, sm secrets.Mana
 	mux.HandleFunc("/audio", handleAudio(songService))
 
 	// file server
-	// mux.HandleFunc("/audio/", func(w http.ResponseWriter, r *http.Request) {
-	// 	// ServeFile handles Range headers, 206 responses, ETags, and If-Modified-Since.
-	// 	// The path after /video/ maps to the file system.
 
-	// 	// fsys := fstest.MapFS{
-	// 	// 	"hello.txt": {
-	// 	// 		Data: []byte("Hello, World!\n"),
-	// 	// 	},
-	// 	// }
-	// 	//os.DirFS("../")
-	// 	path := "audio/" + r.URL.Path[len("/audio/"):]
-	// 	http.ServeFile(w, r, path)
-
-	// })
-	// os.UserCacheDir()
-	// fsys := http.FileServer(http.FS(os.DirFS()))
-	// mux.Handle()
-
+	var handler http.Handler = mux
+	if cfg.Middleware.Logger {
+		handler = middleware.Logger(handler)
+	}
+	if cfg.Middleware.Ratelimit {
+		rl := ratelimit.NewTokenBucket(15, 30)
+		handler = middleware.RateLimit(rl, handler)
+	}
 	root := http.NewServeMux()
 
-	root.Handle("/v1/", http.StripPrefix("/v1", mux))
+	root.Handle("/v1/", http.StripPrefix("/v1", handler))
 	//root.Handle("/", http.HandlerFunc(HandleNotFound))
 
 	// var handler http.Handler = root

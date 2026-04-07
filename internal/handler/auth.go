@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"log"
 	"net/http"
 
@@ -11,8 +12,14 @@ import (
 	"musicproject.com/pkg/model"
 )
 
+type authService interface {
+	Signup(ctx context.Context, email, password string) (*model.User, *model.TokenPair, error)
+	Login(ctx context.Context, email, password string) (*model.User, *model.TokenPair, error)
+	Refresh(ctx context.Context, refreshToken string) (*model.TokenPair, error)
+}
+
 type authHandler struct {
-	authService *auth.Service
+	authService authService
 }
 
 func (h *authHandler) handleSignup() http.HandlerFunc {
@@ -120,7 +127,7 @@ func (h *authHandler) handleRefresh() http.HandlerFunc {
 			case auth.ErrInvalidTokenType:
 				jsonutil.WriteError(w, auth.ErrNoRefeshToken, http.StatusUnauthorized)
 			}
-			
+
 			jsonutil.WriteError(w, err, http.StatusBadRequest)
 			return
 		}

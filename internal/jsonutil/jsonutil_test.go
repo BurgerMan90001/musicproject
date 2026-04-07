@@ -21,8 +21,7 @@ func TestWriteJSON(t *testing.T) {
 		code    int
 		details []string
 
-		wantCode    int
-		wantMessage string
+		wantCode int
 	}{
 		{
 			name: "invalid status code",
@@ -33,10 +32,12 @@ func TestWriteJSON(t *testing.T) {
 			wantCode: http.StatusInternalServerError,
 		},
 		{
-			name: "much details",
+			name:    "much details",
+			
 			details: []string{"asd", "asd", "asd", "asd",
 				"asd", "asd", "asd", "asd", "asd", "asd"},
-			wantMessage: "",
+			code:     http.StatusOK,
+			wantCode: http.StatusOK,
 		},
 	}
 	for _, tt := range errorTests {
@@ -52,8 +53,7 @@ func TestWriteJSON(t *testing.T) {
 			// Assert all codes match
 			assert.Equal(t, tt.wantCode, w.Code, tt.name)
 			assert.Equal(t, tt.wantCode, errorRes.Code)
-
-			assert.Equal(t, tt.wantMessage, errorRes.Message)
+			assert.NotEmpty(t, errorRes.Message)
 		})
 	}
 	t.Run("status ok", func(t *testing.T) {

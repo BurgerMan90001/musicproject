@@ -16,7 +16,9 @@ type AWSSecretManager struct {
 }
 
 func NewAWS(ctx context.Context, region string) (*AWSSecretManager, error) {
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
+	cfg, err := config.LoadDefaultConfig(ctx,
+		config.WithRegion(region),
+	)
 	if err != nil {
 		return nil, err
 	}

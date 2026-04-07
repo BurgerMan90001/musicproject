@@ -12,19 +12,6 @@ import (
 	"musicproject.com/pkg/model"
 )
 
-func detailsFromArgs(details []string) (string, []string) {
-
-	var message string
-
-	if len(details) > 0 {
-		message = details[0]
-		details = details[1:]
-		if len(details) > 10 {
-			details = details[1:10]
-		}
-	}
-	return message, details
-}
 func WriteJSON(w http.ResponseWriter, data any, code int, details ...string) {
 	w.Header().Set("Content-type", "application/json")
 
@@ -33,15 +20,25 @@ func WriteJSON(w http.ResponseWriter, data any, code int, details ...string) {
 	// Check for invalid status code
 	if http.StatusText(code) == "" {
 		// Is internal server error
+		invaldCode := code
 		code = http.StatusInternalServerError
 
 		w.WriteHeader(code)
 		jsonEncoder.Encode(model.Error{
 			Code:    code,
 			Message: "Internal server error",
-			Details: append(details, fmt.Sprintf("Invalid code: %d", code)),
+			Details: append(details, fmt.Sprintf("WriteJSON invalid code: %d", invaldCode)),
 		})
 		return
+	}
+
+	var message string = ""
+	if len(details) > 0 {
+		message = details[0]
+		details = details[1:]
+		if len(details) > 10 {
+			details = details[1:10]
+		}
 	}
 
 	success := code >= 200 && code < 300
@@ -62,17 +59,9 @@ func WriteJSON(w http.ResponseWriter, data any, code int, details ...string) {
 		}
 		w.WriteHeader(code)
 		jsonEncoder.Encode(data)
-
 		return
 	}
-	var message string = ""
-	if len(details) > 0 {
-		message = details[0]
-		details = details[1:]
-		if len(details) > 10 {
-			details = details[1:10]
-		}
-	}
+
 	w.WriteHeader(code)
 	jsonEncoder.Encode(model.Error{
 		Code:    code,

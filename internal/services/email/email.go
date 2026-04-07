@@ -38,8 +38,9 @@ func New(ctx context.Context, sm secrets.Manager) (*Service, error) {
 	return &Service{}, nil
 }
 
+// TODO MAYBE
 func (s *Service) SendWelcome() {
-	
+
 }
 func (s *Service) SendOTP(otp string, recipient string) error {
 	return nil

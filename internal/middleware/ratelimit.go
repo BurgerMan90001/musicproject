@@ -10,7 +10,7 @@ import (
 	"musicproject.com/internal/middleware/ratelimit"
 )
 
-func WithRateLimit(rl ratelimit.RateLimiter, next http.Handler) http.Handler {
+func RateLimit(rl ratelimit.RateLimiter, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if rl == nil {
 			next.ServeHTTP(w, r)

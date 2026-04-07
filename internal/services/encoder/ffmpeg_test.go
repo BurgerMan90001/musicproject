@@ -48,7 +48,6 @@ func TestFFmpeg(t *testing.T) {
 				ext := filepath.Ext(entry.Name())
 
 				assertMatchExt(t, ext, ".ts", ".m3u8")
-
 			}
 		})
 
