@@ -32,7 +32,7 @@ func NewJWTService(ctx context.Context, sm secrets.Manager) (*JWTService, error)
 		refreshKey: []byte(refreshKey),
 	}, nil
 }
-func (s *JWTService) GenerateToken(userId uuid.UUID, tokenType string, expireAt time.Time) (string, error) {
+func (s *JWTService) generateToken(userId uuid.UUID, tokenType string, expireAt time.Time) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &model.Claims{
 		UserID:    userId,
 		TokenType: tokenType,
@@ -61,12 +61,12 @@ func (s *JWTService) GenerateToken(userId uuid.UUID, tokenType string, expireAt 
 	return tokenString, nil
 }
 
-func (s *JWTService) GenerateTokenPair(userId uuid.UUID) (*model.TokenPair, error) {
-	accessToken, err := s.GenerateToken(userId, TokenAccess, ExpiresInOneHour)
+func (s *JWTService) generateTokenPair(userId uuid.UUID) (*model.TokenPair, error) {
+	accessToken, err := s.generateToken(userId, TokenAccess, ExpiresInOneHour)
 	if err != nil {
 		return nil, err
 	}
-	refreshToken, err := s.GenerateToken(userId, TokenAccess, ExpiresInOneHour)
+	refreshToken, err := s.generateToken(userId, TokenAccess, ExpiresInOneHour)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,11 @@ func (s *JWTService) GenerateTokenPair(userId uuid.UUID) (*model.TokenPair, erro
 		RefreshToken: refreshToken,
 	}, nil
 }
-func (s *JWTService) ParseToken(tokenString string, tokenType string) (*jwt.Token, error) {
+func (s *JWTService) revokeToken(ctx context.Context, tokenString string) error {
+	return nil
+}
+
+func (s *JWTService) validateToken(tokenString string, tokenType string) (*jwt.Token, error) {
 	key, err := s.keyFunc(tokenType)
 	if err != nil {
 		return nil, err
@@ -103,8 +107,8 @@ func (s *JWTService) ParseToken(tokenString string, tokenType string) (*jwt.Toke
 	return token, nil
 }
 
-func (s *JWTService) ParseAccessToken(accessToken string) (*model.Claims, error) {
-	token, err := s.ParseToken(accessToken, TokenAccess)
+func (s *JWTService) validateAccessToken(accessToken string) (*model.Claims, error) {
+	token, err := s.validateToken(accessToken, TokenAccess)
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			return nil, jwt.ErrTokenExpired
@@ -125,7 +129,7 @@ func (s *JWTService) ParseAccessToken(accessToken string) (*model.Claims, error)
 }
 
 func (s *JWTService) refreshTokens(ctx context.Context, refeshToken string) (*model.TokenPair, error) {
-	token, err := s.ParseToken(refeshToken, TokenRefresh)
+	token, err := s.validateToken(refeshToken, TokenRefresh)
 	if err != nil {
 		return nil, err
 	}
@@ -141,10 +145,7 @@ func (s *JWTService) refreshTokens(ctx context.Context, refeshToken string) (*mo
 		// TODO Check if revoked
 	}
 
-	return s.GenerateTokenPair(claims.UserID)
-}
-func (s *JWTService) RevokeToken(ctx context.Context, tokenString string) error {
-	return nil
+	return s.generateTokenPair(claims.UserID)
 }
 
 func (s *JWTService) keyFunc(tokenType string) ([]byte, error) {

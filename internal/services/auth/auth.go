@@ -30,7 +30,7 @@ type userRepo interface {
 type Service struct {
 	userRepo userRepo
 
-	JWT    *JWTService
+	jwt    *JWTService
 	Google Oauth
 }
 
@@ -87,7 +87,7 @@ func (s *Service) Signup(ctx context.Context, email string, password string) (*m
 	user.PasswordHash = ""
 
 	// Generate token pair
-	tokenPair, err := s.JWT.GenerateTokenPair(userId)
+	tokenPair, err := s.jwt.generateTokenPair(userId)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -109,7 +109,7 @@ func (s *Service) Login(ctx context.Context, email string, password string) (*mo
 		return nil, nil, ErrIncorrectLogin
 	}
 	// Generate token pair
-	pair, err := s.JWT.GenerateTokenPair(user.ID)
+	pair, err := s.jwt.generateTokenPair(user.ID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -119,16 +119,20 @@ func (s *Service) Login(ctx context.Context, email string, password string) (*mo
 	return user, pair, nil
 }
 
-func (s *Service) Logout(ctx context.Context, refeshToken string) error {
+func (s *Service) Logout(ctx context.Context, accessToken, refeshToken string) error {
 
 	return nil
 }
 
 func (s *Service) Refresh(ctx context.Context, refeshToken string) (*model.TokenPair, error) {
-	tokenPair, err := s.JWT.refreshTokens(ctx, refeshToken)
+	tokenPair, err := s.jwt.refreshTokens(ctx, refeshToken)
 	if err != nil {
 		return nil, err
 	}
 
 	return tokenPair, nil
+}
+
+func (s *Service) Validate(ctx context.Context, tokenString string) (*model.Claims, error) {
+	return s.jwt.validateAccessToken(tokenString)
 }

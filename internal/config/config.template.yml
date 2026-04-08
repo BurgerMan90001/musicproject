@@ -14,7 +14,7 @@ services:
 
 middleware:
   logger: false
-  ratelimit: true
+  ratelimit: false
 
 repository:
   postgres:

@@ -5,6 +5,7 @@ package encode
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,8 +16,9 @@ var _ HLSEncoder = (*FFmpeg)(nil)
 type FFmpeg struct {
 }
 
-// Command line ffmpeg
+// Command line ffmpeg encoder
 func NewFFmpeg() *FFmpeg {
+	log.Println("NEW FFMPEG")
 	return &FFmpeg{}
 }
 
@@ -28,7 +30,6 @@ func (s *FFmpeg) Segment(ctx context.Context, inputPath, outputDir string) error
 	manifestPath := filepath.Join(outputDir, "index.m3u8")
 	segmentPattern := filepath.Join(outputDir, "segment%03d.ts")
 
-	// TODO
 	cmd := exec.CommandContext(ctx,
 		"ffmpeg",
 		"-i", inputPath,
@@ -37,11 +38,13 @@ func (s *FFmpeg) Segment(ctx context.Context, inputPath, outputDir string) error
 		"-hls_time", "6",
 		// Keep all segments in manifest
 		"-hls_list_size", "0",
+		// Bitrate flags
+		"-c:v libx264 -c:a aac",
 		"-hls_segment_filename", segmentPattern,
 		"-f", "hls",
 		manifestPath,
 	)
-
+	// Get ffmepeg output for debugging
 	//cmd.Stderr = os.Stderr
 
 	// begin ffmpeg

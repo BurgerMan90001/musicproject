@@ -1,28 +1,38 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/google/uuid"
+	"musicproject.com/internal/middleware"
+	encode "musicproject.com/internal/services/encoder"
 )
 
 func main() {
 	run()
 }
-
-func run() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// ServeFile handles Range headers, 206 responses, ETags, and If-Modified-Since.
-		// The path after /video/ maps to the file system.
-		//path := "audio/" + r.URL.Path[len("/audio/"):]
-		fs := http.FileServer(http.Dir("audio"))
-
-		// Use CORS headers
+func addHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Range")
+		next.ServeHTTP(w, r)
+	})
+}
+func fs() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// ServeFile handles Range headers, 206  responses, ETags, and If-Modified-Since.
+		// The path after /video/ maps to the file system.
+		//path := "audio/" + r.URL.Path[len("/audio/"):]
+		id := r.PathValue("id")
 
+		log.Println(id)
+		fs := http.FileServerFS(os.DirFS("audio"))
 
 		ext := strings.ToLower(filepath.Ext(r.URL.Path))
 		switch ext {
@@ -37,9 +47,27 @@ func run() {
 		}
 
 		fs.ServeHTTP(w, r)
-
 	})
 
+}
+func run() {
+	http.Handle("/segment", handleSegment())
+	http.Handle("/audio/", middleware.Logger(addHeaders(http.StripPrefix("/audio/", fs()))))
 	log.Println("serving on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
+func handleSegment() http.Handler {
+	encoder := encode.NewFFmpeg()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		ctx := r.Context()
+		id := uuid.New()
+		outputDir := filepath.Join("audio", id.String())
+		err := encoder.Segment(ctx, "", outputDir)
+
+		if err != nil {
+			fmt.Fprintln(w, err)
+		}
+	})
 }

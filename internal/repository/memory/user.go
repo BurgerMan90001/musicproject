@@ -10,8 +10,9 @@ import (
 )
 
 type User struct {
-	mu   sync.Mutex
-	data map[uuid.UUID]*model.User
+	mu     sync.RWMutex
+	data   map[uuid.UUID]*model.User
+	emails map[string]uuid.UUID
 }
 
 func NewUser() *User {
@@ -32,26 +33,36 @@ func (r *User) GetByID(ctx context.Context, userId uuid.UUID) (*model.User, erro
 }
 
 func (r *User) GetByEmail(ctx context.Context, email string) (*model.User, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
-	return nil, nil
+	userId, exists := r.emails[email]
+	if !exists {
+		return nil, repository.ErrNotFound
+	}
+	user, err := r.GetByID(ctx, userId)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }
+
 func (r *User) Put(ctx context.Context, user *model.User) (uuid.UUID, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	// if user.ID != uuid.Nil {
-	// 	r.data[user.ID] = user
-	// 	return user.ID, nil
-	// }
-	// userId, err := uuid.NewV7()
-	// if err != nil {
-	// 	return uuid.Nil, err
-	// }
-	r.data[user.ID] = user
+	userId, err := uuid.NewV7()
+	if err != nil {
+		return uuid.Nil, err
+	}
+	r.data[userId] = user
+	r.emails[user.Email] = userId
 	return user.ID, nil
 }
 
 func (r *User) DeleteByID(ctx context.Context, userId uuid.UUID) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	delete(r.data, userId)
 	return nil
 }

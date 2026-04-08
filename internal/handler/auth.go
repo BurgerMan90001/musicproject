@@ -16,6 +16,7 @@ type authService interface {
 	Signup(ctx context.Context, email, password string) (*model.User, *model.TokenPair, error)
 	Login(ctx context.Context, email, password string) (*model.User, *model.TokenPair, error)
 	Refresh(ctx context.Context, refreshToken string) (*model.TokenPair, error)
+	Logout(ctx context.Context, accessToken, refreshToken string) error
 }
 
 type authHandler struct {
@@ -135,25 +136,23 @@ func (h *authHandler) handleRefresh() http.HandlerFunc {
 	}
 }
 
-func HandleLogout(authService auth.JWTService) http.HandlerFunc {
+func HandleLogout(authService authService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			MethodNotAllowedError(w)
 			return
 		}
 		ctx := r.Context()
-		cookie, err := r.Cookie(auth.TokenAccess)
+		access, err := r.Cookie(auth.TokenAccess)
 		if err != nil {
 			jsonutil.WriteError(w, err, http.StatusBadRequest)
 			return
 		}
 
-		if err := authService.RevokeToken(ctx, cookie.Value); err != nil {
+		if err := authService.Logout(ctx, access.Value, access.Value); err != nil {
 			jsonutil.WriteError(w, err, http.StatusInternalServerError)
 			return
 		}
-		// TODO USE authService.Logout function
-		//authService.Logout(ctx)
 
 		// Clear the cookie
 		http.SetCookie(w, accessCookie("", -1))

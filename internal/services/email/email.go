@@ -9,6 +9,10 @@ import (
 	"musicproject.com/internal/config/secrets"
 )
 
+type Sender interface {
+	Send(ctx context.Context, to, subject, body string) error
+}
+
 type Service struct {
 	smtp smtp.Client
 }

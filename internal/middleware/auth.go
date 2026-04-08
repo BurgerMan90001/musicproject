@@ -2,28 +2,36 @@ package middleware
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"musicproject.com/internal/jsonutil"
 	"musicproject.com/internal/services/auth"
+	"musicproject.com/pkg/model"
 )
 
-func RequireAuth(jwtService *auth.JWTService, next http.HandlerFunc) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie(auth.TokenAccess)
-		if err != nil {
-			jsonutil.WriteError(w, auth.ErrNoAccessToken, http.StatusUnauthorized)
-			return
-		}
+type validator interface {
+	Validate(tokenString string) (*model.Claims, error)
+}
 
-		claims, err := jwtService.ParseAccessToken(cookie.Value)
-		if err != nil {
-			jsonutil.WriteError(w, err, http.StatusUnauthorized)
-			return
-		}
+func RequireAuth(validator validator) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cookie, err := r.Cookie(auth.TokenAccess)
+			if err != nil {
+				jsonutil.WriteError(w, auth.ErrNoAccessToken, http.StatusUnauthorized)
+				return
+			}
 
-		// Pass claims to the next handler
-		ctx := context.WithValue(r.Context(), "claims", claims)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+			claims, err := validator.Validate(cookie.Name)
+			if err != nil {
+				jsonutil.WriteError(w, errors.New("Unauthorized"), http.StatusUnauthorized)
+				return
+			}
+
+			// Pass claims to the next handler
+			ctx := context.WithValue(r.Context(), "claims", claims)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
 }

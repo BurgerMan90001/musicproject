@@ -131,13 +131,6 @@ func (s *testSuite) TestSignup() {
 
 			WantMessage: auth.ErrInvalidEmail.Error(),
 		},
-		// {
-		// 	Name:     "method not allowed",
-		// 	Method:   http.MethodDelete,
-		// 	WantCode: http.StatusMethodNotAllowed,
-
-		// 	WantMessage: handler.ErrInvalidMethod.Error(),
-		// },
 		{
 			Name: "empty body",
 			Req: &request{
@@ -236,7 +229,7 @@ func (s *testSuite) TestRefresh() {
 			Req: &request{
 				refreshToken: access,
 			},
-			WantMessage: auth.ErrInvalidTokenType.Error(),
+			WantMessage: auth.ErrNoRefeshToken.Error(),
 		},
 		{
 			Name:        "empty refresh token string",
