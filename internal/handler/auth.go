@@ -143,16 +143,18 @@ func HandleLogout(authService authService) http.HandlerFunc {
 			return
 		}
 		ctx := r.Context()
-		access, err := r.Cookie(auth.TokenAccess)
+		cookie, err := r.Cookie(auth.TokenAccess)
 		if err != nil {
 			jsonutil.WriteError(w, err, http.StatusBadRequest)
 			return
 		}
 
-		if err := authService.Logout(ctx, access.Value, access.Value); err != nil {
+		if err := authService.RevokeToken(ctx, cookie.Value); err != nil {
 			jsonutil.WriteError(w, err, http.StatusInternalServerError)
 			return
 		}
+		// TODO USE authService.Logout function
+		authService.Logout(ctx, c)
 
 		// Clear the cookie
 		http.SetCookie(w, accessCookie("", -1))
@@ -178,7 +180,7 @@ func HandleOauthLogin(oauth auth.Oauth) http.HandlerFunc {
 		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 	}
 }
-func HandleOauthGoogleRedirect(oauth auth.Oauth) http.HandlerFunc {
+func HandleOauthRedirect(oauth auth.Oauth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -186,7 +188,6 @@ func HandleOauthGoogleRedirect(oauth auth.Oauth) http.HandlerFunc {
 		state := r.FormValue("state")
 
 		stateCookie, err := r.Cookie("oauthState")
-
 		if state != stateCookie.Value || err != nil {
 			log.Println("invalid google oauth state")
 			http.Redirect(w, r, "/", http.StatusFound)
@@ -203,20 +204,5 @@ func HandleOauthGoogleRedirect(oauth auth.Oauth) http.HandlerFunc {
 		http.SetCookie(w, refreshCookie(tokenPair.RefreshToken, 1))
 
 		jsonutil.WriteJSON(w, user, http.StatusOK)
-		// userInfo, err := oauth.GetUserInfo(ctx, token)
-		// if err != nil {
-		// 	log.Printf("get user info error: %v", err)
-		// 	http.Redirect(w, r, "/", http.StatusFound)
-		// 	return
-		// }
-
-		// tokenPair, err := authService.GenerateTokenPair()
-
-		// if err != nil {
-		// 	log.Printf("generate token error: %v", err)
-		// 	http.Redirect(w, r, "/", http.StatusFound)
-		// 	return
-		// }
-
 	}
 }

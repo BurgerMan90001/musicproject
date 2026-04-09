@@ -36,3 +36,4 @@ type Song interface {
 type Token interface {
 	Repo[string]
 }
+
