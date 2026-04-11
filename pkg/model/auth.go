@@ -31,5 +31,6 @@ type TokenPair struct {
 type Claims struct {
 	UserID    uuid.UUID `json:"userId"`
 	TokenType string    `json:"tokenType"`
+	Roles     []string  `json:"roles"`
 	jwt.RegisteredClaims
 }

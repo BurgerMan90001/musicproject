@@ -7,6 +7,8 @@ services:
   auth:
     jwt:
       issuer: okapi
+      audience:
+        -
     oauth:
       google:
         redirectUrl: http://localhost:8081/v1/auth/google/redirect

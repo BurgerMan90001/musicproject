@@ -2,159 +2,103 @@ package auth
 
 import (
 	"context"
-	"errors"
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"musicproject.com/internal/config/secrets"
 	"musicproject.com/pkg/model"
 )
 
 type JWTService struct {
-	issuer     string
-	accessKey  []byte
-	refreshKey []byte
+	key       []byte
+	tokenType string
+	issuer    string
+	audience  []string
+	ttl       time.Duration
 }
 
-func NewJWTService(ctx context.Context, sm secrets.Manager) (*JWTService, error) {
-	var (
-		issuer, issuerErr      = sm.Get(ctx, "JWT_ISSUER")
-		accessKey, accessErr   = sm.Get(ctx, "JWT_ACCESS_KEY")
-		refreshKey, refreshErr = sm.Get(ctx, "JWT_REFRESH_KEY")
-	)
-	if err := errors.Join(issuerErr, accessErr, refreshErr); err != nil {
-		return nil, err
+func NewJWTService(envVar, issuer, tokenType string, audience []string, ttl time.Duration) (*JWTService, error) {
+	key := os.Getenv(envVar)
+	if len(key) < 32 {
+		return nil, fmt.Errorf("env var %q must be at least 32 bytes long", envVar)
+	}
+	switch tokenType {
+	case TokenAccess, TokenRefresh:
+	default:
+		return nil, ErrInvalidTokenType
 	}
 	return &JWTService{
-		issuer:     issuer,
-		accessKey:  []byte(accessKey),
-		refreshKey: []byte(refreshKey),
+		key:       []byte(key),
+		issuer:    issuer,
+		tokenType: tokenType,
+		audience:  audience,
+		ttl:       ttl,
 	}, nil
 }
-func (s *JWTService) generateToken(userId uuid.UUID, tokenType string, expireAt time.Time) (string, error) {
+func (s *JWTService) generateToken(userId uuid.UUID, roles []string) (string, error) {
+	now := time.Now()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &model.Claims{
 		UserID:    userId,
-		TokenType: tokenType,
+		TokenType: s.tokenType,
+		Roles:     roles,
 		RegisteredClaims: jwt.RegisteredClaims{
+			// ID is for revocation
+			ID:        uuid.NewString(),
 			Issuer:    s.issuer,
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			ExpiresAt: jwt.NewNumericDate(expireAt),
+			Audience:  s.audience,
+			Subject:   userId.String(),
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(s.ttl)),
 		},
 	})
-
-	key, err := s.keyFunc(tokenType)
-	if err != nil {
-		return "", err
-	}
-	day := time.Now().Weekday()
-	switch day {
-	case time.Thursday:
-
-	}
-
-	tokenString, err := token.SignedString(key)
-	if err != nil {
-		return "", err
-	}
-
-	return tokenString, nil
+	return token.SignedString(s.key)
 }
 
-func (s *JWTService) generateTokenPair(userId uuid.UUID) (*model.TokenPair, error) {
-	accessToken, err := s.generateToken(userId, TokenAccess, ExpiresInOneHour)
-	if err != nil {
-		return nil, err
-	}
-	refreshToken, err := s.generateToken(userId, TokenAccess, ExpiresInOneHour)
-	if err != nil {
-		return nil, err
-	}
-	// TODO Revoke refresh
-
-	return &model.TokenPair{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-	}, nil
-}
-func (s *JWTService) revokeToken(ctx context.Context, tokenString string) error {
-	return nil
-}
-
-func (s *JWTService) validateToken(tokenString string, tokenType string) (*jwt.Token, error) {
-	key, err := s.keyFunc(tokenType)
-	if err != nil {
-		return nil, err
-	}
-	token, err := jwt.ParseWithClaims(tokenString,
+func (s *JWTService) validateToken(tokenString string) (*model.Claims, error) {
+	token, err := jwt.ParseWithClaims(
+		tokenString,
 		&model.Claims{},
 		func(t *jwt.Token) (any, error) {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, jwt.ErrSignatureInvalid
+				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 			}
-			return key, nil
+			return s.key, nil
 		},
 		jwt.WithIssuer(s.issuer),
 		jwt.WithValidMethods([]string{"HS256"}),
 		jwt.WithExpirationRequired(),
+		jwt.WithAudience(s.audience[0]),
 	)
 	if err != nil {
-		if errors.Is(err, jwt.ErrTokenMalformed) {
-			return nil, jwt.ErrTokenMalformed
-		}
-		return nil, err
+		return nil, fmt.Errorf("validate token: %v", err)
 	}
-	return token, nil
-}
-
-func (s *JWTService) validateAccessToken(accessToken string) (*model.Claims, error) {
-	token, err := s.validateToken(accessToken, TokenAccess)
-	if err != nil {
-		if errors.Is(err, jwt.ErrTokenExpired) {
-			return nil, jwt.ErrTokenExpired
-		}
-		return nil, err
-	}
-
-	claims, ok := token.Claims.(*model.Claims)
-
-	switch {
-	case !ok || !token.Valid:
-		return nil, jwt.ErrTokenInvalidClaims
-	case claims.TokenType != TokenAccess:
-		return nil, ErrInvalidTokenType
-	default:
-		return claims, nil
-	}
-}
-
-func (s *JWTService) refreshTokens(ctx context.Context, refeshToken string) (*model.TokenPair, error) {
-	token, err := s.validateToken(refeshToken, TokenRefresh)
-	if err != nil {
-		return nil, err
-	}
-
 	claims, ok := token.Claims.(*model.Claims)
 	switch {
 	case !ok || !token.Valid:
 		return nil, jwt.ErrTokenInvalidClaims
-
-	case claims.TokenType != TokenRefresh:
-		return nil, ErrInvalidTokenType
-
-		// TODO Check if revoked
-	}
-
-	return s.generateTokenPair(claims.UserID)
-}
-
-func (s *JWTService) keyFunc(tokenType string) ([]byte, error) {
-	switch tokenType {
-	case TokenAccess:
-		return s.accessKey, nil
-	case TokenRefresh:
-		return []byte(s.refreshKey), nil
-	default:
+	case claims.TokenType != s.tokenType:
 		return nil, ErrInvalidTokenType
 	}
+	return claims, nil
 }
+
+func (s *JWTService) revokeToken(ctx context.Context, tokenString string) error {
+	return nil
+}
+
+// 	return s.generateTokenPair(claims.UserID)
+// }
+
+// func (s *JWTService) keyFunc(tokenType string) ([]byte, error) {
+// 	switch tokenType {
+// 	case TokenAccess:
+// 		return s.accessKey, nil
+// 	case TokenRefresh:
+// 		return []byte(s.refreshKey), nil
+// 	default:
+// 		return nil, ErrInvalidTokenType
+// 	}
+// }
