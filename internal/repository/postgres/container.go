@@ -15,21 +15,21 @@ import (
 
 type PostgresContainer struct {
 	*postgres.PostgresContainer
-	URL string
+	URI string
 }
 
 func newPostgresContainer(t *testing.T, ctx context.Context, cfg config.Postgres, sm secrets.Manager) *PostgresContainer {
 	t.Helper()
 
-	s, err := secrets.GetSecrets(ctx, sm, "PG_USERNAME",
+	secretList, err := secrets.GetSecrets(ctx, sm, "PG_USERNAME",
 		"PG_PASSWORD", "PG_DATABASE",
 	)
 	require.NoError(t, err)
 
 	pg, err := postgres.Run(ctx, cfg.Image,
-		postgres.WithUsername(s[0]),
-		postgres.WithPassword(s[1]),
-		postgres.WithDatabase(s[2]),
+		postgres.WithUsername(secretList["PG_USERNAME"]),
+		postgres.WithPassword(secretList["PG_PASSWORD"]),
+		postgres.WithDatabase(secretList["PG_DATABASE"]),
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("database system is ready to accept connections").
 				WithOccurrence(2).WithStartupTimeout(5*time.Second)),
@@ -37,8 +37,8 @@ func newPostgresContainer(t *testing.T, ctx context.Context, cfg config.Postgres
 	require.NoError(t, err)
 	testcontainers.CleanupContainer(t, pg)
 
-	url, err := pg.ConnectionString(ctx, "sslmode=disable")
+	uri, err := pg.ConnectionString(ctx, "sslmode=disable")
 	require.NoError(t, err)
 
-	return &PostgresContainer{PostgresContainer: pg, URL: url}
+	return &PostgresContainer{PostgresContainer: pg, URI: uri}
 }

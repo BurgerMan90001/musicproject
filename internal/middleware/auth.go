@@ -11,7 +11,7 @@ import (
 )
 
 type validator interface {
-	Validate(tokenString string) (*model.Claims, error)
+	Validate(ctx context.Context, tokenString string) (*model.Claims, error)
 }
 
 func RequireAuth(validator validator) func(next http.Handler) http.Handler {
@@ -22,16 +22,17 @@ func RequireAuth(validator validator) func(next http.Handler) http.Handler {
 				jsonutil.WriteError(w, auth.ErrNoAccessToken, http.StatusUnauthorized)
 				return
 			}
+			ctx := r.Context()
 
-			claims, err := validator.Validate(cookie.Name)
+			claims, err := validator.Validate(ctx, cookie.Name)
 			if err != nil {
 				jsonutil.WriteError(w, errors.New("Unauthorized"), http.StatusUnauthorized)
 				return
 			}
 
 			// Pass claims to the next handler
-			ctx := context.WithValue(r.Context(), "claims", claims)
-			next.ServeHTTP(w, r.WithContext(ctx))
+			ctxClaims := context.WithValue(r.Context(), "claims", claims)
+			next.ServeHTTP(w, r.WithContext(ctxClaims))
 		})
 	}
 }

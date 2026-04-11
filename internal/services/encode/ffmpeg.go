@@ -5,7 +5,6 @@ package encode
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,11 +13,12 @@ import (
 var _ HLSEncoder = (*FFmpeg)(nil)
 
 type FFmpeg struct {
+	//store     file.Blobstore
+	logOutput bool
 }
 
 // Command line ffmpeg encoder
 func NewFFmpeg() *FFmpeg {
-	log.Println("NEW FFMPEG")
 	return &FFmpeg{}
 }
 
@@ -39,18 +39,26 @@ func (s *FFmpeg) Segment(ctx context.Context, inputPath, outputDir string) error
 		// Keep all segments in manifest
 		"-hls_list_size", "0",
 		// Bitrate flags
-		"-c:v libx264 -c:a aac",
+		//"-c:v libx264 -c:a aac",
 		"-hls_segment_filename", segmentPattern,
 		"-f", "hls",
+		"pipe:1",
 		manifestPath,
 	)
-	// Get ffmepeg output for debugging
-	//cmd.Stderr = os.Stderr
+	if s.logOutput {
+		// Get ffmepeg output for debugging
+		cmd.Stderr = os.Stderr
+	}
 
-	// begin ffmpeg
+	// Start ffmpeg
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("ffmpeg exec: %w", err)
 	}
+
+	// Store the manifest
+	// s.store.CreateObject(ctx, manifestPath, )
+	// // Store the file segments
+	// s.store.CreateObject(ctx, segmentPattern)
 
 	return nil
 }

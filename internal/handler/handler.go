@@ -14,6 +14,7 @@ import (
 	"musicproject.com/internal/repository/postgres"
 	"musicproject.com/internal/services/auth"
 	"musicproject.com/internal/services/email"
+	"musicproject.com/internal/services/encode"
 	"musicproject.com/internal/services/file"
 	"musicproject.com/internal/services/song"
 )
@@ -30,6 +31,7 @@ func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB, sm secrets.Mana
 	// if err != nil {
 	// 	return nil, err
 	// }
+	encoder := encode.NewFFmpeg()
 
 	authService, err := auth.New(ctx, cfg.Services.Auth, userRepo, sm)
 	if err != nil {
@@ -38,7 +40,7 @@ func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB, sm secrets.Mana
 	userHandler := &userHandler{userRepo: userRepo}
 	authHandler := &authHandler{authService: authService}
 
-	songService := song.NewSong(store, songRepo)
+	songService := song.NewSong(store, encoder, songRepo)
 	//store := file.NewFileSystem()
 
 	emailService, err := email.New(ctx, sm)
@@ -54,7 +56,7 @@ func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB, sm secrets.Mana
 	mux.HandleFunc("/users/{id}", userHandler.handleUsersID())
 
 	mux.HandleFunc("/songs/{id}", HandleSongsMetadata(songRepo))
-	mux.Handle("POST /songs/upload", HandleSongUpload(songService))
+	mux.Handle("/songs/upload", HandleSongUpload(songService))
 
 	// maybe
 	//mux.HandleFunc("/artists/{id}", HandleArtists())
@@ -68,10 +70,10 @@ func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB, sm secrets.Mana
 
 	// oauth routes
 	mux.HandleFunc("/auth/google/login", HandleOauthLogin(authService.Google))
-	mux.HandleFunc("/auth/google/redirect", HandleOauthGoogleRedirect(authService.Google))
+	mux.HandleFunc("/auth/google/redirect", HandleOauthRedirect(authService.Google))
 
 	// Test routes
-	mux.Handle("/protected", middleware.RequireAuth(authService)(HandleTest))
+	mux.Handle("/protected", middleware.RequireAuth(authService)(HandleTest()))
 	mux.HandleFunc("/audio", handleAudio(songService))
 
 	// file server
@@ -91,8 +93,7 @@ func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB, sm secrets.Mana
 
 	// var handler http.Handler = root
 	// if cfg.Middleware.Logger {
-	// 	handler = middleware.WithLogger(root)
-	// }
+	// 	handler = middleware.WithLogger(root) // }
 	return root, nil
 }
 
@@ -100,12 +101,15 @@ func HandleNotFound(w http.ResponseWriter, r *http.Request) {
 	jsonutil.WriteError(w, errors.New("route not found"), http.StatusNotFound)
 }
 
-func HandleTest(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	ctx := r.Context()
-	claims, ok := contextClaims(ctx)
-	if ok {
-		jsonutil.WriteJSON(w, claims, http.StatusOK)
+func HandleTest() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		w.WriteHeader(http.StatusOK)
+		ctx := r.Context()
+		claims, ok := contextClaims(ctx)
+		if ok {
+			jsonutil.WriteJSON(w, claims, http.StatusOK)
+		}
+		jsonutil.WriteJSON(w, nil, http.StatusOK)
 	}
-	jsonutil.WriteJSON(w, nil, http.StatusOK)
 }

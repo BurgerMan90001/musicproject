@@ -13,6 +13,7 @@ type Album struct {
 	ArtistID int       `json:"artistId"`
 }
 
+// A song's metadata
 type Song struct {
 	ID       uuid.UUID `json:"id"`
 	Name     string    `json:"name"`
@@ -26,7 +27,7 @@ type Song struct {
 type UploadSongRequest struct {
 	Name  string `json:"name"`
 	Genre string `json:"genre"`
-	Image    string    `json:"image"`
+	Image string `json:"image"`
 }
 
 type Rating struct {

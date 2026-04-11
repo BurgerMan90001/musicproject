@@ -25,6 +25,7 @@ func (s *testSuite) TestAuthMiddleware() {
 
 	userId := uuid.Nil
 
+	
 	expired, err := s.jwtService.GenerateToken(userId, auth.TokenAccess, time.Now().Add(-1*time.Hour))
 	s.Require().NoError(err)
 
@@ -77,7 +78,7 @@ func (s *testSuite) TestAuthMiddleware() {
 			s.NotEmpty(resBody["message"])
 		})
 	}
-	valid, err := s.jwtService.GenerateToken(userId, auth.TokenAccess, auth.ExpiresInOneDay)
+	valid, err := s.jwtService.GenerateToken(userId, auth.TokenAccess, )
 	s.Require().NoError(err)
 
 	s.Run("success", func() {

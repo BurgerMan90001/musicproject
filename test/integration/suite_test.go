@@ -51,8 +51,10 @@ func (s *testSuite) SetupSuite() {
 	s.sm, err = secrets.NewEnv()
 	s.Require().NoError(err)
 
-	s.jwtService, err = auth.NewJWTService(s.ctx, s.sm)
+	s.jwtService, err = auth.NewJWTService(s.ctx, s.sm, cfg.Services.Auth.Jwt)
 	s.Require().NoError(err)
+	//test, err := auth.New()
+	
 
 	db := postgres.NewTestDB(t, s.ctx, cfg.Repository.Postgres, s.sm)
 

@@ -3,9 +3,11 @@ package auth
 import (
 	"context"
 	"errors"
+	"net/http"
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/oauth2/google"
 	"musicproject.com/internal/config"
 	"musicproject.com/internal/config/secrets"
 	"musicproject.com/internal/repository"
@@ -27,6 +29,11 @@ type userRepo interface {
 	Put(ctx context.Context, user *model.User) (uuid.UUID, error)
 }
 
+type Oauth interface {
+	Login(ctx context.Context, code string) (*model.User, *model.TokenPair, error)
+	RedirectURL(w http.ResponseWriter) string
+}
+
 type Service struct {
 	userRepo userRepo
 
@@ -35,7 +42,7 @@ type Service struct {
 }
 
 func New(ctx context.Context, cfg config.Auth, repo userRepo, sm secrets.Manager) (*Service, error) {
-	google, err := NewGoogle(ctx, cfg.Oauth.Google, sm)
+	google, err := NewOauth(ctx, cfg.Oauth.Google, sm, google.Endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -47,11 +54,11 @@ func New(ctx context.Context, cfg config.Auth, repo userRepo, sm secrets.Manager
 		return nil, errors.New("Auth service: nil secret manager")
 	}
 
-	JWT, err := NewJWTService(ctx, sm)
+	jwt, err := NewJWTService(ctx, sm, cfg.Jwt)
 	if err != nil {
 		return nil, err
 	}
-	return &Service{repo, JWT, google}, nil
+	return &Service{repo, jwt, google}, nil
 }
 
 func (s *Service) Signup(ctx context.Context, email string, password string) (*model.User, *model.TokenPair, error) {

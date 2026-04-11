@@ -4,31 +4,29 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
+	"time"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"musicproject.com/internal/config"
 	"musicproject.com/internal/config/secrets"
+	"musicproject.com/internal/jsonutil"
 	"musicproject.com/pkg/model"
 )
-
-type Oauth interface {
-	Login(ctx context.Context, code string) (*model.User, *model.TokenPair, error)
-	RedirectURL(w http.ResponseWriter) string
-}
 
 type GoogleOauth struct {
 	cfg *oauth2.Config
 }
 
-func NewGoogle(ctx context.Context, cfg config.Google, sm secrets.Manager) (*GoogleOauth, error) {
+func NewOauth(ctx context.Context, cfg config.Google, sm secrets.Manager, endpoint oauth2.Endpoint) (*GoogleOauth, error) {
 	var (
 		clientId, clientErr     = sm.Get(ctx, "GOOGLE_OAUTH_CLIENT_ID")
 		clientSecret, secretErr = sm.Get(ctx, "GOOGLE_OAUTH_CLIENT_SECRET")
 	)
+	os.Getenv(clientId)
 	if err := errors.Join(clientErr, secretErr); err != nil {
 		return nil, err
 	}
@@ -41,8 +39,15 @@ func NewGoogle(ctx context.Context, cfg config.Google, sm secrets.Manager) (*Goo
 	}}, nil
 }
 func (s *GoogleOauth) Login(ctx context.Context, code string) (*model.User, *model.TokenPair, error) {
-	s.getUserInfo(ctx, &oauth2.Token{})
-	return nil, nil, nil
+	userInfo, err := s.getUserInfo(ctx, &oauth2.Token{})
+	if err != nil {
+		return nil, nil, err
+	}
+	user := &model.User{
+		Email: userInfo.Email,
+	}
+
+	return user, nil, nil
 }
 
 // Generates state cookie and returns redirect url
@@ -53,6 +58,9 @@ func (s *GoogleOauth) RedirectURL(w http.ResponseWriter) string {
 }
 
 func (s *GoogleOauth) getUserInfo(ctx context.Context, token *oauth2.Token) (*model.OauthUserInfo, error) {
+	ctx, cancel := context.WithTimeout(ctx, time.Second*5)
+	defer cancel()
+
 	client := s.cfg.Client(ctx, token)
 
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
@@ -61,12 +69,12 @@ func (s *GoogleOauth) getUserInfo(ctx context.Context, token *oauth2.Token) (*mo
 	}
 	defer resp.Body.Close()
 
-	var userInfo model.OauthUserInfo
-	if err := json.NewDecoder(resp.Body).Decode(&userInfo); err != nil {
+	userInfo, err := jsonutil.ReadJSON[*model.OauthUserInfo](resp.Body)
+	if err != nil {
 		return nil, err
 	}
 
-	return &userInfo, nil
+	return userInfo, nil
 }
 
 func generateStateCookie(w http.ResponseWriter) string {
@@ -82,13 +90,14 @@ func generateStateCookie(w http.ResponseWriter) string {
 	})
 	return state
 }
-func (s *GoogleOauth) validateStateCookie(r *http.Request) error {
-	//code := r.FormValue("code")
-	state := r.FormValue("state")
-	stateCookie, err := r.Cookie("oauthState")
-	if state != stateCookie.Value || err != nil {
-		return errors.New("invalid google oauth state")
 
-	}
-	return nil
-}
+// func (s *GoogleOauth) validateStateCookie(r *http.Request) error {
+// 	//code := r.FormValue("code")
+// 	state := r.FormValue("state")
+// 	stateCookie, err := r.Cookie("oauthState")
+// 	if state != stateCookie.Value || err != nil {
+// 		return errors.New("invalid google oauth state")
+
+// 	}
+// 	return nil
+// }

@@ -21,6 +21,7 @@ func NewS3(ctx context.Context) (*AWSS3, error) {
 	if err != nil {
 		return nil, err
 	}
+	
 	client := s3.NewFromConfig(cfg)
 
 	return &AWSS3{client: client}, nil

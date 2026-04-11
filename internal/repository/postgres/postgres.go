@@ -15,13 +15,11 @@ import (
 )
 
 func NewDB(ctx context.Context, sm secrets.Manager) (*sql.DB, error) {
-	s, err := secrets.GetSecrets(ctx, sm, "PG_USERNAME",
-		"PG_PASSWORD", "PG_DATABASE",
-	)
+	uri, err := sm.Get(ctx, "PG_URI")
 	if err != nil {
 		return nil, err
 	}
-	db, err := newDBFromUrl(ctx, url(s[0], s[1], s[2]))
+	db, err := newDBFromUri(ctx, uri)
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +30,7 @@ func NewTestDB(t *testing.T, ctx context.Context, cfg config.Postgres, sm secret
 	t.Helper()
 	pg := newPostgresContainer(t, ctx, cfg, sm)
 
-	db, err := newDBFromUrl(ctx, pg.URL)
+	db, err := newDBFromUri(ctx, pg.URI)
 	require.NoError(t, err)
 
 	err = schema.LoadTestData(ctx, db)
@@ -41,7 +39,7 @@ func NewTestDB(t *testing.T, ctx context.Context, cfg config.Postgres, sm secret
 	return db
 }
 
-func newDBFromUrl(ctx context.Context, url string) (*sql.DB, error) {
+func newDBFromUri(ctx context.Context, url string) (*sql.DB, error) {
 	db, err := sql.Open("postgres", url)
 	if err != nil {
 		return nil, fmt.Errorf("Pg open: %v", err)
@@ -57,6 +55,6 @@ func newDBFromUrl(ctx context.Context, url string) (*sql.DB, error) {
 	return db, nil
 }
 
-func url(username, password, database string) string {
+func uri(username, password, database string) string {
 	return fmt.Sprintf("postgres://%s:%s@localhost/%s?sslmode=disable", username, password, database)
 }

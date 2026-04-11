@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"musicproject.com/internal/middleware"
-	encode "musicproject.com/internal/services/encoder"
+	"musicproject.com/internal/services/encode"
 )
 
 func main() {

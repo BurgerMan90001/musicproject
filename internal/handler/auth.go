@@ -178,7 +178,7 @@ func HandleOauthLogin(oauth auth.Oauth) http.HandlerFunc {
 		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 	}
 }
-func HandleOauthGoogleRedirect(oauth auth.Oauth) http.HandlerFunc {
+func HandleOauthRedirect(oauth auth.Oauth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -203,20 +203,5 @@ func HandleOauthGoogleRedirect(oauth auth.Oauth) http.HandlerFunc {
 		http.SetCookie(w, refreshCookie(tokenPair.RefreshToken, 1))
 
 		jsonutil.WriteJSON(w, user, http.StatusOK)
-		// userInfo, err := oauth.GetUserInfo(ctx, token)
-		// if err != nil {
-		// 	log.Printf("get user info error: %v", err)
-		// 	http.Redirect(w, r, "/", http.StatusFound)
-		// 	return
-		// }
-
-		// tokenPair, err := authService.GenerateTokenPair()
-
-		// if err != nil {
-		// 	log.Printf("generate token error: %v", err)
-		// 	http.Redirect(w, r, "/", http.StatusFound)
-		// 	return
-		// }
-
 	}
 }

@@ -6,24 +6,27 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	"github.com/google/uuid"
 	"musicproject.com/internal/repository"
+	"musicproject.com/internal/services/encode"
 	"musicproject.com/internal/services/file"
 	"musicproject.com/pkg/model"
 )
 
 type Service struct {
-	store file.Blobstore
-	repo  repository.Song
-	root  string
+	store   file.Blobstore
+	encoder encode.HLSEncoder
+	repo    repository.Song
 }
 
-func NewSong(store file.Blobstore, repo repository.Song) *Service {
-	return &Service{store, repo, "/test"}
+func NewSong(store file.Blobstore, encoder encode.HLSEncoder, repo repository.Song) *Service {
+	return &Service{store, encoder, repo}
 }
 
+// Stores file then encodes
 func (s *Service) UploadSong(ctx context.Context, file multipart.File,
 	header *multipart.FileHeader, songRequest model.UploadSongRequest) (*model.Song, error) {
 
@@ -37,14 +40,17 @@ func (s *Service) UploadSong(ctx context.Context, file multipart.File,
 		return nil, fmt.Errorf("Upload incorrect mime type: %v", mimeType)
 	}
 
-	if err := s.store.CreateObject(ctx, "", header.Filename, contents, true, mimeType); err != nil {
+	parent := "/audio"
+
+	if err := s.store.CreateObject(ctx, parent, header.Filename, contents, true, mimeType); err != nil {
 		return nil, err
 	}
-
+	// Create song metadata
 	song := &model.Song{
 		Name:  songRequest.Name,
 		Genre: songRequest.Genre,
 		Image: songRequest.Image,
+		Source: filepath.Join(header.Filename),
 	}
 
 	songId, err := s.repo.Put(ctx, song)

@@ -55,6 +55,7 @@ func TestWriteJSON(t *testing.T) {
 			assert.Equal(t, tt.wantCode, errorRes.Code)
 			assert.NotEmpty(t, errorRes.Message)
 		})
+
 	}
 	t.Run("status ok", func(t *testing.T) {
 		w := httptest.NewRecorder()

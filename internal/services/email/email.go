@@ -18,20 +18,24 @@ type Service struct {
 }
 
 func New(ctx context.Context, sm secrets.Manager) (*Service, error) {
-	s, err := secrets.GetSecrets(ctx, sm, "SMTP_EMAIL",
+	secretList, err := secrets.GetSecrets(ctx, sm, "SMTP_EMAIL",
 		"SMTP_PASSWORD", "SMTP_HOST", "SMTP_PORT")
 	if err != nil {
 		return nil, err
 	}
 
-	smtpAuth := smtp.PlainAuth("", s[0], s[1], s[2])
-	client, err := smtp.Dial(fmt.Sprintf("%s:%s", s[2], s[3]))
+	smtpAuth := smtp.PlainAuth("", secretList["SMTP_EMAIL"],
+		secretList["SMTP_PASSWORD"], secretList["SMTP_HOST"])
+
+	addr := fmt.Sprintf("%s:%s", secretList["SMTP_HOST"], secretList["SMTP_PORT"])
+
+	client, err := smtp.Dial(addr)
 	if err != nil {
 		return nil, fmt.Errorf("Email service dial: %v", err)
 	}
-	// start tls
+	// start tls connection
 	if ok, _ := client.Extension("STARTTLS"); ok {
-		if err := client.StartTLS(&tls.Config{ServerName: s[2]}); err != nil {
+		if err := client.StartTLS(&tls.Config{ServerName: secretList["SMTP_HOST"]}); err != nil {
 			return nil, fmt.Errorf("Email service startTLS: %w", err)
 		}
 	}

@@ -5,9 +5,11 @@ api:
 
 services:
   auth:
+    jwt:
+      issuer: okapi
     oauth:
       google:
-        redirectURL: http://localhost:8081/v1/auth/google/redirect
+        redirectUrl: http://localhost:8081/v1/auth/google/redirect
         scopes:
           - https://www.googleapis.com/auth/userinfo.email
           - https://www.googleapis.com/auth/userinfo.profile
@@ -21,4 +23,7 @@ repository:
     image: postgres:alpine
 
 aws:
-  s3: false
+  s3:
+    buckets:
+      audio: okapi-audio-634220481321-ca-central-1-an
+      log: d
