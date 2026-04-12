@@ -9,14 +9,8 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/oauth2/google"
 	"musicproject.com/internal/config"
-	"musicproject.com/internal/config/secrets"
 	"musicproject.com/internal/repository"
 	"musicproject.com/pkg/model"
-)
-
-const (
-	TokenAccess  = "accessKey"
-	TokenRefresh = "refreshKey"
 )
 
 var defaultRoles = []string{"user"}
@@ -38,8 +32,8 @@ type Service struct {
 	Google     Oauth
 }
 
-func New(ctx context.Context, cfg config.Auth, repo userRepo, sm secrets.Manager) (*Service, error) {
-	google, err := NewOauth(ctx, cfg.Oauth.Google, sm, google.Endpoint)
+func New(ctx context.Context, cfg config.Auth, repo userRepo) (*Service, error) {
+	google, err := NewOauth(cfg.Oauth.Google.RedirectURL, cfg.Oauth.Google.Scopes, google.Endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -47,15 +41,12 @@ func New(ctx context.Context, cfg config.Auth, repo userRepo, sm secrets.Manager
 	if repo == nil {
 		return nil, errors.New("Auth service: nil repo")
 	}
-	if sm == nil {
-		return nil, errors.New("Auth service: nil secret manager")
-	}
 
-	jwtAccess, err := NewJWTService("JWT_ACCESS_KEY", "", TokenAccess, []string{}, time.Minute*30)
+	jwtAccess, err := NewJWTService(cfg.Jwt, "JWT_ACCESS_KEY", model.TokenAccess, time.Minute*30)
 	if err != nil {
 		return nil, err
 	}
-	jwtRefresh, err := NewJWTService("JWT_REFRESH_KEY", "", TokenRefresh, []string{}, time.Hour*24*7)
+	jwtRefresh, err := NewJWTService(cfg.Jwt, "JWT_REFRESH_KEY", model.TokenRefresh, time.Hour*24*7)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +130,7 @@ func (s *Service) Logout(ctx context.Context, accessToken, refeshToken string) e
 }
 
 func (s *Service) Refresh(ctx context.Context, refeshToken string) (*model.TokenPair, error) {
-	claims, err := s.jwtRefresh.validateToken(refeshToken)
+	claims, err := s.jwtRefresh.ValidateToken(refeshToken)
 	if err != nil {
 		return nil, err
 	}
@@ -154,16 +145,16 @@ func (s *Service) Refresh(ctx context.Context, refeshToken string) (*model.Token
 	return tokenPair, nil
 }
 
-func (s *Service) ValidateAccess(tokenString string) (*model.Claims, error) {
-	return s.jwtAccess.validateToken(tokenString)
+func (s *Service) Validate(tokenString string) (*model.Claims, error) {
+	return s.jwtAccess.ValidateToken(tokenString)
 }
 
 func (s *Service) generateTokenPair(userId uuid.UUID, roles []string) (*model.TokenPair, error) {
-	accessToken, err := s.jwtAccess.generateToken(userId, roles)
+	accessToken, err := s.jwtAccess.GenerateToken(userId, roles)
 	if err != nil {
 		return nil, err
 	}
-	refreshToken, err := s.jwtRefresh.generateToken(userId, roles)
+	refreshToken, err := s.jwtRefresh.GenerateToken(userId, roles)
 	if err != nil {
 		return nil, err
 	}

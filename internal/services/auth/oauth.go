@@ -4,14 +4,10 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"errors"
 	"net/http"
-	"os"
 	"time"
 
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
-	"musicproject.com/internal/config"
 	"musicproject.com/internal/config/secrets"
 	"musicproject.com/internal/jsonutil"
 	"musicproject.com/pkg/model"
@@ -21,21 +17,17 @@ type GoogleOauth struct {
 	cfg *oauth2.Config
 }
 
-func NewOauth(ctx context.Context, cfg config.Google, sm secrets.Manager, endpoint oauth2.Endpoint) (*GoogleOauth, error) {
-	var (
-		clientId, clientErr     = sm.Get(ctx, "GOOGLE_OAUTH_CLIENT_ID")
-		clientSecret, secretErr = sm.Get(ctx, "GOOGLE_OAUTH_CLIENT_SECRET")
-	)
-	os.Getenv(clientId)
-	if err := errors.Join(clientErr, secretErr); err != nil {
+func NewOauth(redirectUrl string, scopes []string, endpoint oauth2.Endpoint) (*GoogleOauth, error) {
+	secretList, err := secrets.GetEnv("GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET")
+	if err != nil {
 		return nil, err
 	}
 	return &GoogleOauth{&oauth2.Config{
-		ClientID:     clientId,
-		ClientSecret: clientSecret,
-		RedirectURL:  cfg.RedirectURL,
-		Scopes:       cfg.Scopes,
-		Endpoint:     google.Endpoint,
+		ClientID:     secretList["GOOGLE_OAUTH_CLIENT_ID"],
+		ClientSecret: secretList["GOOGLE_OAUTH_CLIENT_SECRET"],
+		RedirectURL:  redirectUrl,
+		Scopes:       scopes,
+		Endpoint:     endpoint,
 	}}, nil
 }
 func (s *GoogleOauth) Login(ctx context.Context, code string) (*model.User, *model.TokenPair, error) {

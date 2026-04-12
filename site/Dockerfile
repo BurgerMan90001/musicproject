@@ -12,7 +12,7 @@ COPY . .
 
 RUN npm run build
 
-FROM nginx
+FROM nginx:alpine
 
 COPY nginx/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/site/dist /usr/share/nginx/html

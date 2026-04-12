@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
 	"musicproject.com/internal/config"
@@ -15,6 +17,10 @@ import (
 )
 
 func main() {
+	var env string
+	flag.StringVar(&env, "env", "dev", "environment type")
+	flag.Parse()
+
 	ctx, done := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer func() {
 		done()
@@ -23,27 +29,34 @@ func main() {
 		}
 	}()
 
-	if err := run(ctx); err != nil {
+	if err := run(ctx, env); err != nil {
 		log.Fatal(err)
 	}
 
 	log.Println("server shutdown")
 }
 
-func run(ctx context.Context) error {
+func run(ctx context.Context, env string) error {
 	log.Println("Starting server")
-	// load config
-	cfg, err := config.LoadConfig()
+
+	configFile := "config.dev.yml"
+	envFile := ".env.dev"
+	if env == "prod" {
+		configFile = "config.prod.yml"
+		envFile = ".env.prod"
+	}
+
+	cfg, err := config.LoadConfig(filepath.Join("config", configFile))
 	if err != nil {
 		return fmt.Errorf("Config load: %v", err)
 	}
-	// create secret manager
-	sm, err := secrets.NewEnv()
+	// load env
+	err = secrets.LoadEnv(filepath.Join(envFile))
 	if err != nil {
 		return fmt.Errorf("New env secret: %v", err)
 	}
 	//create database connection
-	db, err := postgres.NewDB(ctx, sm)
+	db, err := postgres.NewDB(ctx)
 	if err != nil {
 		return fmt.Errorf("New postgres: %v", err)
 	}
@@ -55,7 +68,7 @@ func run(ctx context.Context) error {
 	}
 
 	// create handler
-	handler, err := handler.NewMux(ctx, cfg, db, sm)
+	handler, err := handler.NewMux(ctx, cfg, db)
 	if err != nil {
 		return fmt.Errorf("New handler: %w", err)
 	}

@@ -12,12 +12,10 @@ var (
 	ErrInvalidEmail     = errors.New("Invalid email")
 	ErrIncorrectLogin   = errors.New("Incorrect password or email")
 
-	ErrInvalidToken            = errors.New("Invalid token")
-	ErrNoAccessToken           = errors.New("No access token cookie")
-	ErrNoRefeshToken           = errors.New("No refresh token cookie")
-	ErrTokenExpired            = jwt.ErrTokenExpired
-	ErrInvalidTokenType        = errors.New("Invalid token type")
-	ErrUnexpectedSigningMethod = errors.New("Unexpected signing method")
+	ErrNoAccessToken    = errors.New("No access token cookie")
+	ErrNoRefeshToken    = errors.New("No refresh token cookie")
+	ErrTokenExpired     = jwt.ErrTokenExpired
+	ErrInvalidTokenType = errors.New("Invalid token type")
 
 	ErrUserAlreadyExists = errors.New("User already exists")
 )

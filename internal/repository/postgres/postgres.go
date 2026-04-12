@@ -4,21 +4,19 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
 	"testing"
 
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 
 	"musicproject.com/internal/config"
-	"musicproject.com/internal/config/secrets"
 	"musicproject.com/schema"
 )
 
-func NewDB(ctx context.Context, sm secrets.Manager) (*sql.DB, error) {
-	uri, err := sm.Get(ctx, "PG_URI")
-	if err != nil {
-		return nil, err
-	}
+func NewDB(ctx context.Context) (*sql.DB, error) {
+	uri := os.Getenv("PG_URI")
+
 	db, err := newDBFromUri(ctx, uri)
 	if err != nil {
 		return nil, err
@@ -26,9 +24,9 @@ func NewDB(ctx context.Context, sm secrets.Manager) (*sql.DB, error) {
 	return db, nil
 }
 
-func NewTestDB(t *testing.T, ctx context.Context, cfg config.Postgres, sm secrets.Manager) *sql.DB {
+func NewTestDB(t *testing.T, ctx context.Context, cfg config.Postgres) *sql.DB {
 	t.Helper()
-	pg := newPostgresContainer(t, ctx, cfg, sm)
+	pg := newPostgresContainer(t, ctx, cfg)
 
 	db, err := newDBFromUri(ctx, pg.URI)
 	require.NoError(t, err)
@@ -39,8 +37,11 @@ func NewTestDB(t *testing.T, ctx context.Context, cfg config.Postgres, sm secret
 	return db
 }
 
-func newDBFromUri(ctx context.Context, url string) (*sql.DB, error) {
-	db, err := sql.Open("postgres", url)
+func newDBFromUri(ctx context.Context, uri string) (*sql.DB, error) {
+	if uri == "" {
+		return nil, fmt.Errorf("postgres uri empty")
+	}
+	db, err := sql.Open("postgres", uri)
 	if err != nil {
 		return nil, fmt.Errorf("Pg open: %v", err)
 	}
@@ -55,6 +56,6 @@ func newDBFromUri(ctx context.Context, url string) (*sql.DB, error) {
 	return db, nil
 }
 
-func uri(username, password, database string) string {
-	return fmt.Sprintf("postgres://%s:%s@localhost/%s?sslmode=disable", username, password, database)
-}
+// func uri(username, password, database string) string {
+// 	return fmt.Sprintf("postgres://%s:%s@localhost/%s?sslmode=disable", username, password, database)
+// }

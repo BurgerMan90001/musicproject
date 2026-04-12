@@ -9,6 +9,8 @@ import (
 	"musicproject.com/pkg/model"
 )
 
+var _ repository.User = (*User)(nil)
+
 type User struct {
 	mu     sync.RWMutex
 	data   map[uuid.UUID]*model.User

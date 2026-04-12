@@ -8,18 +8,20 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"musicproject.com/internal/config"
 )
 
 var _ HLSEncoder = (*FFmpeg)(nil)
 
 type FFmpeg struct {
 	//store     file.Blobstore
-	logOutput bool
+	cfg config.Encoder
 }
 
 // Command line ffmpeg encoder
-func NewFFmpeg() *FFmpeg {
-	return &FFmpeg{}
+func NewFFmpeg(cfg config.Encoder) *FFmpeg {
+	return &FFmpeg{cfg}
 }
 
 func (s *FFmpeg) Segment(ctx context.Context, inputPath, outputDir string) error {
@@ -45,8 +47,8 @@ func (s *FFmpeg) Segment(ctx context.Context, inputPath, outputDir string) error
 		"pipe:1",
 		manifestPath,
 	)
-	if s.logOutput {
-		// Get ffmepeg output for debugging
+	// Get ffmepeg output for debugging
+	if s.cfg.Logging {
 		cmd.Stderr = os.Stderr
 	}
 

@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS genres (
     genre VARCHAR(255)
 );
 
-CREATE TABLE IF NOT EXISTS ratings (
+CREATE TABLE IF NOT EXISTS song_ratings (
     song_id VARCHAR(255),
     user_id VARCHAR(255),
     value INT

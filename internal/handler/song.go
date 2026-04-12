@@ -1,18 +1,19 @@
 package handler
 
 import (
+	"context"
 	"errors"
+	"mime/multipart"
 	"net/http"
 
 	"github.com/google/uuid"
 	"musicproject.com/internal/jsonutil"
 	"musicproject.com/internal/repository"
 	"musicproject.com/internal/services/rating"
-	"musicproject.com/internal/services/song"
 	"musicproject.com/pkg/model"
 )
 
-func HandleSongsMetadata(repo repository.Song) http.HandlerFunc {
+func handleSongsMetadata(repo repository.Song) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(r.PathValue("id"))
 		if err != nil {
@@ -31,7 +32,7 @@ func HandleSongsMetadata(repo repository.Song) http.HandlerFunc {
 					http.Error(w, err.Error(), http.StatusNotFound)
 					return
 				}
-				InternalServerError(w, err)
+				jsonutil.InternalServerError(w, err)
 				return
 			}
 			jsonutil.WriteJSON(w, song, http.StatusOK)
@@ -39,16 +40,16 @@ func HandleSongsMetadata(repo repository.Song) http.HandlerFunc {
 		case http.MethodPut:
 			_, err := repo.Put(ctx, nil)
 			if err != nil {
-				InternalServerError(w, err)
+				jsonutil.InternalServerError(w, err)
 				return
 			}
 		default:
-			MethodNotAllowedError(w)
+			jsonutil.MethodNotAllowedError(w)
 		}
 	}
 }
 
-func HandleSongRating(ratingService *rating.Service) http.HandlerFunc {
+func handleSongRating(ratingService *rating.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		songId, err := uuid.Parse(r.PathValue("songId"))
 		if err != nil {
@@ -66,12 +67,12 @@ func HandleSongRating(ratingService *rating.Service) http.HandlerFunc {
 			}
 			jsonutil.WriteJSON(w, aggregated, http.StatusOK)
 		case http.MethodPut:
-			rating, err := jsonutil.ReadJSON[model.Rating](r.Body)
+			rating, err := jsonutil.ReadJSON[*model.Rating](r.Body)
 			if err != nil {
 				jsonutil.WriteError(w, err, http.StatusBadRequest)
 				return
 			}
-			if err := ratingService.PutRating(ctx, songId, uuid.Nil, 0); err != nil {
+			if err := ratingService.Put(ctx, rating); err != nil {
 				jsonutil.WriteError(w, err, http.StatusInternalServerError)
 				return
 			}
@@ -79,17 +80,24 @@ func HandleSongRating(ratingService *rating.Service) http.HandlerFunc {
 			jsonutil.WriteJSON(w, rating, http.StatusOK)
 
 		default:
-			MethodNotAllowedError(w)
+			jsonutil.MethodNotAllowedError(w)
 		}
 	}
 }
 
-func HandleSongUpload(songService *song.Service) http.HandlerFunc {
+type songService interface {
+	UploadSong(ctx context.Context,
+		file multipart.File, handler *multipart.FileHeader,
+		songRequest model.UploadSongRequest) (*model.Song, error)
+}
+
+func handleSongUpload(songService songService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			MethodNotAllowedError(w)
+			jsonutil.MethodNotAllowedError(w)
 			return
 		}
+		// TODO limit uploads
 		file, handler, err := r.FormFile("file")
 		if err != nil {
 			jsonutil.WriteError(w, err, http.StatusBadRequest)
@@ -98,7 +106,10 @@ func HandleSongUpload(songService *song.Service) http.HandlerFunc {
 		defer file.Close()
 
 		songRequest, err := jsonutil.ReadJSON[model.UploadSongRequest](r.Body)
-
+		if err != nil {
+			jsonutil.WriteError(w, err, http.StatusBadRequest)
+			return
+		}
 		ctx := r.Context()
 
 		song, err := songService.UploadSong(ctx, file, handler, songRequest)

@@ -23,14 +23,16 @@ type User interface {
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
 }
 type Rating interface {
-	Repo[*model.Rating]
-	GetRatings(ctx context.Context, songId uuid.UUID) ([]model.Rating, error)
+	Put(ctx context.Context, rating *model.Rating) (uuid.UUID, error)
+	GetRatings(ctx context.Context, songId uuid.UUID) ([]*model.Rating, error)
+	//GetRating(ctx context.Context, songId, userId uuid.UUID) (*model.Rating, error)
+	Update(ctx context.Context, rating *model.Rating) error
 }
 
 // Metadata repository for songs
 type Song interface {
 	Repo[*model.Song]
-	GetSongsByGenre(ctx context.Context, genre string) ([]model.Song, error)
+	GetSongsByGenre(ctx context.Context, genre string) ([]*model.Song, error)
 }
 
 type Token interface {

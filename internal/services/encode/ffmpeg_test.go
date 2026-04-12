@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"musicproject.com/internal/config"
 )
 
 func TestFFmpeg(t *testing.T) {
@@ -15,7 +16,9 @@ func TestFFmpeg(t *testing.T) {
 
 	ctx := t.Context()
 	//store := file.NewFileSystem()
-	ffmpeg := NewFFmpeg()
+	ffmpeg := NewFFmpeg(config.Encoder{
+		Logging: false,
+	})
 
 	out, err := os.MkdirTemp("", "")
 	require.NoError(t, err)

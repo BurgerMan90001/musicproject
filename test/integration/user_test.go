@@ -49,7 +49,7 @@ func (s *testSuite) TestHandleUserID() {
 			req := &request{
 				method: tt.method,
 			}
-			w := s.newRequest(s.ctx, URL+tt.userId.String(), req)
+			w := s.newRequest(URL+tt.userId.String(), req)
 
 			resBody, err := jsonutil.ReadJSON[map[string]any](w.Result().Body)
 			s.Require().NoError(err)

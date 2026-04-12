@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"musicproject.com/internal/jsonutil"
@@ -11,22 +10,21 @@ import (
 )
 
 type validator interface {
-	Validate(ctx context.Context, tokenString string) (*model.Claims, error)
+	Validate(tokenString string) (*model.Claims, error)
 }
 
 func RequireAuth(validator validator) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			cookie, err := r.Cookie(auth.TokenAccess)
+			cookie, err := r.Cookie(string(model.TokenAccess))
 			if err != nil {
 				jsonutil.WriteError(w, auth.ErrNoAccessToken, http.StatusUnauthorized)
 				return
 			}
-			ctx := r.Context()
-
-			claims, err := validator.Validate(ctx, cookie.Name)
+			//ctx := r.Context()
+			claims, err := validator.Validate(cookie.Value)
 			if err != nil {
-				jsonutil.WriteError(w, errors.New("Unauthorized"), http.StatusUnauthorized)
+				jsonutil.WriteError(w, err, http.StatusUnauthorized)
 				return
 			}
 

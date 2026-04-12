@@ -2,30 +2,16 @@ package handler
 
 import (
 	"net/http"
-
-	"musicproject.com/internal/services/auth"
 )
 
-func accessCookie(value string, maxAge int) *http.Cookie {
-	return &http.Cookie{
-		Name:     auth.TokenRefresh,
-		Value:    value,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
-		Path:     "/v1/auth/refresh",
-		MaxAge:   maxAge,
-	}
+type Cookie interface {
+	Cookie(value string, maxAge int) *http.Cookie
+	Clear() *http.Cookie
 }
 
-func refreshCookie(value string, maxAge int) *http.Cookie {
-	return &http.Cookie{
-		Name:     auth.TokenRefresh,
-		Value:    value,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
-		Path:     "/v1/auth/refresh",
-		MaxAge:   maxAge,
-	}
+func setCookie(w http.ResponseWriter, cookie Cookie, value string, maxAge int) {
+	http.SetCookie(w, cookie.Cookie(value, maxAge))
+}
+func clearCookie(w http.ResponseWriter, cookie Cookie) {
+	http.SetCookie(w, cookie.Clear())
 }

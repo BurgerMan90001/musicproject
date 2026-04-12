@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"testing"
 
@@ -24,7 +25,7 @@ func WriteJSON(w http.ResponseWriter, data any, code int, details ...string) {
 		code = http.StatusInternalServerError
 
 		w.WriteHeader(code)
-		jsonEncoder.Encode(model.Error{
+		jsonEncoder.Encode(model.ErrorResponse{
 			Code:    code,
 			Message: "Internal server error",
 			Details: append(details, fmt.Sprintf("WriteJSON invalid code: %d", invaldCode)),
@@ -50,7 +51,7 @@ func WriteJSON(w http.ResponseWriter, data any, code int, details ...string) {
 			code = http.StatusInternalServerError
 
 			w.WriteHeader(code)
-			jsonEncoder.Encode(model.Error{
+			jsonEncoder.Encode(model.ErrorResponse{
 				Code:    code,
 				Message: "Internal server error",
 				Details: details,
@@ -63,7 +64,7 @@ func WriteJSON(w http.ResponseWriter, data any, code int, details ...string) {
 	}
 
 	w.WriteHeader(code)
-	jsonEncoder.Encode(model.Error{
+	jsonEncoder.Encode(model.ErrorResponse{
 		Code:    code,
 		Message: message,
 		Details: details,
@@ -102,4 +103,18 @@ func Marshal(code int, args ...string) ([]byte, error) {
 	// // }
 	// return json.Marshal(res)
 	return nil, nil
+}
+
+func MethodNotAllowedError(w http.ResponseWriter) {
+	WriteError(w, errors.New("Method not allowed"), http.StatusMethodNotAllowed)
+}
+
+func NotFoundError(w http.ResponseWriter, reason error) {
+	WriteError(w, errors.New("Resource not found"), http.StatusNotFound)
+}
+
+func InternalServerError(w http.ResponseWriter, err error) {
+	// TODO USE better logging
+	log.Printf("internal server error: %v", err)
+	WriteError(w, err, http.StatusInternalServerError)
 }

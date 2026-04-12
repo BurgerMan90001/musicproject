@@ -2,6 +2,7 @@ package file
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -17,7 +18,11 @@ func NewFileSystem() *FileSystem {
 
 func (s *FileSystem) CreateObject(ctx context.Context, folder string, filename string,
 	contents []byte, cacheble bool, contentType string) error {
+	if filename == "" {
+		return errors.New("Create object: filename is empty")
+	}
 	path := filepath.Join(folder, filename)
+
 	if err := os.WriteFile(path, contents, 0o600); err != nil {
 		return fmt.Errorf("Create object: %w", err)
 	}

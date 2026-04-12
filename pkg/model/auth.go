@@ -24,7 +24,7 @@ type EmailResetRequest struct {
 }
 
 type TokenPair struct {
-	AccessToken  string `json:"accessToken"`
+	AccessToken string `json:"accessToken"`
 	RefreshToken string `json:"refreshToken"`
 }
 

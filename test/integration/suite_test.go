@@ -2,12 +2,13 @@ package integration
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 	"musicproject.com/internal/config"
@@ -15,6 +16,7 @@ import (
 	"musicproject.com/internal/handler"
 	"musicproject.com/internal/repository/postgres"
 	"musicproject.com/internal/services/auth"
+	"musicproject.com/pkg/model"
 )
 
 type HandlerTest struct {
@@ -27,38 +29,44 @@ type HandlerTest struct {
 }
 type testSuite struct {
 	suite.Suite
-	ctx        context.Context
+	//ctx        context.Context
 	cfg        *config.Config
 	handler    http.Handler
 	sm         secrets.Manager
-	jwtService *auth.JWTService
+	jwtAccess  *auth.JWTService
+	jwtRefresh *auth.JWTService
 }
 
 func TestIntegrationSuite(t *testing.T) {
+	if testing.Short() {
+		t.Skip("SHORT: Integration testing skipped")
+	}
 	suite.Run(t, new(testSuite))
 }
 
 func (s *testSuite) SetupSuite() {
 	t := s.T()
+	ctx := t.Context()
 
-	s.ctx = t.Context()
-
-	cfg, err := config.LoadConfig()
+	var err error
+	// Config
+	s.cfg, err = config.LoadConfig(filepath.Join("..", "..", "config", "config.dev.yml"))
 	s.Require().NoError(err)
 
-	s.cfg = cfg
-
-	s.sm, err = secrets.NewEnv()
+	err = secrets.LoadEnv(filepath.Join("..", "..", "config", ".env.dev"))
 	s.Require().NoError(err)
 
-	s.jwtService, err = auth.NewJWTService(s.ctx, s.sm, cfg.Services.Auth.Jwt)
+	// JWT services
+	s.jwtAccess, err = auth.NewJWTService(s.cfg.Services.Auth.Jwt, "JWT_ACCESS_KEY", model.TokenAccess, time.Minute*30)
 	s.Require().NoError(err)
-	//test, err := auth.New()
-	
 
-	db := postgres.NewTestDB(t, s.ctx, cfg.Repository.Postgres, s.sm)
+	s.jwtRefresh, err = auth.NewJWTService(s.cfg.Services.Auth.Jwt, "JWT_REFRESH_KEY", model.TokenRefresh, time.Hour)
+	s.Require().NoError(err)
 
-	s.handler, err = handler.NewMux(s.ctx, cfg, db, s.sm)
+	// Test postgres database container
+	db := postgres.NewTestDB(t, ctx, s.cfg.Repository.Postgres)
+
+	s.handler, err = handler.NewMux(ctx, s.cfg, db)
 	s.Require().NoError(err)
 }
 func (s *testSuite) TeardownSuite() {
@@ -68,13 +76,12 @@ func (s *testSuite) TeardownSuite() {
 type request struct {
 	method string
 	body   map[string]any
-	// Access and refresh tokens are set in cookies
-	// accessKey and refreshKey
+	// Access and refresh tokens are set in cookies as accessKey and refreshKey
 	accessToken  string
 	refreshToken string
 }
 
-func (s *testSuite) newRequest(ctx context.Context, url string, req *request) *httptest.ResponseRecorder {
+func (s *testSuite) newRequest(url string, req *request) *httptest.ResponseRecorder {
 	s.T().Helper()
 
 	s.Require().NotNil(req)
@@ -85,15 +92,17 @@ func (s *testSuite) newRequest(ctx context.Context, url string, req *request) *h
 		s.Require().NoError(err)
 		buf = bytes.NewBuffer(mar)
 	}
-	r := httptest.NewRequestWithContext(ctx, req.method, url, buf)
+	r := httptest.NewRequestWithContext(s.T().Context(), req.method, url, buf)
 
 	w := httptest.NewRecorder()
 
 	if req.accessToken != "" {
-		r.AddCookie(&http.Cookie{Name: auth.TokenAccess, Value: req.accessToken})
+
+		//http.SetCookie(w, &http.Cookie{Name: auth.TokenAccess, Value: req.accessToken})
+		r.AddCookie(&http.Cookie{Name: string(model.TokenAccess), Value: req.accessToken})
 	}
 	if req.refreshToken != "" {
-		r.AddCookie(&http.Cookie{Name: auth.TokenRefresh, Value: req.refreshToken})
+		r.AddCookie(&http.Cookie{Name: string(model.TokenRefresh), Value: req.refreshToken})
 	}
 
 	s.handler.ServeHTTP(w, r)

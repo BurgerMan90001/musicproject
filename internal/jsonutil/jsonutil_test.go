@@ -31,14 +31,6 @@ func TestWriteJSON(t *testing.T) {
 			},
 			wantCode: http.StatusInternalServerError,
 		},
-		{
-			name:    "much details",
-			
-			details: []string{"asd", "asd", "asd", "asd",
-				"asd", "asd", "asd", "asd", "asd", "asd"},
-			code:     http.StatusOK,
-			wantCode: http.StatusOK,
-		},
 	}
 	for _, tt := range errorTests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -46,7 +38,7 @@ func TestWriteJSON(t *testing.T) {
 
 			WriteJSON(w, tt.data, tt.code, tt.details...)
 
-			var errorRes model.Error
+			var errorRes model.ErrorResponse
 			err := json.NewDecoder(w.Body).Decode(&errorRes)
 			require.NoError(t, err)
 
@@ -55,21 +47,36 @@ func TestWriteJSON(t *testing.T) {
 			assert.Equal(t, tt.wantCode, errorRes.Code)
 			assert.NotEmpty(t, errorRes.Message)
 		})
-
 	}
+
 	t.Run("status ok", func(t *testing.T) {
 		w := httptest.NewRecorder()
-		data := model.User{
+
+		user := model.User{
 			ID:    uuid.New(),
 			Email: "paulcasigay@gmail.com",
 		}
-		WriteJSON(w, data, http.StatusOK)
+		WriteJSON(w, user, http.StatusOK)
+
 		assert.Equal(t, http.StatusOK, w.Code)
 
-		var user model.User
-		err := json.NewDecoder(w.Body).Decode(&user)
+		var resUser model.User
+		err := json.NewDecoder(w.Body).Decode(&resUser)
 		require.NoError(t, err)
 
-		assert.Equal(t, data, user)
+		assert.Equal(t, user, resUser)
 	})
+	t.Run("much details", func(t *testing.T) {
+		w := httptest.NewRecorder()
+
+		WriteJSON(w, model.User{
+			ID:    uuid.New(),
+			Email: "paulcasigay@gmail.com",
+		}, http.StatusOK, "asd", "asd", "asd", "asd",
+			"asd", "asd", "asd", "asd", "asd", "asd")
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+	})
+
 }

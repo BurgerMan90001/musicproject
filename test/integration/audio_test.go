@@ -32,7 +32,7 @@ func (s *testSuite) TestAudio() {
 			req := &request{
 				method: http.MethodGet,
 			}
-			w := s.newRequest(s.ctx, url+tt.file, req)
+			w := s.newRequest(url+tt.file, req)
 
 			// resBody, err := jsonutil.ReadJSON[map[string]any](w.Result().Body)
 			// s.Require().NoError(err)

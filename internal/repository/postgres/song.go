@@ -47,7 +47,7 @@ func (r *Song) GetByID(ctx context.Context, songId uuid.UUID) (*model.Song, erro
 	}
 	return song, nil
 }
-func (r *Song) GetSongsByGenre(ctx context.Context, genre string) ([]model.Song, error) {
+func (r *Song) GetSongsByGenre(ctx context.Context, genre string) ([]*model.Song, error) {
 	query := "SELECT id, WHERE genre=$1"
 	rows, err := r.db.QueryContext(ctx, query, genre)
 	if err != nil {
@@ -74,6 +74,6 @@ func (r *Song) DeleteByID(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (r *Song) SearchSongs(ctx context.Context) ([]model.Song, error) {
+func (r *Song) SearchSongs(ctx context.Context) ([]*model.Song, error) {
 	return nil, nil
 }

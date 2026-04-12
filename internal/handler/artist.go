@@ -1,6 +1,10 @@
 package handler
 
-import "net/http"
+import (
+	"net/http"
+
+	"musicproject.com/internal/jsonutil"
+)
 
 func HandleArtists() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -9,7 +13,7 @@ func HandleArtists() http.HandlerFunc {
 		case http.MethodGet:
 			//artist, err
 		default:
-			MethodNotAllowedError(w)
+			jsonutil.MethodNotAllowedError(w)
 		}
 	}
 }

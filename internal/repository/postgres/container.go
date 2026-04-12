@@ -18,10 +18,10 @@ type PostgresContainer struct {
 	URI string
 }
 
-func newPostgresContainer(t *testing.T, ctx context.Context, cfg config.Postgres, sm secrets.Manager) *PostgresContainer {
+func newPostgresContainer(t *testing.T, ctx context.Context, cfg config.Postgres) *PostgresContainer {
 	t.Helper()
 
-	secretList, err := secrets.GetSecrets(ctx, sm, "PG_USERNAME",
+	secretList, err := secrets.GetEnv("PG_USERNAME",
 		"PG_PASSWORD", "PG_DATABASE",
 	)
 	require.NoError(t, err)

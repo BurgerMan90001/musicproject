@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"musicproject.com/internal/config"
 	"musicproject.com/internal/middleware"
 	"musicproject.com/internal/services/encode"
 )
@@ -58,7 +59,9 @@ func run() {
 }
 
 func handleSegment() http.Handler {
-	encoder := encode.NewFFmpeg()
+	encoder := encode.NewFFmpeg(config.Encoder{
+		Logging: true,
+	})
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()

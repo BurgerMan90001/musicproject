@@ -23,7 +23,7 @@ func NewUser(userRepo repository.User) (*userHandler, error) {
 func (h *userHandler) handleUsers() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
-			MethodNotAllowedError(w)
+			jsonutil.MethodNotAllowedError(w)
 			return
 		}
 	}
@@ -47,7 +47,7 @@ func (h *userHandler) handleUsersID() http.HandlerFunc {
 				case repository.ErrNotFound:
 					jsonutil.WriteError(w, err, http.StatusNotFound)
 				default:
-					InternalServerError(w, err)
+					jsonutil.InternalServerError(w, err)
 				}
 				return
 			}
@@ -72,13 +72,13 @@ func (h *userHandler) handleUsersID() http.HandlerFunc {
 					jsonutil.WriteError(w, err, http.StatusNotFound)
 
 				default:
-					InternalServerError(w, err)
+					jsonutil.InternalServerError(w, err)
 				}
 				return
 			}
 
 		default:
-			MethodNotAllowedError(w)
+			jsonutil.MethodNotAllowedError(w)
 		}
 	}
 }

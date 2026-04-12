@@ -1,44 +1,33 @@
 package secrets
 
 import (
-	"bytes"
-	"context"
-	"embed"
 	"fmt"
+	"os"
 
 	"github.com/joho/godotenv"
 )
 
-var _ Manager = (*Env)(nil)
+type Env map[string]string
 
-//go:embed .env.dev
-var secretFS embed.FS
-
-type Env struct {
-	env map[string]string
-}
-
-func NewEnv() (*Env, error) {
-	f, err := secretFS.ReadFile(".env.dev")
-	env, err := godotenv.Parse(bytes.NewReader(f))
+func LoadEnv(name string) error {
+	err := godotenv.Load(name)
 	if err != nil {
-		return nil, fmt.Errorf("Read .env file: %w", err)
+		return fmt.Errorf("Read .env file: %w", err)
 	}
-	return &Env{env}, nil
+	return nil
 }
 
-func (m *Env) Get(ctx context.Context, name string) (string, error) {
+// Returns a map of secrets from the names
+func GetEnv(names ...string) (Env, error) {
 
-	secret, exists := m.env[name]
-	if !exists {
-		return "", fmt.Errorf("Get secret not found: %v", name)
+	var secrets Env = make(Env, 4)
+	for _, name := range names {
+		secret := os.Getenv(name)
+		if secret == "" {
+			return nil, fmt.Errorf("env var %v is empty", name)
+		}
+		secrets[name] = secret
 	}
-	if secret == "" {
-		return "", fmt.Errorf("Env secret is empty: %v", name)
-	}
-	return secret, nil
-}
 
-func (m *Env) Clear() {
-
+	return secrets, nil
 }

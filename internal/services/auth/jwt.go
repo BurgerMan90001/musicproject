@@ -8,40 +8,53 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"musicproject.com/internal/config"
 	"musicproject.com/pkg/model"
 )
 
 type JWTService struct {
 	key       []byte
-	tokenType string
+	tokenType model.TokenType
 	issuer    string
 	audience  []string
 	ttl       time.Duration
 }
 
-func NewJWTService(envVar, issuer, tokenType string, audience []string, ttl time.Duration) (*JWTService, error) {
+func NewJWTService(cfg config.Jwt, envVar string, tokenType model.TokenType, ttl time.Duration) (*JWTService, error) {
 	key := os.Getenv(envVar)
 	if len(key) < 32 {
 		return nil, fmt.Errorf("env var %q must be at least 32 bytes long", envVar)
 	}
+	if len(cfg.Audience) == 0 || cfg.Audience[0] == "" {
+		return nil, fmt.Errorf("jwt audience is empty")
+	}
 	switch tokenType {
-	case TokenAccess, TokenRefresh:
+	case model.TokenAccess, model.TokenRefresh:
+
 	default:
 		return nil, ErrInvalidTokenType
 	}
 	return &JWTService{
 		key:       []byte(key),
-		issuer:    issuer,
+		issuer:    cfg.Issuer,
 		tokenType: tokenType,
-		audience:  audience,
+		audience:  cfg.Audience,
 		ttl:       ttl,
 	}, nil
 }
-func (s *JWTService) generateToken(userId uuid.UUID, roles []string) (string, error) {
+func (s *JWTService) GenerateToken(userId uuid.UUID, roles []string) (string, error) {
+	// if len(opts) > 0 {
+	// 	for _, apply := range opts {
+	// 		apply(s)
+	// 	}
+	// }
+	if roles == nil {
+		roles = defaultRoles
+	}
 	now := time.Now()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &model.Claims{
 		UserID:    userId,
-		TokenType: s.tokenType,
+		TokenType: string(s.tokenType),
 		Roles:     roles,
 		RegisteredClaims: jwt.RegisteredClaims{
 			// ID is for revocation
@@ -54,10 +67,14 @@ func (s *JWTService) generateToken(userId uuid.UUID, roles []string) (string, er
 			ExpiresAt: jwt.NewNumericDate(now.Add(s.ttl)),
 		},
 	})
+
 	return token.SignedString(s.key)
 }
 
-func (s *JWTService) validateToken(tokenString string) (*model.Claims, error) {
+func (s *JWTService) ValidateToken(tokenString string) (*model.Claims, error) {
+	if tokenString == "" {
+		return nil, ErrNoRefeshToken
+	}
 	token, err := jwt.ParseWithClaims(
 		tokenString,
 		&model.Claims{},
@@ -79,7 +96,7 @@ func (s *JWTService) validateToken(tokenString string) (*model.Claims, error) {
 	switch {
 	case !ok || !token.Valid:
 		return nil, jwt.ErrTokenInvalidClaims
-	case claims.TokenType != s.tokenType:
+	case claims.TokenType != string(s.tokenType):
 		return nil, ErrInvalidTokenType
 	}
 	return claims, nil
@@ -88,17 +105,3 @@ func (s *JWTService) validateToken(tokenString string) (*model.Claims, error) {
 func (s *JWTService) revokeToken(ctx context.Context, tokenString string) error {
 	return nil
 }
-
-// 	return s.generateTokenPair(claims.UserID)
-// }
-
-// func (s *JWTService) keyFunc(tokenType string) ([]byte, error) {
-// 	switch tokenType {
-// 	case TokenAccess:
-// 		return s.accessKey, nil
-// 	case TokenRefresh:
-// 		return []byte(s.refreshKey), nil
-// 	default:
-// 		return nil, ErrInvalidTokenType
-// 	}
-// }

@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"musicproject.com/internal/config"
-	"musicproject.com/internal/config/secrets"
 	"musicproject.com/internal/jsonutil"
 	"musicproject.com/internal/middleware"
 	"musicproject.com/internal/middleware/ratelimit"
@@ -19,7 +18,7 @@ import (
 	"musicproject.com/internal/services/song"
 )
 
-func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB, sm secrets.Manager) (http.Handler, error) {
+func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB) (http.Handler, error) {
 	mux := http.NewServeMux()
 
 	userRepo := postgres.NewUser(db)
@@ -28,12 +27,10 @@ func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB, sm secrets.Mana
 	//ratingRepo := postgres.NewRating(db)
 	// store, err := file.NewS3(ctx)
 	store := file.NewFileSystem()
-	// if err != nil {
-	// 	return nil, err
-	// }
-	encoder := encode.NewFFmpeg()
 
-	authService, err := auth.New(ctx, cfg.Services.Auth, userRepo, sm)
+	encoder := encode.NewFFmpeg(cfg.Services.Encoder)
+
+	authService, err := auth.New(ctx, cfg.Services.Auth, userRepo)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +40,7 @@ func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB, sm secrets.Mana
 	songService := song.NewSong(store, encoder, songRepo)
 	//store := file.NewFileSystem()
 
-	emailService, err := email.New(ctx, sm)
+	emailService, err := email.New()
 	if err != nil {
 		return nil, err
 	}
@@ -55,10 +52,12 @@ func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB, sm secrets.Mana
 	mux.HandleFunc("/users", userHandler.handleUsers())
 	mux.HandleFunc("/users/{id}", userHandler.handleUsersID())
 
-	mux.HandleFunc("/songs/{id}", HandleSongsMetadata(songRepo))
-	mux.Handle("/songs/upload", HandleSongUpload(songService))
+	mux.HandleFunc("/songs/{id}", handleSongsMetadata(songRepo))
+	mux.Handle("POST /songs", handleSongUpload(songService))
+	// MAYBE
+	//mux.HandleFunc("/songs/{id}/rating", handleSongRating())
 
-	// maybe
+	// MAYBE
 	//mux.HandleFunc("/artists/{id}", HandleArtists())
 
 	// auth routes
@@ -72,11 +71,19 @@ func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB, sm secrets.Mana
 	mux.HandleFunc("/auth/google/login", HandleOauthLogin(authService.Google))
 	mux.HandleFunc("/auth/google/redirect", HandleOauthRedirect(authService.Google))
 
+	// File routes
+
+	// Audio
+	mux.HandleFunc("/files/audio/{id}", HandleAudio())
+	mux.HandleFunc("POST /files/audio", HandleAudioUpload())
+
+	// Uploads audio encoded
+	mux.HandleFunc("POST /files/audio/encode", HandleAudioEncode())
+
+	// Image
+	mux.HandleFunc("/files/image", handleImage())
 	// Test routes
 	mux.Handle("/protected", middleware.RequireAuth(authService)(HandleTest()))
-	mux.HandleFunc("/audio", handleAudio(songService))
-
-	// file server
 
 	var handler http.Handler = mux
 	if cfg.Middleware.Logger {
@@ -89,11 +96,8 @@ func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB, sm secrets.Mana
 	root := http.NewServeMux()
 
 	root.Handle("/v1/", http.StripPrefix("/v1", handler))
-	//root.Handle("/", http.HandlerFunc(HandleNotFound))
+	root.Handle("/", http.HandlerFunc(HandleNotFound))
 
-	// var handler http.Handler = root
-	// if cfg.Middleware.Logger {
-	// 	handler = middleware.WithLogger(root) // }
 	return root, nil
 }
 

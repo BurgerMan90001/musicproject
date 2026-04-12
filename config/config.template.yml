@@ -8,13 +8,16 @@ services:
     jwt:
       issuer: okapi
       audience:
-        -
+        - api
     oauth:
       google:
         redirectUrl: http://localhost:8081/v1/auth/google/redirect
         scopes:
           - https://www.googleapis.com/auth/userinfo.email
           - https://www.googleapis.com/auth/userinfo.profile
+  encoder:
+    
+    logging: true
 
 middleware:
   logger: false
@@ -28,4 +31,4 @@ aws:
   s3:
     buckets:
       audio: okapi-audio-634220481321-ca-central-1-an
-      log: d
+      logs: .

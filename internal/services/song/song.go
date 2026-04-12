@@ -47,10 +47,10 @@ func (s *Service) UploadSong(ctx context.Context, file multipart.File,
 	}
 	// Create song metadata
 	song := &model.Song{
-		Name:  songRequest.Name,
-		Genre: songRequest.Genre,
-		Image: songRequest.Image,
-		Source: filepath.Join(header.Filename),
+		Name:   songRequest.Name,
+		Genre:  songRequest.Genre,
+		Image:  songRequest.Image,
+		Source: filepath.Join(parent, header.Filename),
 	}
 
 	songId, err := s.repo.Put(ctx, song)
