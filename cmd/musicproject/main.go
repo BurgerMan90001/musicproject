@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"log/slog"
 	"os/signal"
 	"path/filepath"
 	"syscall"
@@ -33,11 +34,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Println("server shutdown")
+	slog.Info("Server shutdown")
 }
 
 func run(ctx context.Context, env string) error {
-	log.Println("Starting server")
 
 	configFile := "config.dev.yml"
 	envFile := ".env.dev"
@@ -51,16 +51,15 @@ func run(ctx context.Context, env string) error {
 		return fmt.Errorf("Config load: %v", err)
 	}
 	// load env
-	err = secrets.LoadEnv(filepath.Join(envFile))
+	err = secrets.LoadEnv(filepath.Join("config", envFile))
 	if err != nil {
 		return fmt.Errorf("New env secret: %v", err)
 	}
 	//create database connection
-	db, err := postgres.NewDB(ctx)
+	db, err := postgres.NewDB(ctx, env)
 	if err != nil {
 		return fmt.Errorf("New postgres: %v", err)
 	}
-	// db = nil
 	// create server
 	server, err := server.NewServer(cfg.API.Port)
 	if err != nil {

@@ -11,10 +11,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"musicproject.com/internal/config"
+	"musicproject.com/internal/config/secrets"
 	"musicproject.com/schema"
 )
 
-func NewDB(ctx context.Context) (*sql.DB, error) {
+func NewDB(ctx context.Context, env string) (*sql.DB, error) {
 	uri := os.Getenv("PG_URI")
 
 	db, err := newDBFromUri(ctx, uri)
@@ -38,6 +39,11 @@ func NewTestDB(t *testing.T, ctx context.Context, cfg config.Postgres) *sql.DB {
 }
 
 func newDBFromUri(ctx context.Context, uri string) (*sql.DB, error) {
+	// Verify that credentials are not empty
+	_, err := secrets.GetEnv("PG_USERNAME", "PG_PASSWORD", "PG_DATABASE")
+	if err != nil {
+		return nil, err
+	}
 	if uri == "" {
 		return nil, fmt.Errorf("postgres uri empty")
 	}
@@ -46,11 +52,11 @@ func newDBFromUri(ctx context.Context, uri string) (*sql.DB, error) {
 		return nil, fmt.Errorf("Pg open: %v", err)
 	}
 
-	if err := schema.LoadSchema(ctx, db); err != nil {
-		return nil, err
-	}
 	if err := db.PingContext(ctx); err != nil {
 		return nil, fmt.Errorf("Pg ping: %v", err)
+	}
+	if err := schema.LoadSchema(ctx, db); err != nil {
+		return nil, err
 	}
 
 	return db, nil

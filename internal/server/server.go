@@ -31,10 +31,11 @@ func NewServer(port int) (*Server, error) {
 }
 
 func (s *Server) ServeHTTP(ctx context.Context, srv *http.Server) error {
+	slog.Info("Starting server...")
 	go func() {
-		slog.Info("v1 server listening at", "addr", s.ip+strconv.Itoa(s.port))
+		slog.Info("v1 Server listening at", "addr", s.ip+strconv.Itoa(s.port))
 		if err := srv.Serve(s.listener); !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("server error", "err", err)
+			slog.Error("Server error", "err", err)
 		}
 	}()
 

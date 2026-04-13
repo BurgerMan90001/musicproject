@@ -46,6 +46,9 @@ func LoadConfig(name string) (*Config, error) {
 	}
 	return &cfg, nil
 }
+func GetEnv() (string, error) {
+	return "", nil
+}
 
 // func (cfg *Config) Write() {
 

@@ -20,18 +20,17 @@ type Song struct {
 	Genre    string    `json:"genre"`
 	Streams  int       `json:"streams"`
 	Duration int       `json:"duration"`
-	ImageURL string    `json:"imageUrl"`
+	Image    string    `json:"image"`
 	Source   string    `json:"src"`
 }
 
 type SongFile struct {
-	
 }
 
 type UploadSongRequest struct {
 	Name  string `json:"name"`
 	Genre string `json:"genre"`
-	Image string `json:"image"`
+	Image string `json:"imageU"`
 }
 
 type Rating struct {
