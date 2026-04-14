@@ -16,7 +16,7 @@ services:
           - https://www.googleapis.com/auth/userinfo.email
           - https://www.googleapis.com/auth/userinfo.profile
   encoder:
-    logging: true
+    logging: false
 
 middleware:
   logger: false

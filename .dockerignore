@@ -3,3 +3,7 @@ main
 .git
 node_modules
 test
+
+.env.dev
+.env.template
+.env

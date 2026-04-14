@@ -14,10 +14,10 @@ FROM alpine:latest AS run
 WORKDIR /src
 
 COPY --from=build /src/main .
-#COPY --from=build /src/config config
-#COPY --from=build /src/schema schema
+COPY --from=build /src/config config
+COPY --from=build /src/schema schema
 
-RUN apk add ffmpeg
+#RUN apk add ffmpeg
 #RUN apk add postgresql18 postgresql18-contrib
 
 CMD [ "./main" ]

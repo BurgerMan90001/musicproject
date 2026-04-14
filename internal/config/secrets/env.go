@@ -9,8 +9,12 @@ import (
 
 type Env map[string]string
 
-func LoadEnv(name string) error {
-	err := godotenv.Load(name)
+func LoadEnv(file string) error {
+	// if file == "" {
+
+	// }
+	err := godotenv.Load(file)
+
 	if err != nil {
 		return fmt.Errorf("Read .env file: %w", err)
 	}
@@ -18,15 +22,14 @@ func LoadEnv(name string) error {
 }
 
 // Returns a map of secrets from the names
-func GetEnv(names ...string) (Env, error) {
-
+func GetEnv(keys ...string) (Env, error) {
 	var secrets Env = make(Env, 4)
-	for _, name := range names {
-		secret := os.Getenv(name)
+	for _, key := range keys {
+		secret := os.Getenv(key)
 		if secret == "" {
-			return nil, fmt.Errorf("env var %v is empty", name)
+			return nil, fmt.Errorf("env var %v is empty", key)
 		}
-		secrets[name] = secret
+		secrets[key] = secret
 	}
 
 	return secrets, nil

@@ -7,6 +7,7 @@ import (
 )
 
 func main() {
-	//rand := randutil.RandRead{}
-	fmt.Println(randutil.FNV("testasdasdas"))
+	rand := randutil.RandRead{}
+	fmt.Println(rand.New(39))
+	//fmt.Println(randutil.FNV("testasdasdas"))
 }

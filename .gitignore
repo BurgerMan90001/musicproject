@@ -11,8 +11,8 @@ main
 config.dev.yml
 config.dev.yaml
 
-config.prod.yml
-config.prod.yaml
+#config.prod.yml
+#config.prod.yaml
 
 node_modules
 
