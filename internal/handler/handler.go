@@ -15,7 +15,7 @@ import (
 	"musicproject.com/internal/services/email"
 	"musicproject.com/internal/services/encode"
 	"musicproject.com/internal/services/file"
-	"musicproject.com/internal/services/song"
+	"musicproject.com/internal/services/upload"
 )
 
 func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB) (http.Handler, error) {
@@ -37,7 +37,7 @@ func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB) (http.Handler, 
 	userHandler := &userHandler{userRepo: userRepo}
 	authHandler := &authHandler{authService: authService}
 
-	songService := song.NewSong(store, encoder, songRepo)
+	uploadService := upload.New(store, encoder, songRepo)
 	//store := file.NewFileSystem()
 
 	emailService, err := email.New()
@@ -45,20 +45,8 @@ func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB) (http.Handler, 
 		return nil, err
 	}
 
-	// setup routes
-	mux.HandleFunc("/", HandleNotFound)
+	mux.HandleFunc("/", HandleNotFound())
 	mux.HandleFunc("/health", HandleHealth)
-
-	mux.HandleFunc("/users", userHandler.handleUsers())
-	mux.HandleFunc("/users/{id}", userHandler.handleUsersID())
-
-	mux.HandleFunc("/songs/{id}", handleSongsMetadata(songRepo))
-	mux.Handle("POST /songs", handleSongUpload(songService))
-	// MAYBE
-	//mux.HandleFunc("/songs/{id}/rating", handleSongRating())
-
-	// MAYBE
-	//mux.HandleFunc("/artists/{id}", HandleArtists())
 
 	// auth routes
 	mux.HandleFunc("/auth/login", authHandler.handleLogin())
@@ -71,17 +59,36 @@ func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB) (http.Handler, 
 	mux.HandleFunc("/auth/google/login", HandleOauthLogin(authService.Google))
 	mux.HandleFunc("/auth/google/redirect", HandleOauthRedirect(authService.Google))
 
+	// Metadata routes
+
+	mux.HandleFunc("/users", userHandler.handleUsers())
+	mux.HandleFunc("/users/{id}", userHandler.handleUsersID())
+
+	mux.HandleFunc("/songs/{id}", handleGetSongsMetadata(songRepo))
+
+	mux.HandleFunc("/upload/songs", handleSongUpload(uploadService))
+
+	//mux.Handle("POST /songs", handleSongUpload(songService))
+	// MAYBE
+	//mux.HandleFunc("/songs/{id}/rating", handleSongRating())
+
+	// MAYBE
+	//mux.HandleFunc("/artists/{id}", HandleArtists())
+
+	// Upload routes
+
 	// File routes
 
-	// Audio
-	mux.HandleFunc("/files/audio/{id}", HandleAudio())
-	mux.HandleFunc("POST /files/audio", HandleAudioUpload())
+	// Audio routes
+	// Gets specified audio file
+	//mux.HandleFunc("/files/audio/{id}", handleAudio(songService))
 
 	// Uploads audio encoded
-	mux.HandleFunc("POST /files/audio/encode", HandleAudioEncode())
+	//mux.HandleFunc("POST /files/audio/encode", HandleAudioEncode())
 
 	// Image
 	mux.HandleFunc("/files/image", handleImage())
+
 	// Test routes
 	mux.Handle("/protected", middleware.RequireAuth(authService)(HandleTest()))
 
@@ -96,13 +103,15 @@ func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB) (http.Handler, 
 	root := http.NewServeMux()
 
 	root.Handle("/v1/", http.StripPrefix("/v1", handler))
-	root.Handle("/", http.HandlerFunc(HandleNotFound))
-
+	root.Handle("/", HandleNotFound())
 	return root, nil
 }
 
-func HandleNotFound(w http.ResponseWriter, r *http.Request) {
-	jsonutil.WriteError(w, errors.New("route not found"), http.StatusNotFound)
+func HandleNotFound() http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		jsonutil.WriteError(w, errors.New("route not found"), http.StatusNotFound)
+	})
+
 }
 
 func HandleTest() http.HandlerFunc {

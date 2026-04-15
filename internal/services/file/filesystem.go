@@ -28,7 +28,10 @@ func (s *FileSystem) CreateObject(ctx context.Context, folder string, filename s
 	}
 	return nil
 }
-
+func (s *FileSystem) CreateObjectUrl(ctx context.Context, parent, name string,
+	cacheble bool) (string, error) {
+	return "", nil
+}
 func (s *FileSystem) GetObject(ctx context.Context, folder string, filename string) ([]byte, error) {
 	path := filepath.Join(folder, filename)
 	data, err := os.ReadFile(path)

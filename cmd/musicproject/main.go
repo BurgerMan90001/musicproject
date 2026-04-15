@@ -23,8 +23,8 @@ func main() {
 		configFile string
 	)
 	flag.StringVar(&env, "env", "dev", "environment type")
-	flag.StringVar(&envFile, "envFile", "", "specifies the location of the env file")
-	flag.StringVar(&configFile, "config", "config.dev.yml", "specifies the location of the config file")
+	flag.StringVar(&envFile, "envFile", "config/.env.dev", "specifies the location of the env file")
+	flag.StringVar(&configFile, "config", "config/config.dev.yml", "specifies the location of the config file")
 	flag.Parse()
 
 	ctx, done := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -35,29 +35,28 @@ func main() {
 		}
 	}()
 
-	if err := run(ctx, env, envFile, configFile); err != nil {
+	if err := run(ctx, configFile, envFile); err != nil {
 		log.Fatal(err)
 	}
 
 	slog.Info("Server shutdown")
 }
 
-func run(ctx context.Context, env, configFile, envFile string) error {
+func run(ctx context.Context, configFile, envFile string) error {
 
-	err := secrets.LoadEnv(envFile)
-	if err != nil {
-		return fmt.Errorf("New env secret: %v", err)
+	if err := secrets.LoadEnv(envFile); err != nil {
+		return fmt.Errorf("Load env file: %v", err)
 	}
 
 	cfg, err := config.LoadConfig(configFile)
 	if err != nil {
-		return fmt.Errorf("Config load: %v", err)
+		return fmt.Errorf("Load config file: %v", err)
 	}
 
 	//create database connection
-	db, err := postgres.NewDB(ctx, env)
+	db, err := postgres.NewDB(ctx)
 	if err != nil {
-		return fmt.Errorf("New postgres: %v", err)
+		return fmt.Errorf("New postgres connection: %v", err)
 	}
 	// create server
 	server, err := server.NewServer(cfg.API.Port)
@@ -68,7 +67,7 @@ func run(ctx context.Context, env, configFile, envFile string) error {
 	// create handler
 	handler, err := handler.NewMux(ctx, cfg, db)
 	if err != nil {
-		return fmt.Errorf("New handler: %w", err)
+		return fmt.Errorf("New mux handler: %w", err)
 	}
 
 	// start server

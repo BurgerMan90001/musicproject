@@ -25,6 +25,10 @@ func (s *Memory) CreateObject(ctx context.Context, parent string, name string,
 
 	return nil
 }
+func (s *Memory) CreateObjectUrl(ctx context.Context, parent, name string,
+	cacheble bool) (string, error) {
+	return "", nil
+}
 func (s *Memory) GetObject(ctx context.Context, parent string, name string) ([]byte, error) {
 	return nil, nil
 

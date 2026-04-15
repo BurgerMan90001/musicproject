@@ -27,5 +27,6 @@ repository:
     image: postgres:alpine
 
 aws:
+  region: us-east-1
   s3:
-    bucket:
+    bucket: spume-musicproject-634220481321-us-east-1-an

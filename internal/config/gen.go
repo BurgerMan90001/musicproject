@@ -44,13 +44,10 @@ type Postgres struct {
 type Repository struct {
 	Postgres Postgres `yaml:"postgres"`
 }
-type Buckets struct {
-	Audio string `yaml:"audio"`
-	Logs  string `yaml:"logs"`
-}
 type S3 struct {
-	Buckets Buckets `yaml:"buckets"`
+	Bucket string `yaml:"bucket"`
 }
 type Aws struct {
-	S3 S3 `yaml:"s3"`
+	Region string `yaml:"region"`
+	S3     S3     `yaml:"s3"`
 }

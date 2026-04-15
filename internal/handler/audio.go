@@ -2,9 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"path/filepath"
-
-	"musicproject.com/internal/jsonutil"
 )
 
 // func HandleAudio(store file.Blobstore) http.HandlerFunc {
@@ -20,13 +17,14 @@ import (
 // }
 
 // TODO
-func HandleAudioEncode() http.HandlerFunc {
+func handleAudioEncode() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 	}
 }
 
-func HandleAudio() http.HandlerFunc {
+/*
+func handleAudio(songService *song.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		//songId, err := uuid.Parse(r.PathValue("id"))
 		// if err != nil {
@@ -61,7 +59,4 @@ func HandleAudio() http.HandlerFunc {
 		}
 	}
 }
-func HandleAudioUpload() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-	}
-}
+*/

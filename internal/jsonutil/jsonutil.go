@@ -13,6 +13,10 @@ import (
 	"musicproject.com/pkg/model"
 )
 
+type ContentType string
+
+const Json ContentType = "application/json"
+
 func WriteJSON(w http.ResponseWriter, data any, code int, details ...string) {
 	w.Header().Set("Content-type", "application/json")
 

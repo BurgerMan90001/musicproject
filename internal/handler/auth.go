@@ -12,8 +12,11 @@ import (
 	"musicproject.com/pkg/model"
 )
 
+var _ http.Handler = (*authHandler)(nil)
+
 type authHandler struct {
 	authService authService
+	mux         http.ServeMux
 }
 type authService interface {
 	Signup(ctx context.Context, email, password string) (*model.User, *model.TokenPair, error)
@@ -23,6 +26,7 @@ type authService interface {
 }
 
 func (h *authHandler) handleSignup() http.HandlerFunc {
+	http.NewServeMux()
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			jsonutil.MethodNotAllowedError(w)

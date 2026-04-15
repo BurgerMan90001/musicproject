@@ -22,6 +22,7 @@ func TestSendEmail(t *testing.T) {
 
 	emailService, err := New()
 	require.NoError(t, err)
+	
 
 	//err = os.Setenv("SMTP_EMAIL", "paulcasigay@gmail.com")
 	//require.NoError(t, err)

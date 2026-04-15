@@ -15,7 +15,7 @@ import (
 	"musicproject.com/schema"
 )
 
-func NewDB(ctx context.Context, env string) (*sql.DB, error) {
+func NewDB(ctx context.Context) (*sql.DB, error) {
 	uri := os.Getenv("PG_URI")
 
 	db, err := newDBFromUri(ctx, uri)

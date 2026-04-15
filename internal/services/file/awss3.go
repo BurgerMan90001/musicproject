@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -13,40 +14,65 @@ import (
 var _ Blobstore = (*AWSS3)(nil)
 
 type AWSS3 struct {
-	client *s3.Client
+	client        *s3.Client
+	presignClient *s3.PresignClient
 }
 
-func NewS3(ctx context.Context) (*AWSS3, error) {
-	cfg, err := config.LoadDefaultConfig(ctx)
+func NewS3(ctx context.Context, region string) (*AWSS3, error) {
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
 		return nil, err
 	}
-	
-	client := s3.NewFromConfig(cfg)
 
-	return &AWSS3{client: client}, nil
+	client := s3.NewFromConfig(cfg)
+	presignClient := s3.NewPresignClient(client)
+
+	return &AWSS3{client: client, presignClient: presignClient}, nil
 }
 
 func (s *AWSS3) CreateObject(ctx context.Context, bucket string, key string,
 	contents []byte, cacheble bool, contentType string) error {
-	cacheControl := "public, max-age=86400"
-	if !cacheble {
-		cacheControl = "no-cache, max-age=0"
-	}
 
-	putInput := &s3.PutObjectInput{
-		Bucket:       aws.String(bucket),
-		Key:          aws.String(key),
-		CacheControl: aws.String(cacheControl),
-		Body:         bytes.NewReader(contents),
-	}
-	if contentType != "" {
-		putInput.ContentType = aws.String(contentType)
-	}
+	putInput := s.newPutInput(bucket, key,
+		contents, cacheble, contentType)
 	if _, err := s.client.PutObject(ctx, putInput); err != nil {
 		return err
 	}
 	return nil
+}
+
+// Returns a presigned url to upload files to
+func (s *AWSS3) CreateObjectUrl(ctx context.Context, bucket, key string, cacheble bool) (string, error) {
+	putInput := s.newPutInput(bucket, key,
+		nil, cacheble, "")
+
+	presignUrl, err := s.presignClient.PresignPutObject(ctx, putInput, func(po *s3.PresignOptions) {
+		s3.WithPresignExpires(30 * time.Minute)
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return presignUrl.URL, nil
+}
+func (s *AWSS3) newPutInput(bucket string, key string,
+	contents []byte, cacheble bool, contentType string) *s3.PutObjectInput {
+	cacheControl := "public, max-age=86400"
+	if !cacheble {
+		cacheControl = "no-cache, max-age=0"
+	}
+	putInput := &s3.PutObjectInput{
+		Bucket:       aws.String(bucket),
+		Key:          aws.String(key),
+		CacheControl: aws.String(cacheControl),
+	}
+	if contents != nil {
+		putInput.Body = bytes.NewReader(contents)
+	}
+	if contentType != "" {
+		putInput.ContentType = aws.String(contentType)
+	}
+	return putInput
 }
 func (s *AWSS3) GetObject(ctx context.Context, bucket string, key string) ([]byte, error) {
 	getInput := &s3.GetObjectInput{
