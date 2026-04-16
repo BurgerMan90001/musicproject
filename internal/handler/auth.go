@@ -12,11 +12,8 @@ import (
 	"musicproject.com/pkg/model"
 )
 
-var _ http.Handler = (*authHandler)(nil)
-
 type authHandler struct {
 	authService authService
-	mux         http.ServeMux
 }
 type authService interface {
 	Signup(ctx context.Context, email, password string) (*model.User, *model.TokenPair, error)

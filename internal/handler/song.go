@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 
@@ -103,6 +104,8 @@ func handleSongUpload(songService *upload.Song) http.HandlerFunc {
 		ctx := r.Context()
 		contentType := r.Header.Get("Content-Type")
 
+		log.Println(contentType)
+
 		switch {
 		// Metadata upload request
 		case contentType == "application/json":
@@ -137,15 +140,7 @@ func handleSongUpload(songService *upload.Song) http.HandlerFunc {
 
 			return
 		default:
-
+			jsonutil.WriteError(w, errors.New("Request should either contain song metadata or audio file"), http.StatusBadRequest)
 		}
-
-		// song, err := songService.UploadSong(ctx, file, handler, songRequest)
-		// if err != nil {
-		// 	jsonutil.WriteError(w, err, http.StatusOK)
-		// 	return
-		// }
-
-		// jsonutil.WriteJSON(w, song, http.StatusCreated)
 	}
 }

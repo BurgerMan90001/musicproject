@@ -12,7 +12,6 @@ import (
 	"musicproject.com/internal/middleware/ratelimit"
 	"musicproject.com/internal/repository/postgres"
 	"musicproject.com/internal/services/auth"
-	"musicproject.com/internal/services/email"
 	"musicproject.com/internal/services/encode"
 	"musicproject.com/internal/services/file"
 	"musicproject.com/internal/services/upload"
@@ -40,10 +39,10 @@ func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB) (http.Handler, 
 	uploadService := upload.New(store, encoder, songRepo)
 	//store := file.NewFileSystem()
 
-	emailService, err := email.New()
-	if err != nil {
-		return nil, err
-	}
+	// emailService, err := email.New()
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	mux.HandleFunc("/", HandleNotFound())
 	mux.HandleFunc("/health", HandleHealth)
@@ -53,7 +52,7 @@ func NewMux(ctx context.Context, cfg *config.Config, db *sql.DB) (http.Handler, 
 	mux.HandleFunc("/auth/signup", authHandler.handleSignup())
 
 	mux.HandleFunc("/auth/refresh", authHandler.handleRefresh())
-	mux.HandleFunc("/auth/reset", authHandler.handleEmailReset(emailService))
+	//mux.HandleFunc("/auth/reset", authHandler.handleEmailReset(emailService))
 
 	// oauth routes
 	mux.HandleFunc("/auth/google/login", HandleOauthLogin(authService.Google))

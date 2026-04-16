@@ -2,6 +2,7 @@ package upload
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -28,6 +29,9 @@ func New(store file.Blobstore, encoder encode.HLSEncoder, repo repository.Song) 
 // Returns the url to upload the song file to.
 func (s *Song) UploadMetadata(ctx context.Context,
 	songRequest *model.UploadSongRequest) (string, error) {
+	if songRequest.Name == "" {
+		return "", errors.New("")
+	}
 	// Put song metadata in repository
 	_, err := s.repo.Put(ctx, &model.Song{
 		Name:  songRequest.Name,
