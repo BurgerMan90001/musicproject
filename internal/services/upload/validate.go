@@ -7,7 +7,6 @@ import (
 )
 
 func validateUploadRequest(req *model.UploadSongRequest) error {
-
 	if req == nil {
 		return errors.New("Song request is empty")
 	}
@@ -18,6 +17,6 @@ func validateUploadRequest(req *model.UploadSongRequest) error {
 	if req.Genre == "" {
 		errorList = append(errorList, errors.New("Genre is empty"))
 	}
-	
+
 	return errors.Join(errorList...)
 }

@@ -1,10 +1,19 @@
 package repository
 
-import (
-	"errors"
-)
+var _ error = (*Error)(nil)
+
+type Error struct {
+	s string
+}
+
+func (e *Error) Error() string {
+	return e.s
+}
+func newRepoErr(s string) *Error {
+	return &Error{s}
+}
 
 var (
-	ErrNotFound = errors.New("not found")
-	ErrNilRepo  = errors.New("repo in context is nil")
+	ErrNotFound = newRepoErr("not found")
+	ErrNilRepo  = newRepoErr("repo in context is nil")
 )

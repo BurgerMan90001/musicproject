@@ -19,7 +19,7 @@ type PostgresContainer struct {
 
 func newPostgresContainer(t *testing.T, ctx context.Context, image string) *PostgresContainer {
 	t.Helper()
-	
+
 	secretList, err := secrets.GetEnv("PG_USERNAME",
 		"PG_PASSWORD", "PG_DATABASE",
 	)

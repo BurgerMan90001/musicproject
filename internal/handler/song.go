@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"musicproject.com/internal/jsonutil"
 	"musicproject.com/internal/repository"
+	"musicproject.com/internal/services"
 	"musicproject.com/internal/services/rating"
 	"musicproject.com/internal/services/upload"
 	"musicproject.com/pkg/model"
@@ -122,7 +123,15 @@ func handleSongUpload(songService *upload.Song) http.HandlerFunc {
 
 			url, err := songService.UploadMetadata(ctx, songRequest)
 			if err != nil {
-				jsonutil.WriteError(w, err, http.StatusBadRequest, err)
+				switch err.(type) {
+				case *repository.Error:
+
+				case *services.Error:
+					//jsonutil.WriteError(w, ,)
+				default:
+					jsonutil.WriteError(w, err, http.StatusBadRequest, err)
+				}
+
 				return
 			}
 			// Set the location where the file is going to be uploaded

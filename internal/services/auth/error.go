@@ -1,22 +1,20 @@
 package auth
 
 import (
-	"errors"
-
 	"github.com/golang-jwt/jwt/v5"
+	"musicproject.com/internal/services"
 )
 
 var (
-	ErrInvalidPassword  = errors.New("Password must be at least 8 characters, contain uppercase, lowercase, number, and special character")
-	ErrMismatchPassword = errors.New("Incorrect password")
-	ErrInvalidEmail     = errors.New("Invalid email")
-	ErrIncorrectLogin   = errors.New("Incorrect password or email")
+	ErrInvalidPassword  = services.NewErr("Password must be at least 8 characters, contain uppercase, lowercase, number, and special character")
+	ErrMismatchPassword = services.NewErr("Incorrect password")
+	ErrInvalidEmail     = services.NewErr("Invalid email")
+	ErrIncorrectLogin   = services.NewErr("Incorrect password or email")
 
-	ErrNoAccessToken    = errors.New("No access token cookie")
-	ErrNoRefeshToken    = errors.New("No refresh token cookie")
+	ErrNoAccessToken    = services.NewErr("No access token cookie")
+	ErrNoRefeshToken    = services.NewErr("No refresh token cookie")
 	ErrTokenExpired     = jwt.ErrTokenExpired
-	ErrInvalidTokenType = errors.New("Invalid token type")
+	ErrInvalidTokenType = services.NewErr("Invalid token type")
 
-	ErrUserAlreadyExists = errors.New("User already exists")
-	
+	ErrUserAlreadyExists = services.NewErr("User already exists")
 )
