@@ -15,7 +15,6 @@ import (
 var _ HLSEncoder = (*FFmpeg)(nil)
 
 type FFmpeg struct {
-	//store     file.Blobstore
 	cfg config.Encoder
 }
 

@@ -13,7 +13,6 @@ import (
 func (s *testSuite) TestLogin() {
 	url := "/v1/auth/login"
 	failTests := []HandlerTest{
-
 		{
 			Name:        "incorect password or email",
 			WantCode:    http.StatusUnauthorized,
@@ -46,7 +45,7 @@ func (s *testSuite) TestLogin() {
 			},
 
 			WantCode:    http.StatusMethodNotAllowed,
-			WantMessage: handler.ErrInvalidMethod.Error(),
+			WantMessage: "Method not allowed",
 		},
 		{
 			Name: "empty body",
@@ -63,7 +62,7 @@ func (s *testSuite) TestLogin() {
 		s.Run(tt.Name, func() {
 			w := s.newRequest(url, tt.Req)
 
-			resBody, err := jsonutil.ReadJSON[model.ErrorResponse](w.Result().Body)
+			resBody, err := jsonutil.ReadJson[model.ErrorResponse](w.Result().Body)
 			s.Require().NoError(err)
 
 			s.Equal(tt.WantMessage, resBody.Message)
@@ -86,7 +85,7 @@ func (s *testSuite) TestLogin() {
 	s.Run(tt.Name, func() {
 		w := s.newRequest(url, tt.Req)
 
-		user, err := jsonutil.ReadJSON[model.User](w.Result().Body)
+		user, err := jsonutil.ReadJson[model.User](w.Result().Body)
 		s.Require().NoError(err)
 
 		s.Equal("paulcasigay@gmail.com", user.Email)

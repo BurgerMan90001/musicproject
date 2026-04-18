@@ -3,20 +3,28 @@ api:
   host: localhost
   version: "1"
 
-services:
-  auth:
-    jwt:
-      issuer: spume
-      audience:
-        - api
-    oauth:
-      google:
-        redirectUrl: http://localhost:8081/v1/auth/google/redirect
-        scopes:
-          - https://www.googleapis.com/auth/userinfo.email
-          - https://www.googleapis.com/auth/userinfo.profile
+auth:
+  jwt:
+    issuer: spume
+    audience:
+      - api
+
+  oauth:
+    google:
+      redirectUrl: http://localhost:8081/v1/auth/google/redirect
+      scopes:
+        - https://www.googleapis.com/auth/userinfo.email
+        - https://www.googleapis.com/auth/userinfo.profile
+
+upload:
+  store: aws
+  region: us-east-1
+  bucket: spume-musicproject-634220481321-us-east-1-an
   encoder:
     logging: false
+    enabled: false
+  
+    
 
 middleware:
   logger: false
@@ -25,8 +33,3 @@ middleware:
 repository:
   postgres:
     image: postgres:alpine
-
-aws:
-  region: us-east-1
-  s3:
-    bucket: spume-musicproject-634220481321-us-east-1-an

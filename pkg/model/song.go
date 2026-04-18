@@ -30,8 +30,8 @@ type SongFile struct {
 type UploadSongRequest struct {
 	Name     string `json:"name"`
 	Genre    string `json:"genre"`
-	Image    string `json:"image"`
-	Filename string `json:"filename"`
+	Image    string `json:"image,omitempty"`
+	Filename string `json:"filename,omitempty"`
 }
 
 type Rating struct {

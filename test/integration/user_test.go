@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"musicproject.com/internal/handler"
 	"musicproject.com/internal/jsonutil"
 	"musicproject.com/internal/repository"
 )
@@ -34,12 +33,11 @@ func (s *testSuite) TestHandleUserID() {
 
 			wantMessage: repository.ErrNotFound.Error(),
 		},
-
 		{
 			name:   "method not allowed",
 			method: http.MethodConnect,
 
-			wantMessage: handler.ErrInvalidMethod.Error(),
+			wantMessage: "Method not allowed",
 			wantCode:    http.StatusMethodNotAllowed,
 		},
 	}
@@ -51,7 +49,7 @@ func (s *testSuite) TestHandleUserID() {
 			}
 			w := s.newRequest(URL+tt.userId.String(), req)
 
-			resBody, err := jsonutil.ReadJSON[map[string]any](w.Result().Body)
+			resBody, err := jsonutil.ReadJson[map[string]any](w.Result().Body)
 			s.Require().NoError(err)
 
 			if resBody["message"] != nil {

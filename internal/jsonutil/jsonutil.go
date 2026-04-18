@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"testing"
 
@@ -22,36 +22,12 @@ func WriteJSON(w http.ResponseWriter, data any, code int, details ...string) {
 
 	jsonEncoder := json.NewEncoder(w)
 
-	// Check for invalid status code
-	if http.StatusText(code) == "" {
-		// Is internal server error
-		invaldCode := code
-		code = http.StatusInternalServerError
-
-		w.WriteHeader(code)
-		jsonEncoder.Encode(model.ErrorResponse{
-			Code:    code,
-			Message: "Internal server error",
-			Details: append(details, fmt.Sprintf("WriteJSON invalid code: %d", invaldCode)),
-		})
-		return
-	}
-
-	var message string = ""
-	if len(details) > 0 {
-		message = details[0]
-		details = details[1:]
-		if len(details) > 10 {
-			details = details[1:10]
-		}
-	}
-
-	success := code >= 200 && code < 300
-
-	if success {
+	switch {
+	// Not an error code
+	case code >= 200 && code < 300:
 		// Check if data is properly encoded
 		_, err := json.Marshal(data)
-		if err != nil {
+		if err != nil || data == nil {
 			code = http.StatusInternalServerError
 
 			w.WriteHeader(code)
@@ -64,61 +40,75 @@ func WriteJSON(w http.ResponseWriter, data any, code int, details ...string) {
 		}
 		w.WriteHeader(code)
 		jsonEncoder.Encode(data)
-		return
+
+	// Invalid status codes
+	case code < 100 || code >= 600:
+		w.WriteHeader(http.StatusInternalServerError)
+		jsonEncoder.Encode(model.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+			Details: append(details, fmt.Sprintf("WriteJSON invalid code: %d", code)),
+		})
+
+	default:
+		// If the message is an error but the code is error
+		err, ok := data.(error)
+		if !ok || err == nil || err.Error() == "" {
+			w.WriteHeader(http.StatusInternalServerError)
+			jsonEncoder.Encode(model.ErrorResponse{
+				Code:    http.StatusInternalServerError,
+				Message: "Internal server error",
+			})
+			return
+		}
+
+		if len(details) > 10 {
+			details = details[:10]
+		}
+		w.WriteHeader(code)
+		jsonEncoder.Encode(model.ErrorResponse{
+			Code:    code,
+			Message: err.Error(),
+			Details: details,
+		})
+	}
+}
+func WriteError(w http.ResponseWriter, reason error, code int, errors ...error) {
+	//	if code == http.StatusInternalServerError {
+	for _, e := range errors {
+		slog.Error(e.Error())
+	}
+	//}
+	WriteJSON(w, reason, code)
+}
+func ReadJson[T any](r io.Reader) (T, error) {
+	var v T
+	if err := json.NewDecoder(r).Decode(&v); err != nil {
+		return v, fmt.Errorf("ReadJSON: %w", err)
 	}
 
-	w.WriteHeader(code)
-	jsonEncoder.Encode(model.ErrorResponse{
-		Code:    code,
-		Message: message,
-		Details: details,
-	})
-}
-
-func WriteError(w http.ResponseWriter, reason error, code int) {
-	WriteJSON(w, nil, code, reason.Error())
-}
-
-func ReadJSON[T any](r io.ReadCloser) (T, error) {
-	var v T
-	err := json.NewDecoder(r).Decode(&v)
-
-	return v, errors.Join(err, r.Close())
+	return v, nil
 }
 
 // Test helper for reading test responses
-func ReadJSONT[T any](t *testing.T, r io.ReadCloser) T {
+func ReadJSONT[T any](t *testing.T, r io.Reader) T {
 	t.Helper()
-	data, err := ReadJSON[T](r)
+	data, err := ReadJson[T](r)
 	require.NoError(t, err)
 
 	return data
 }
 
-// TODO update to match WriteJSON
-func Marshal(code int, args ...string) ([]byte, error) {
-	// var message string
-	// if len(args) > 0 {
-	// 	message = args[0]
-	// }
-	// // res := Error{
-	// // 	Code:    code,
-	// // 	Message: message, // fix later
-	// // }
-	// return json.Marshal(res)
-	return nil, nil
-}
-
 func MethodNotAllowedError(w http.ResponseWriter) {
-	WriteError(w, errors.New("Method not allowed"), http.StatusMethodNotAllowed)
+	WriteJSON(w, errors.New("Method not allowed"), http.StatusMethodNotAllowed)
 }
 
 func NotFoundError(w http.ResponseWriter, reason error) {
-	WriteError(w, errors.New("Resource not found"), http.StatusNotFound)
+	WriteJSON(w, errors.New("Resource not found"), http.StatusNotFound)
 }
 
 func InternalServerError(w http.ResponseWriter, err error) {
 	// TODO USE better logging
-	log.Printf("internal server error: %v", err)
-	WriteError(w, err, http.StatusInternalServerError)
+	slog.Error("internal server error: ", err)
+	WriteError(w, errors.New("Internal server error"), http.StatusInternalServerError)
 }

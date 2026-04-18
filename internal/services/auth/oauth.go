@@ -61,7 +61,7 @@ func (s *GoogleOauth) getUserInfo(ctx context.Context, token *oauth2.Token) (*mo
 	}
 	defer resp.Body.Close()
 
-	userInfo, err := jsonutil.ReadJSON[*model.OauthUserInfo](resp.Body)
+	userInfo, err := jsonutil.ReadJson[*model.OauthUserInfo](resp.Body)
 	if err != nil {
 		return nil, err
 	}

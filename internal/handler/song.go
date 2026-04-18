@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"strings"
 
@@ -68,7 +67,7 @@ func handleSongRating(ratingService *rating.Service) http.HandlerFunc {
 			}
 			jsonutil.WriteJSON(w, aggregated, http.StatusOK)
 		case http.MethodPut:
-			rating, err := jsonutil.ReadJSON[*model.Rating](r.Body)
+			rating, err := jsonutil.ReadJson[*model.Rating](r.Body)
 			if err != nil {
 				jsonutil.WriteError(w, err, http.StatusBadRequest)
 				return
@@ -86,12 +85,6 @@ func handleSongRating(ratingService *rating.Service) http.HandlerFunc {
 	}
 }
 
-//	type songService interface {
-//		UploadSong(ctx context.Context,
-//			file multipart.File, handler *multipart.FileHeader,
-//			songRequest model.UploadSongRequest) (*model.Song, error)
-//
-// // }
 // Takes metadata first
 // Then returns url for the cloud file upload or service file handler
 func handleSongUpload(songService *upload.Song) http.HandlerFunc {
@@ -104,26 +97,7 @@ func handleSongUpload(songService *upload.Song) http.HandlerFunc {
 		ctx := r.Context()
 		contentType := r.Header.Get("Content-Type")
 
-		log.Println(contentType)
-
 		switch {
-		// Metadata upload request
-		case contentType == "application/json":
-			songRequest, err := jsonutil.ReadJSON[*model.UploadSongRequest](r.Body)
-			if err != nil {
-				jsonutil.WriteError(w, err, http.StatusBadRequest)
-				return
-			}
-
-			url, err := songService.UploadMetadata(ctx, songRequest)
-			if err != nil {
-				jsonutil.WriteError(w, err, http.StatusBadRequest)
-				return
-			}
-			// Set the location where the file is going to be uploaded
-			w.Header().Set("Location", url)
-			w.WriteHeader(http.StatusOK)
-			return
 		// Audio file upload request to local storage MAYBE
 		case strings.HasPrefix(contentType, "audio/"):
 			// TODO limit uploads
@@ -138,9 +112,22 @@ func handleSongUpload(songService *upload.Song) http.HandlerFunc {
 				return
 			}
 
-			return
+		// Metadata upload request
 		default:
-			jsonutil.WriteError(w, errors.New("Request should either contain song metadata or audio file"), http.StatusBadRequest)
+			songRequest, err := jsonutil.ReadJson[*model.UploadSongRequest](r.Body)
+			if err != nil {
+				jsonutil.WriteError(w, err, http.StatusBadRequest)
+				return
+			}
+
+			url, err := songService.UploadMetadata(ctx, songRequest)
+			if err != nil {
+				jsonutil.WriteError(w, err, http.StatusBadRequest, err)
+				return
+			}
+			// Set the location where the file is going to be uploaded
+			w.Header().Set("Location", url)
+			w.WriteHeader(http.StatusOK)
 		}
 	}
 }

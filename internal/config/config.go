@@ -1,11 +1,9 @@
 package config
 
 import (
-	"bytes"
 	"fmt"
-	"os"
 
-	"go.yaml.in/yaml/v4"
+	"musicproject.com/internal/fileutil"
 )
 
 // //go:embed config.dev.yml
@@ -33,23 +31,11 @@ func LoadEnvironment(env Env) {
 	}
 }
 
-// Reads file from local directory
-func LoadConfig(name string) (*Config, error) {
-	f, err := os.ReadFile(name)
+func LoadConfig(filename string) (*Config, error) {
+	cfg, err := fileutil.ReadYaml[Config](filename)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Load config: %w", err)
 	}
-
-	var cfg Config
-	if err := yaml.NewDecoder(bytes.NewReader(f)).Decode(&cfg); err != nil {
-		return nil, fmt.Errorf("config load: %w", err)
-	}
-	return &cfg, nil
+	
+	return cfg, nil
 }
-func GetEnv() (string, error) {
-	return "", nil
-}
-
-// func (cfg *Config) Write() {
-
-// }

@@ -10,7 +10,6 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 
-	"musicproject.com/internal/config"
 	"musicproject.com/internal/config/secrets"
 	"musicproject.com/schema"
 )
@@ -25,9 +24,9 @@ func NewDB(ctx context.Context) (*sql.DB, error) {
 	return db, nil
 }
 
-func NewTestDB(t *testing.T, ctx context.Context, cfg config.Postgres) *sql.DB {
+func NewTestDB(t *testing.T, ctx context.Context, image string) *sql.DB {
 	t.Helper()
-	pg := newPostgresContainer(t, ctx, cfg)
+	pg := newPostgresContainer(t, ctx, image)
 
 	db, err := newDBFromUri(ctx, pg.URI)
 	require.NoError(t, err)

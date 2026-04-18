@@ -17,7 +17,7 @@ func (s *testSuite) TestAuthMiddleware() {
 	userId := uuid.Nil
 
 	expireJwt, err := auth.NewJWTService(
-		s.cfg.Services.Auth.Jwt, "JWT_ACCESS_KEY",
+		s.cfg.Auth.Jwt, "JWT_ACCESS_KEY",
 		model.TokenAccess, -1*time.Hour)
 
 	expired, err := expireJwt.GenerateToken(userId, nil)
@@ -65,27 +65,29 @@ func (s *testSuite) TestAuthMiddleware() {
 			}
 			w := s.newRequest(url, req)
 
-			resBody, err := jsonutil.ReadJSON[map[string]any](w.Result().Body)
+			resBody, err := jsonutil.ReadJson[map[string]any](w.Result().Body)
 			s.Require().NoError(err)
 
 			s.Equal(tt.wantStatus, w.Code, tt.name)
 			s.NotEmpty(resBody["message"], tt.name)
 		})
 	}
-	valid, err := s.jwtAccess.GenerateToken(userId, nil)
-	s.Require().NoError(err)
 
 	s.Run("success", func() {
+		valid, err := s.jwtAccess.GenerateToken(uuid.Nil, nil)
+		s.Require().NoError(err)
+
 		req := &request{
 			method:      http.MethodGet,
 			accessToken: valid,
 		}
 		w := s.newRequest(url, req)
 
-		resBody, err := jsonutil.ReadJSON[map[string]any](w.Result().Body)
+		resBody, err := jsonutil.ReadJson[map[string]any](w.Result().Body)
 		s.Require().NoError(err)
 
 		s.Equal(http.StatusOK, w.Code)
 		s.Empty(resBody["message"])
 	})
+
 }

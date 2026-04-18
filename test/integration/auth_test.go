@@ -24,9 +24,9 @@ func (s *testSuite) TestHandleOathGoogleLogin() {
 	s.T().Skip()
 	for _, tt := range tests {
 		s.Run(tt.Name, func() {
-			w := s.newRequest( url, tt.Req)
+			w := s.newRequest(url, tt.Req)
 
-			userInfo, err := jsonutil.ReadJSON[model.OauthUserInfo](w.Result().Body)
+			userInfo, err := jsonutil.ReadJson[model.OauthUserInfo](w.Result().Body)
 			s.Require().NoError(err)
 
 			s.Equal(tt.WantCode, w.Code, tt.Name)

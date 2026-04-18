@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -9,18 +8,7 @@ import (
 	"musicproject.com/internal/repository"
 )
 
-type userHandler struct {
-	userRepo repository.User
-}
-
-func NewUser(userRepo repository.User) (*userHandler, error) {
-	if userRepo == nil {
-		return nil, fmt.Errorf("nil user repo")
-
-	}
-	return &userHandler{userRepo: userRepo}, nil
-}
-func (h *userHandler) handleUsers() http.HandlerFunc {
+func handleUsers(userRepo repository.User) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			jsonutil.MethodNotAllowedError(w)
@@ -28,11 +16,11 @@ func (h *userHandler) handleUsers() http.HandlerFunc {
 		}
 	}
 }
-func (h *userHandler) handleUsersID() http.HandlerFunc {
+func handleUsersID(userRepo repository.User) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(r.PathValue("id"))
 		if err != nil {
-			jsonutil.WriteError(w, err, http.StatusBadRequest)
+			jsonutil.WriteJSON(w, err, http.StatusBadRequest)
 			return
 		}
 		ctx := r.Context()
@@ -40,7 +28,7 @@ func (h *userHandler) handleUsersID() http.HandlerFunc {
 		switch r.Method {
 		case http.MethodGet:
 
-			user, err := h.userRepo.GetByID(ctx, id)
+			user, err := userRepo.GetByID(ctx, id)
 
 			if err != nil {
 				switch err {
@@ -65,7 +53,7 @@ func (h *userHandler) handleUsersID() http.HandlerFunc {
 				}
 			*/
 
-			err := h.userRepo.DeleteByID(ctx, id)
+			err := userRepo.DeleteByID(ctx, id)
 			if err != nil {
 				switch err {
 				case repository.ErrNotFound:

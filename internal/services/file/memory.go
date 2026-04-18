@@ -31,7 +31,9 @@ func (s *Memory) CreateObjectUrl(ctx context.Context, parent, name string,
 }
 func (s *Memory) GetObject(ctx context.Context, parent string, name string) ([]byte, error) {
 	return nil, nil
-
+}
+func (s *Memory) GetObjectUrl(ctx context.Context, bucket, key string) (string, error) {
+	return "", nil
 }
 func (s *Memory) DeleteObject(Ctx context.Context, parrent string, name string) error {
 	return nil

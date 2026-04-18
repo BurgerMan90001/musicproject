@@ -2,7 +2,7 @@
 /*CREATE DATABASE musicproject;*/
 
 CREATE TABLE IF NOT EXISTS revoked_tokens (
-    token VARCHAR(255) PRIMARY KEY,
+    token_id UUID PRIMARY KEY,
     revocation_date timestamp default now()
 );
 
@@ -11,7 +11,6 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255),
     password_hash VARCHAR(255)
 );
-
 
 CREATE TABLE IF NOT EXISTS artists (
     artist_id UUID PRIMARY KEY DEFAULT uuidv7()

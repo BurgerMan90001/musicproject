@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"regexp"
 	"unicode"
 
@@ -22,7 +23,6 @@ func HashPassword(password string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
 
 	return string(bytes), nil
 }
@@ -33,7 +33,6 @@ func ComparePassword(password string, passwordHash string) error {
 	)
 	return err
 }
-
 
 func validateEmail(email string) error {
 	valid, err := regexp.MatchString(`^[\w\-\.]+@([\w-]+\.)+[\w-]{2,}$`, email)
@@ -46,6 +45,9 @@ func validateEmail(email string) error {
 func validatePassword(password string) error {
 	if len(password) < minLength {
 		return ErrInvalidPassword
+	}
+	if len(password) > maxLength {
+		return fmt.Errorf("Password is over max length %d", maxLength)
 	}
 	var (
 		hasUpper   = false

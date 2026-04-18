@@ -3,6 +3,7 @@ package file
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"time"
 
@@ -93,7 +94,18 @@ func (s *AWSS3) GetObject(ctx context.Context, bucket string, key string) ([]byt
 
 	return data, nil
 }
-
+func (s *AWSS3) GetObjectUrl(ctx context.Context, bucket, key string) (string, error) {
+	req, err := s.presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	}, func(po *s3.PresignOptions) {
+		s3.WithPresignExpires(30 * time.Minute)
+	})
+	if err != nil {
+		return "", fmt.Errorf("Get object url: %w", err)
+	}
+	return req.URL, nil
+}
 func (s *AWSS3) DeleteObject(ctx context.Context, bucket string, key string) error {
 	deleteInput := &s3.DeleteObjectInput{
 		Bucket: aws.String(bucket),

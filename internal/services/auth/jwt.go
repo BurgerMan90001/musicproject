@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"time"
@@ -43,11 +42,6 @@ func NewJWTService(cfg config.Jwt, envVar string, tokenType model.TokenType, ttl
 	}, nil
 }
 func (s *JWTService) GenerateToken(userId uuid.UUID, roles []string) (string, error) {
-	// if len(opts) > 0 {
-	// 	for _, apply := range opts {
-	// 		apply(s)
-	// 	}
-	// }
 	if roles == nil {
 		roles = defaultRoles
 	}
@@ -98,10 +92,7 @@ func (s *JWTService) ValidateToken(tokenString string) (*model.Claims, error) {
 		return nil, jwt.ErrTokenInvalidClaims
 	case claims.TokenType != string(s.tokenType):
 		return nil, ErrInvalidTokenType
+		//case claims.ID:
 	}
 	return claims, nil
-}
-
-func (s *JWTService) revokeToken(ctx context.Context, tokenString string) error {
-	return nil
 }

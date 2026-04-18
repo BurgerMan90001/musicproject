@@ -15,11 +15,10 @@ func NewPostgres(db *sql.DB) *Postgres {
 	return &Postgres{db}
 }
 
-func (s *Postgres) SearchSongs(ctx context.Context) ([]model.Song, error) {
-	query := ""
-	rows, err := s.db.QueryContext(ctx, query)
+func (s *Postgres) SearchSongs(ctx context.Context, query string) ([]model.Song, error) {
+	q := ""
+	rows, err := s.db.QueryContext(ctx, q)
 	if err != nil {
-
 		return nil, err
 	}
 	for rows.Next() {

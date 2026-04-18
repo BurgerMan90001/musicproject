@@ -1,5 +1,2 @@
 package handler
 
-func handleEmailReset() {
-	
-}

@@ -2,13 +2,14 @@ package upload
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
+	"path/filepath"
 	"strings"
 
+	"musicproject.com/internal/config"
 	"musicproject.com/internal/repository"
 	"musicproject.com/internal/services/encode"
 	"musicproject.com/internal/services/file"
@@ -16,22 +17,33 @@ import (
 )
 
 type Song struct {
+	parent  string
 	store   file.Blobstore
 	encoder encode.HLSEncoder
 	repo    repository.Song
 }
 
-func New(store file.Blobstore, encoder encode.HLSEncoder, repo repository.Song) *Song {
-	return &Song{store, encoder, repo}
+func New(parent string, encoding bool, store file.Blobstore, repo repository.Song) *Song {
+	var encoder encode.HLSEncoder
+	if encoding {
+		encoder = encode.NewFFmpeg(config.Encoder{})
+	}
+	// TODO Use local filesystem if the bucket is empty
+	if parent == "" {
+		parent = ""
+	}
+	return &Song{parent, store, encoder, repo}
 }
 
 // Uploads the song's metadata to the repository.
 // Returns the url to upload the song file to.
 func (s *Song) UploadMetadata(ctx context.Context,
 	songRequest *model.UploadSongRequest) (string, error) {
-	if songRequest.Name == "" {
-		return "", errors.New("")
+
+	if err := validateUploadRequest(songRequest); err != nil {
+		return "", err
 	}
+
 	// Put song metadata in repository
 	_, err := s.repo.Put(ctx, &model.Song{
 		Name:  songRequest.Name,
@@ -41,12 +53,11 @@ func (s *Song) UploadMetadata(ctx context.Context,
 	if err != nil {
 		return "", err
 	}
-	parent := "files/audio"
-	url, err := s.store.CreateObjectUrl(ctx, parent, songRequest.Filename, true)
+	
+	url, err := s.store.CreateObjectUrl(ctx, s.parent, filepath.Join("files/audio", songRequest.Filename), true)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
-
 	return url, nil
 }
 
@@ -66,10 +77,3 @@ func (s *Song) UploadFile(ctx context.Context, file multipart.File,
 	}
 	return nil
 }
-
-//	func (s *Song) DownloadByID(ctx context.Context, songId uuid.UUID) error {
-//		return nil
-//	}
-// func (s *Song) DeleteByID(ctx context.Context, songId uuid.UUID) error {
-// 	return nil
-// }

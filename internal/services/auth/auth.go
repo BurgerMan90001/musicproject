@@ -20,19 +20,23 @@ type userRepo interface {
 	Put(ctx context.Context, user *model.User) (uuid.UUID, error)
 }
 
+//	type refreshTokenRepo interface {
+//		RevokeToken(ctx context.Context, refreshToken uui) error
+//	}
 type Oauth interface {
 	Login(ctx context.Context, code string) (*model.User, *model.TokenPair, error)
 	RedirectURL(w http.ResponseWriter) string
 }
 
 type Service struct {
-	userRepo   userRepo
-	jwtAccess  *JWTService
-	jwtRefresh *JWTService
-	Google     Oauth
+	userRepo         userRepo
+	refreshTokenRepo repository.Token
+	jwtAccess        *JWTService
+	jwtRefresh       *JWTService
+	Google           Oauth
 }
 
-func New(ctx context.Context, cfg config.Auth, repo userRepo) (*Service, error) {
+func New(ctx context.Context, cfg config.Auth, refreshTokenRepo repository.Token, repo userRepo) (*Service, error) {
 	google, err := NewOauth(cfg.Oauth.Google.RedirectURL, cfg.Oauth.Google.Scopes, google.Endpoint)
 	if err != nil {
 		return nil, err
@@ -51,10 +55,11 @@ func New(ctx context.Context, cfg config.Auth, repo userRepo) (*Service, error) 
 		return nil, err
 	}
 	return &Service{
-		userRepo:   repo,
-		jwtAccess:  jwtAccess,
-		jwtRefresh: jwtRefresh,
-		Google:     google}, nil
+		userRepo:         repo,
+		refreshTokenRepo: refreshTokenRepo,
+		jwtAccess:        jwtAccess,
+		jwtRefresh:       jwtRefresh,
+		Google:           google}, nil
 }
 
 func (s *Service) Signup(ctx context.Context, email string, password string) (*model.User, *model.TokenPair, error) {
@@ -123,9 +128,18 @@ func (s *Service) Login(ctx context.Context, email string, password string) (*mo
 }
 
 // TODO
-func (s *Service) Logout(ctx context.Context, accessToken, refeshToken string) error {
-	//err := s.jwtRefresh.revokeToken(ctx, refeshToken)
-
+func (s *Service) Logout(ctx context.Context, refeshToken string) error {
+	claims, err := s.jwtRefresh.ValidateToken(refeshToken)
+	if err != nil {
+		return err
+	}
+	userId, err := uuid.Parse(claims.ID)
+	if err != nil {
+		return err
+	}
+	if err := s.refreshTokenRepo.RevokeToken(ctx, userId); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -134,7 +148,15 @@ func (s *Service) Refresh(ctx context.Context, refeshToken string) (*model.Token
 	if err != nil {
 		return nil, err
 	}
-	if err := s.jwtRefresh.revokeToken(ctx, refeshToken); err != nil {
+	userId, err := uuid.Parse(claims.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.refreshTokenRepo.Revoked(ctx, userId); err != nil {
+		return nil, err
+	}
+	if err := s.refreshTokenRepo.RevokeToken(ctx, userId); err != nil {
 		return nil, err
 	}
 	tokenPair, err := s.generateTokenPair(claims.UserID, claims.Roles)
@@ -145,6 +167,7 @@ func (s *Service) Refresh(ctx context.Context, refeshToken string) (*model.Token
 	return tokenPair, nil
 }
 
+// Validates access token
 func (s *Service) Validate(tokenString string) (*model.Claims, error) {
 	return s.jwtAccess.ValidateToken(tokenString)
 }

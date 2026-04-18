@@ -8,22 +8,19 @@ import (
 	"musicproject.com/internal/jsonutil"
 	"musicproject.com/internal/repository"
 	"musicproject.com/internal/services/auth"
-	"musicproject.com/internal/services/email"
 	"musicproject.com/pkg/model"
 )
 
-type authHandler struct {
-	authService authService
-}
 type authService interface {
 	Signup(ctx context.Context, email, password string) (*model.User, *model.TokenPair, error)
 	Login(ctx context.Context, email, password string) (*model.User, *model.TokenPair, error)
 	Refresh(ctx context.Context, refreshToken string) (*model.TokenPair, error)
-	Logout(ctx context.Context, accessToken, refreshToken string) error
+	Logout(ctx context.Context, refreshToken string) error
+}
+type emailService interface {
 }
 
-func (h *authHandler) handleSignup() http.HandlerFunc {
-	http.NewServeMux()
+func handleSignup(authService authService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			jsonutil.MethodNotAllowedError(w)
@@ -31,13 +28,13 @@ func (h *authHandler) handleSignup() http.HandlerFunc {
 		}
 		ctx := r.Context()
 
-		signup, err := jsonutil.ReadJSON[model.SignupRequest](r.Body)
+		signup, err := jsonutil.ReadJson[model.SignupRequest](r.Body)
 		if err != nil {
 			jsonutil.WriteError(w, ErrInvalidRequestBody, http.StatusBadRequest)
 			return
 		}
 
-		user, tokenPair, err := h.authService.Signup(ctx, signup.Email, signup.Password)
+		user, tokenPair, err := authService.Signup(ctx, signup.Email, signup.Password)
 		if err != nil {
 			switch err {
 			case auth.ErrInvalidEmail,
@@ -52,7 +49,6 @@ func (h *authHandler) handleSignup() http.HandlerFunc {
 		}
 
 		// Set cookies with max age of 24 hours
-
 		setCookie(w, model.TokenAccess, tokenPair.AccessToken, 86400)
 		setCookie(w, model.TokenRefresh, tokenPair.RefreshToken, 86400)
 
@@ -60,7 +56,7 @@ func (h *authHandler) handleSignup() http.HandlerFunc {
 	}
 }
 
-func (h *authHandler) handleLogin() http.HandlerFunc {
+func handleLogin(authService authService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			jsonutil.MethodNotAllowedError(w)
@@ -68,13 +64,13 @@ func (h *authHandler) handleLogin() http.HandlerFunc {
 		}
 		ctx := r.Context()
 
-		login, err := jsonutil.ReadJSON[model.LoginRequest](r.Body)
+		login, err := jsonutil.ReadJson[model.LoginRequest](r.Body)
 		if err != nil {
 			jsonutil.WriteError(w, ErrInvalidRequestBody, http.StatusBadRequest)
 			return
 		}
 
-		user, tokenPair, err := h.authService.Login(ctx, login.Email, login.Password)
+		user, tokenPair, err := authService.Login(ctx, login.Email, login.Password)
 		if err != nil {
 			switch err {
 			case auth.ErrIncorrectLogin:
@@ -94,7 +90,7 @@ func (h *authHandler) handleLogin() http.HandlerFunc {
 	}
 }
 
-func (h *authHandler) handleRefresh() http.HandlerFunc {
+func handleRefresh(authService authService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		// Allowed methods
@@ -104,37 +100,39 @@ func (h *authHandler) handleRefresh() http.HandlerFunc {
 			return
 		}
 
-		var refreshToken string
 		// Try getting refresh token from cookie
 		cookie, err := r.Cookie(string(model.TokenRefresh))
-		if err == nil {
-			refreshToken = cookie.Value
-		} else {
-			body, err := jsonutil.ReadJSON[model.RefreshRequest](r.Body)
-			if err != nil {
-				jsonutil.WriteError(w, auth.ErrNoRefeshToken, http.StatusUnauthorized)
-				return
-			}
-			refreshToken = body.RefreshToken
-		}
-
-		if refreshToken == "" {
-			jsonutil.WriteError(w, auth.ErrNoRefeshToken, http.StatusUnauthorized)
-			return
-		}
-
-		ctx := r.Context()
-
-		tokenPair, err := h.authService.Refresh(ctx, refreshToken)
 		if err != nil {
 			jsonutil.WriteError(w, auth.ErrNoRefeshToken, http.StatusUnauthorized)
 			return
 		}
-		jsonutil.WriteJSON(w, tokenPair, http.StatusOK)
+		ctx := r.Context()
+
+		tokenPair, err := authService.Refresh(ctx, cookie.Value)
+		if err != nil {
+			jsonutil.WriteError(w, auth.ErrNoRefeshToken, http.StatusUnauthorized, err)
+			return
+		}
+
+		setCookie(w, model.TokenRefresh, tokenPair.RefreshToken, 86400)
+		jsonutil.WriteJSON(w, tokenPair.AccessToken, http.StatusOK)
 	}
 }
-
-func HandleLogout(authService authService) http.HandlerFunc {
+func requestRefreshToken(r *http.Request) (string, error) {
+	var refreshToken string
+	cookie, err := r.Cookie(string(model.TokenRefresh))
+	if err == nil {
+		refreshToken = cookie.Value
+	} else {
+		body, err := jsonutil.ReadJson[model.RefreshRequest](r.Body)
+		if err != nil {
+			return "", auth.ErrNoRefeshToken
+		}
+		refreshToken = body.RefreshToken
+	}
+	return refreshToken, nil
+}
+func handleLogout(authService authService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			jsonutil.MethodNotAllowedError(w)
@@ -142,17 +140,25 @@ func HandleLogout(authService authService) http.HandlerFunc {
 		}
 		ctx := r.Context()
 
-		// cookie, err := r.Cookie(auth.TokenAccess)
-		// if err != nil {
-		// 	jsonutil.WriteError(w, err, http.StatusBadRequest)
-		// 	return
-		// }
-		// if err := authService.RevokeToken(ctx, cookie.Value); err != nil {
-		// 	jsonutil.WriteError(w, err, http.StatusInternalServerError)
-		// 	return
-		// }
+		var refreshToken string
+		// Try getting refresh token from cookie
+		cookie, err := r.Cookie(string(model.TokenRefresh))
+		if err == nil {
+			refreshToken = cookie.Value
+		} else {
+			body, err := jsonutil.ReadJson[model.RefreshRequest](r.Body)
+			if err != nil {
+				jsonutil.WriteError(w, auth.ErrNoRefeshToken, http.StatusUnauthorized)
+				return
+			}
+			refreshToken = body.RefreshToken
+		}
+		if refreshToken == "" {
+			jsonutil.WriteError(w, auth.ErrNoRefeshToken, http.StatusUnauthorized)
+			return
+		}
 		// TODO USE authService.Logout function
-		if err := authService.Logout(ctx, "", ""); err != nil {
+		if err := authService.Logout(ctx, cookie.Value); err != nil {
 			jsonutil.InternalServerError(w, err)
 			return
 		}
@@ -164,7 +170,8 @@ func HandleLogout(authService authService) http.HandlerFunc {
 		jsonutil.WriteJSON(w, nil, http.StatusNoContent)
 	}
 }
-func (h *authHandler) handleEmailReset(emailService *email.Service) http.HandlerFunc {
+
+func handleEmailReset(emailService emailService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			jsonutil.MethodNotAllowedError(w)
@@ -175,13 +182,13 @@ func (h *authHandler) handleEmailReset(emailService *email.Service) http.Handler
 }
 
 /* Oauth handler functions */
-func HandleOauthLogin(oauth auth.Oauth) http.HandlerFunc {
+func handleOauthLogin(oauth auth.Oauth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		url := oauth.RedirectURL(w)
 		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 	}
 }
-func HandleOauthRedirect(oauth auth.Oauth) http.HandlerFunc {
+func handleOauthRedirect(oauth auth.Oauth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 

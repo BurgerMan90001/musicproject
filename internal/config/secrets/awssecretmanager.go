@@ -23,6 +23,7 @@ func NewAWS(ctx context.Context, region string) (*AWSSecretManager, error) {
 		return nil, err
 	}
 	client := secretsmanager.NewFromConfig(cfg)
+	
 	return &AWSSecretManager{client: client}, nil
 }
 

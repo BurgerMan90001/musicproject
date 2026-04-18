@@ -18,4 +18,5 @@ var (
 	ErrInvalidTokenType = errors.New("Invalid token type")
 
 	ErrUserAlreadyExists = errors.New("User already exists")
+	
 )

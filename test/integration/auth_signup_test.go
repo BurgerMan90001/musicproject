@@ -68,7 +68,7 @@ func (s *testSuite) TestSignup() {
 		s.Run(tt.Name, func() {
 			w := s.newRequest(url, tt.Req)
 
-			resBody, err := jsonutil.ReadJSON[map[string]any](w.Result().Body)
+			resBody, err := jsonutil.ReadJson[map[string]any](w.Result().Body)
 			s.Require().NoError(err)
 
 			mes := resBody["message"]
@@ -93,7 +93,7 @@ func (s *testSuite) TestSignup() {
 
 		w := s.newRequest(url, success.Req)
 
-		resBody, err := jsonutil.ReadJSON[model.User](w.Result().Body)
+		resBody, err := jsonutil.ReadJson[model.User](w.Result().Body)
 		s.Require().NoError(err)
 
 		s.Empty(resBody.PasswordHash, success.Name)

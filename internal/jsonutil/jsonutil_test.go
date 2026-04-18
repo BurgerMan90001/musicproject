@@ -2,6 +2,7 @@ package jsonutil
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,7 +16,7 @@ import (
 func TestWriteJSON(t *testing.T) {
 	t.Parallel()
 
-	errorTests := []struct {
+	tests := []struct {
 		name    string
 		data    any
 		code    int
@@ -29,10 +30,22 @@ func TestWriteJSON(t *testing.T) {
 				ID:    uuid.New(),
 				Email: "paulcasigay@gmail.com",
 			},
+			code:     1000,
+			wantCode: http.StatusInternalServerError,
+		},
+		{
+			name:     "nil data",
+			code:     http.StatusOK,
+			wantCode: http.StatusInternalServerError,
+		},
+		{
+			name:     "empty error string",
+			data:     errors.New(""),
+			code:     http.StatusBadGateway,
 			wantCode: http.StatusInternalServerError,
 		},
 	}
-	for _, tt := range errorTests {
+	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
 
@@ -49,23 +62,6 @@ func TestWriteJSON(t *testing.T) {
 		})
 	}
 
-	t.Run("status ok", func(t *testing.T) {
-		w := httptest.NewRecorder()
-
-		user := model.User{
-			ID:    uuid.New(),
-			Email: "paulcasigay@gmail.com",
-		}
-		WriteJSON(w, user, http.StatusOK)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-
-		var resUser model.User
-		err := json.NewDecoder(w.Body).Decode(&resUser)
-		require.NoError(t, err)
-
-		assert.Equal(t, user, resUser)
-	})
 	t.Run("much details", func(t *testing.T) {
 		w := httptest.NewRecorder()
 
@@ -76,7 +72,24 @@ func TestWriteJSON(t *testing.T) {
 			"asd", "asd", "asd", "asd", "asd", "asd")
 
 		assert.Equal(t, http.StatusOK, w.Code)
-
 	})
+}
+func TestWriteJSONStatusOK(t *testing.T) {
+	t.Parallel()
 
+	w := httptest.NewRecorder()
+
+	user := model.User{
+		ID:    uuid.New(),
+		Email: "paulcasigay@gmail.com",
+	}
+	WriteJSON(w, user, http.StatusOK)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resUser model.User
+	err := json.NewDecoder(w.Body).Decode(&resUser)
+	require.NoError(t, err)
+
+	assert.Equal(t, user, resUser)
 }

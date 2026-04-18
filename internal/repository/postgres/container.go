@@ -9,7 +9,6 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"musicproject.com/internal/config"
 	"musicproject.com/internal/config/secrets"
 )
 
@@ -18,15 +17,15 @@ type PostgresContainer struct {
 	URI string
 }
 
-func newPostgresContainer(t *testing.T, ctx context.Context, cfg config.Postgres) *PostgresContainer {
+func newPostgresContainer(t *testing.T, ctx context.Context, image string) *PostgresContainer {
 	t.Helper()
-
+	
 	secretList, err := secrets.GetEnv("PG_USERNAME",
 		"PG_PASSWORD", "PG_DATABASE",
 	)
 	require.NoError(t, err)
 
-	pg, err := postgres.Run(ctx, cfg.Image,
+	pg, err := postgres.Run(ctx, image,
 		postgres.WithUsername(secretList["PG_USERNAME"]),
 		postgres.WithPassword(secretList["PG_PASSWORD"]),
 		postgres.WithDatabase(secretList["PG_DATABASE"]),

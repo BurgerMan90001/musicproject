@@ -16,6 +16,7 @@ import (
 	"musicproject.com/internal/handler"
 	"musicproject.com/internal/repository/postgres"
 	"musicproject.com/internal/services/auth"
+	"musicproject.com/internal/services/file"
 	"musicproject.com/pkg/model"
 )
 
@@ -29,7 +30,6 @@ type HandlerTest struct {
 }
 type testSuite struct {
 	suite.Suite
-	//ctx        context.Context
 	cfg        *config.Config
 	handler    http.Handler
 	sm         secrets.Manager
@@ -48,25 +48,30 @@ func (s *testSuite) SetupSuite() {
 	t := s.T()
 	ctx := t.Context()
 
+	configFolder := filepath.Join("..", "..", "config")
 	var err error
 	// Config
-	s.cfg, err = config.LoadConfig(filepath.Join("..", "..", "config", "config.dev.yml"))
+	s.cfg, err = config.LoadConfig(filepath.Join(configFolder, "config.dev.yml"))
 	s.Require().NoError(err)
 
-	err = secrets.LoadEnv(filepath.Join("..", "..", "config", ".env.dev"))
+	err = secrets.ReadEnvFile(filepath.Join(configFolder, ".env.dev"))
 	s.Require().NoError(err)
 
 	// JWT services
-	s.jwtAccess, err = auth.NewJWTService(s.cfg.Services.Auth.Jwt, "JWT_ACCESS_KEY", model.TokenAccess, time.Minute*30)
+	s.jwtAccess, err = auth.NewJWTService(s.cfg.Auth.Jwt, "JWT_ACCESS_KEY", model.TokenAccess, time.Minute*30)
 	s.Require().NoError(err)
 
-	s.jwtRefresh, err = auth.NewJWTService(s.cfg.Services.Auth.Jwt, "JWT_REFRESH_KEY", model.TokenRefresh, time.Hour)
+	s.jwtRefresh, err = auth.NewJWTService(s.cfg.Auth.Jwt, "JWT_REFRESH_KEY", model.TokenRefresh, time.Hour)
+	s.Require().NoError(err)
+
+	// Filesystem store
+	store, err := file.New(ctx, &file.GoogleCloud{}, s.cfg.Upload.Region)
 	s.Require().NoError(err)
 
 	// Test postgres database container
-	db := postgres.NewTestDB(t, ctx, s.cfg.Repository.Postgres)
+	db := postgres.NewTestDB(t, ctx, s.cfg.Repository.Postgres.Image)
 
-	s.handler, err = handler.NewMux(ctx, s.cfg, db)
+	s.handler, err = handler.NewMux(ctx, s.cfg, store, db)
 	s.Require().NoError(err)
 }
 func (s *testSuite) TeardownSuite() {
@@ -74,6 +79,7 @@ func (s *testSuite) TeardownSuite() {
 }
 
 type request struct {
+	// Will default to GET
 	method string
 	body   map[string]any
 	// Access and refresh tokens are set in cookies as accessKey and refreshKey
@@ -82,7 +88,7 @@ type request struct {
 }
 
 func (s *testSuite) newRequest(url string, req *request) *httptest.ResponseRecorder {
-	s.T().Helper()
+	//s.T().Helper()
 
 	s.Require().NotNil(req)
 
@@ -93,17 +99,9 @@ func (s *testSuite) newRequest(url string, req *request) *httptest.ResponseRecor
 		buf = bytes.NewBuffer(mar)
 	}
 	r := httptest.NewRequestWithContext(s.T().Context(), req.method, url, buf)
-
+	r.AddCookie(&http.Cookie{Name: string(model.TokenAccess), Value: req.accessToken})
+	r.AddCookie(&http.Cookie{Name: string(model.TokenRefresh), Value: req.refreshToken})
 	w := httptest.NewRecorder()
-
-	if req.accessToken != "" {
-
-		//http.SetCookie(w, &http.Cookie{Name: auth.TokenAccess, Value: req.accessToken})
-		r.AddCookie(&http.Cookie{Name: string(model.TokenAccess), Value: req.accessToken})
-	}
-	if req.refreshToken != "" {
-		r.AddCookie(&http.Cookie{Name: string(model.TokenRefresh), Value: req.refreshToken})
-	}
 
 	s.handler.ServeHTTP(w, r)
 

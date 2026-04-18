@@ -19,12 +19,15 @@ type RefreshRequest struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
+// type RefreshResponse struct {
+
+// }
 type EmailResetRequest struct {
 	Email string `json:"email"`
 }
 
 type TokenPair struct {
-	AccessToken string `json:"accessToken"`
+	AccessToken  string `json:"accessToken"`
 	RefreshToken string `json:"refreshToken"`
 }
 

@@ -2,10 +2,10 @@ package config
 
 type Config struct {
 	API        API        `yaml:"api"`
-	Services   Services   `yaml:"services"`
+	Auth       Auth       `yaml:"auth"`
+	Upload     Upload     `yaml:"upload"`
 	Middleware Middleware `yaml:"middleware"`
 	Repository Repository `yaml:"repository"`
-	Aws        Aws        `yaml:"aws"`
 }
 type API struct {
 	Port    int    `yaml:"port"`
@@ -29,9 +29,12 @@ type Auth struct {
 }
 type Encoder struct {
 	Logging bool `yaml:"logging"`
+	Enabled bool `yaml:"enabled"`
 }
-type Services struct {
-	Auth    Auth    `yaml:"auth"`
+type Upload struct {
+	Store   string  `yaml:"store"`
+	Region  string  `yaml:"region"`
+	Bucket  string  `yaml:"bucket"`
 	Encoder Encoder `yaml:"encoder"`
 }
 type Middleware struct {
@@ -43,11 +46,4 @@ type Postgres struct {
 }
 type Repository struct {
 	Postgres Postgres `yaml:"postgres"`
-}
-type S3 struct {
-	Bucket string `yaml:"bucket"`
-}
-type Aws struct {
-	Region string `yaml:"region"`
-	S3     S3     `yaml:"s3"`
 }

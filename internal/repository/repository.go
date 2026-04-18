@@ -36,5 +36,6 @@ type Song interface {
 }
 
 type Token interface {
-	Repo[string]
+	RevokeToken(ctx context.Context, tokenId uuid.UUID) error
+	Revoked(ctx context.Context, tokenId uuid.UUID) error
 }

@@ -9,10 +9,7 @@ import (
 
 type Env map[string]string
 
-func LoadEnv(file string) error {
-	// if file == "" {
-
-	// }
+func ReadEnvFile(file string) error {
 	err := godotenv.Load(file)
 
 	if err != nil {

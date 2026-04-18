@@ -14,6 +14,7 @@ import (
 	"musicproject.com/internal/handler"
 	"musicproject.com/internal/repository/postgres"
 	"musicproject.com/internal/server"
+	"musicproject.com/internal/services/file"
 )
 
 func main() {
@@ -44,7 +45,7 @@ func main() {
 
 func run(ctx context.Context, configFile, envFile string) error {
 
-	if err := secrets.LoadEnv(envFile); err != nil {
+	if err := secrets.ReadEnvFile(envFile); err != nil {
 		return fmt.Errorf("Load env file: %v", err)
 	}
 
@@ -64,8 +65,12 @@ func run(ctx context.Context, configFile, envFile string) error {
 		return fmt.Errorf("New server: %v", err)
 	}
 
+	store, err := file.New(ctx, &file.AWSS3{}, cfg.Upload.Region)
+	if err != nil {
+		return err
+	}
 	// create handler
-	handler, err := handler.NewMux(ctx, cfg, db)
+	handler, err := handler.NewMux(ctx, cfg, store, db)
 	if err != nil {
 		return fmt.Errorf("New mux handler: %w", err)
 	}
