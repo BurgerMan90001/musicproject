@@ -1,12 +1,16 @@
 package ratelimit
 
 import (
-	"errors"
 	"net/http"
 	"time"
+
+	"musicproject.com/pkg/model"
 )
 
-var ErrRateLimit = errors.New("Rate limit exceeded")
+var ErrRateLimit = &model.Error{
+	Code:    http.StatusTooManyRequests,
+	Message: "Rate limit exceeded",
+}
 
 type RateLimiter interface {
 	Allow(key string) Result

@@ -1,19 +1,14 @@
 package repository
 
-var _ error = (*Error)(nil)
+import (
+	"net/http"
 
-type Error struct {
-	s string
-}
-
-func (e *Error) Error() string {
-	return e.s
-}
-func newRepoErr(s string) *Error {
-	return &Error{s}
-}
+	"musicproject.com/pkg/model"
+)
 
 var (
-	ErrNotFound = newRepoErr("not found")
-	ErrNilRepo  = newRepoErr("repo in context is nil")
+	ErrNotFound = &model.Error{
+		Code:    http.StatusNotFound,
+		Message: "not found",
+	}
 )

@@ -2,6 +2,8 @@ package integration
 
 import (
 	"net/http"
+
+	"musicproject.com/internal/jsonutil"
 )
 
 func (s *testSuite) TestUploadSongMetadata() {
@@ -37,11 +39,12 @@ func (s *testSuite) TestUploadSongMetadata() {
 		w := s.newRequest(url, tt.Req)
 		url := w.Result().Header.Get("Location")
 
-		//res := jsonutil.ReadJSONT[map[string]any](s.T(), w.Body)
+		res := jsonutil.ReadJSONT[map[string]any](s.T(), w.Body)
+
 		s.NotEmpty(url)
 		s.Equal(tt.WantCode, w.Code, url)
-		// if res["message"] != nil {
-		// 	s.Equal()
-		// }
+		if res != nil {
+			s.Equal("", res["message"])
+		}
 	})
 }

@@ -3,7 +3,6 @@ package integration
 import (
 	"net/http"
 
-	"musicproject.com/internal/handler"
 	"musicproject.com/internal/jsonutil"
 	"musicproject.com/internal/repository"
 	"musicproject.com/internal/services/auth"
@@ -54,7 +53,7 @@ func (s *testSuite) TestLogin() {
 			},
 
 			WantCode:    http.StatusBadRequest,
-			WantMessage: handler.ErrInvalidRequestBody.Error(),
+			WantMessage: "Invalid request body",
 		},
 	}
 
@@ -62,7 +61,7 @@ func (s *testSuite) TestLogin() {
 		s.Run(tt.Name, func() {
 			w := s.newRequest(url, tt.Req)
 
-			resBody, err := jsonutil.ReadJson[model.ErrorResponse](w.Result().Body)
+			resBody, err := jsonutil.ReadJson[model.Error](w.Result().Body)
 			s.Require().NoError(err)
 
 			s.Equal(tt.WantMessage, resBody.Message)

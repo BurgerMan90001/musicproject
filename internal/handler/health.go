@@ -8,7 +8,7 @@ import (
 	"musicproject.com/pkg/model"
 )
 
-func HandleHealth(w http.ResponseWriter, r *http.Request) {
+func handleHealth(w http.ResponseWriter, r *http.Request) {
 	jsonutil.WriteJSON(w, model.HealthResponse{
 		Message:   "alive",
 		Timestamp: time.Now().UTC(),

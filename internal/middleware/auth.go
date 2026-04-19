@@ -18,13 +18,13 @@ func RequireAuth(validator authenticator) func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie(string(model.TokenAccess))
 			if err != nil {
-				jsonutil.WriteError(w, auth.ErrNoAccessToken, http.StatusUnauthorized)
+				jsonutil.WriteError(w, auth.ErrNoAccessToken)
 				return
 			}
-			
+
 			claims, err := validator.Validate(cookie.Value)
 			if err != nil {
-				jsonutil.WriteError(w, err, http.StatusUnauthorized)
+				jsonutil.WriteError(w, err)
 				return
 			}
 

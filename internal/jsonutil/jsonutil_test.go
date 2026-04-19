@@ -51,7 +51,7 @@ func TestWriteJSON(t *testing.T) {
 
 			WriteJSON(w, tt.data, tt.code, tt.details...)
 
-			var errorRes model.ErrorResponse
+			var errorRes model.Error
 			err := json.NewDecoder(w.Body).Decode(&errorRes)
 			require.NoError(t, err)
 
@@ -73,23 +73,74 @@ func TestWriteJSON(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
+	t.Run("status ok", func(t *testing.T) {
+		w := httptest.NewRecorder()
+
+		user := model.User{
+			ID:    uuid.New(),
+			Email: "paulcasigay@gmail.com",
+		}
+		WriteJSON(w, user, http.StatusOK)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var resUser model.User
+		err := json.NewDecoder(w.Body).Decode(&resUser)
+		require.NoError(t, err)
+
+		assert.Equal(t, user, resUser)
+	})
 }
-func TestWriteJSONStatusOK(t *testing.T) {
+
+func TestWriteError(t *testing.T) {
 	t.Parallel()
 
-	w := httptest.NewRecorder()
-
-	user := model.User{
-		ID:    uuid.New(),
-		Email: "paulcasigay@gmail.com",
+	tests := []struct {
+		name     string
+		err      *model.Error
+		wantCode int
+	}{
+		{
+			name: "invalid status code",
+			err: &model.Error{
+				Message: "lalalal",
+				Code:    1000,
+			},
+			wantCode: http.StatusInternalServerError,
+		},
+		{
+			name:     "nil error",
+			err:      nil,
+			wantCode: http.StatusInternalServerError,
+		},
+		{
+			name: "empty error string",
+			err: &model.Error{
+				Message: "",
+				Code:    http.StatusBadGateway,
+			},
+			wantCode: http.StatusInternalServerError,
+		},
 	}
-	WriteJSON(w, user, http.StatusOK)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
 
-	assert.Equal(t, http.StatusOK, w.Code)
+			WriteError(w, tt.err)
 
-	var resUser model.User
-	err := json.NewDecoder(w.Body).Decode(&resUser)
-	require.NoError(t, err)
+			var errorRes model.Error
+			err := json.NewDecoder(w.Body).Decode(&errorRes)
+			require.NoError(t, err)
 
-	assert.Equal(t, user, resUser)
+			// Assert all codes match
+			assert.Equal(t, tt.wantCode, w.Code, tt.name)
+			assert.Equal(t, tt.wantCode, errorRes.Code)
+			assert.NotEmpty(t, errorRes.Message)
+		})
+	}
+	t.Run("normal error success", func(t *testing.T) {
+		w := httptest.NewRecorder()
+
+		WriteError(w, &model.Error{})
+	})
 }

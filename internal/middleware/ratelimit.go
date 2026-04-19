@@ -26,7 +26,7 @@ func RateLimit(rl ratelimit.RateLimiter, next http.Handler) http.Handler {
 		}
 		if !result.Allowed {
 			w.Header().Set("Retry-After", fmt.Sprintf("%.0f", time.Until(result.RetryAt).Seconds()))
-			jsonutil.WriteError(w, ratelimit.ErrRateLimit, http.StatusTooManyRequests)
+			jsonutil.WriteError(w, ratelimit.ErrRateLimit)
 			return
 		}
 		next.ServeHTTP(w, r)

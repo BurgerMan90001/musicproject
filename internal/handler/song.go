@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 	"musicproject.com/internal/jsonutil"
 	"musicproject.com/internal/repository"
-	"musicproject.com/internal/services"
 	"musicproject.com/internal/services/rating"
 	"musicproject.com/internal/services/upload"
 	"musicproject.com/pkg/model"
@@ -18,7 +17,7 @@ func handleGetSongsMetadata(repo repository.Song) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(r.PathValue("id"))
 		if err != nil {
-			jsonutil.WriteError(w, err, http.StatusBadRequest)
+			jsonutil.WriteError(w, err)
 			return
 		}
 		ctx := r.Context()
@@ -54,7 +53,7 @@ func handleSongRating(ratingService *rating.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		songId, err := uuid.Parse(r.PathValue("songId"))
 		if err != nil {
-			jsonutil.WriteError(w, err, http.StatusBadRequest)
+			jsonutil.WriteError(w, err)
 			return
 		}
 		ctx := r.Context()
@@ -63,18 +62,18 @@ func handleSongRating(ratingService *rating.Service) http.HandlerFunc {
 		case http.MethodGet:
 			aggregated, err := ratingService.GetAggregatedRating(ctx, songId)
 			if err != nil {
-				jsonutil.WriteError(w, err, http.StatusInternalServerError)
+				jsonutil.WriteError(w, err)
 				return
 			}
 			jsonutil.WriteJSON(w, aggregated, http.StatusOK)
 		case http.MethodPut:
 			rating, err := jsonutil.ReadJson[*model.Rating](r.Body)
 			if err != nil {
-				jsonutil.WriteError(w, err, http.StatusBadRequest)
+				jsonutil.WriteError(w, err)
 				return
 			}
 			if err := ratingService.Put(ctx, rating); err != nil {
-				jsonutil.WriteError(w, err, http.StatusInternalServerError)
+				jsonutil.WriteError(w, err)
 				return
 			}
 
@@ -104,12 +103,12 @@ func handleSongUpload(songService *upload.Song) http.HandlerFunc {
 			// TODO limit uploads
 			file, header, err := r.FormFile("file")
 			if err != nil {
-				jsonutil.WriteError(w, err, http.StatusBadRequest)
+				jsonutil.WriteError(w, err)
 				return
 			}
 			defer file.Close()
 			if err := songService.UploadFile(ctx, file, header); err != nil {
-				jsonutil.WriteError(w, err, http.StatusBadRequest)
+				jsonutil.WriteError(w, err)
 				return
 			}
 
@@ -117,22 +116,15 @@ func handleSongUpload(songService *upload.Song) http.HandlerFunc {
 		default:
 			songRequest, err := jsonutil.ReadJson[*model.UploadSongRequest](r.Body)
 			if err != nil {
-				jsonutil.WriteError(w, err, http.StatusBadRequest)
+				jsonutil.WriteError(w, err)
 				return
 			}
 
 			url, err := songService.UploadMetadata(ctx, songRequest)
 			if err != nil {
-				switch err.(type) {
-				case *repository.Error:
-
-				case *services.Error:
-					//jsonutil.WriteError(w, ,)
-				default:
-					jsonutil.WriteError(w, err, http.StatusBadRequest, err)
-				}
-
+				jsonutil.WriteError(w, err)
 				return
+
 			}
 			// Set the location where the file is going to be uploaded
 			w.Header().Set("Location", url)

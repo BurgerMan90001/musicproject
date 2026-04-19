@@ -1,0 +1,15 @@
+{
+  "success": {
+    "login": {
+      "method": "GET",
+      "request": {},
+      "wantCode": 200
+    }
+  },
+  "fail": {
+    "poob": {},
+    "body": {
+      "request": 3
+    }
+  }
+}

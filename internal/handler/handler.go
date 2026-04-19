@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"net/http"
 
 	"musicproject.com/internal/config"
@@ -14,6 +13,7 @@ import (
 	"musicproject.com/internal/services/auth"
 	"musicproject.com/internal/services/file"
 	"musicproject.com/internal/services/upload"
+	"musicproject.com/pkg/model"
 )
 
 func NewMux(ctx context.Context, cfg *config.Config, store file.Blobstore, db *sql.DB) (http.Handler, error) {
@@ -36,7 +36,7 @@ func NewMux(ctx context.Context, cfg *config.Config, store file.Blobstore, db *s
 	// }
 
 	mux.HandleFunc("/", handleNotFound())
-	mux.HandleFunc("/health", HandleHealth)
+	mux.HandleFunc("/health", handleHealth)
 
 	// auth routes
 	mux.HandleFunc("/auth/login", handleLogin(authService))
@@ -91,7 +91,10 @@ func NewMux(ctx context.Context, cfg *config.Config, store file.Blobstore, db *s
 
 func handleNotFound() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		jsonutil.WriteError(w, errors.New("route not found"), http.StatusNotFound)
+		jsonutil.WriteError(w, &model.Error{
+			Code:    http.StatusNotFound,
+			Message: "route not found",
+		})
 	})
 
 }

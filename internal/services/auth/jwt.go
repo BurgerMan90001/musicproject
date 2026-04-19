@@ -28,8 +28,8 @@ func NewJWTService(cfg config.Jwt, envVar string, tokenType model.TokenType, ttl
 		return nil, fmt.Errorf("jwt audience is empty")
 	}
 	switch tokenType {
+	// Valid types
 	case model.TokenAccess, model.TokenRefresh:
-
 	default:
 		return nil, ErrInvalidTokenType
 	}
@@ -61,14 +61,13 @@ func (s *JWTService) GenerateToken(userId uuid.UUID, roles []string) (string, er
 			ExpiresAt: jwt.NewNumericDate(now.Add(s.ttl)),
 		},
 	})
-
 	return token.SignedString(s.key)
 }
 
 func (s *JWTService) ValidateToken(tokenString string) (*model.Claims, error) {
-	if tokenString == "" {
-		return nil, ErrNoRefeshToken
-	}
+	// if tokenString == "" {
+	// 	return nil, ErrNoRefeshToken
+	// }
 	token, err := jwt.ParseWithClaims(
 		tokenString,
 		&model.Claims{},
@@ -89,10 +88,9 @@ func (s *JWTService) ValidateToken(tokenString string) (*model.Claims, error) {
 	claims, ok := token.Claims.(*model.Claims)
 	switch {
 	case !ok || !token.Valid:
-		return nil, jwt.ErrTokenInvalidClaims
+		return nil, ErrInvalidClaims
 	case claims.TokenType != string(s.tokenType):
 		return nil, ErrInvalidTokenType
-		//case claims.ID:
 	}
 	return claims, nil
 }

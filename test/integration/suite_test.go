@@ -28,6 +28,15 @@ type HandlerTest struct {
 	WantCode    int
 	WantMessage string
 }
+type request struct {
+	// Will default to GET
+	method string
+	body   map[string]any
+	// Access and refresh tokens are set in cookies as accessKey and refreshKey
+	accessToken  string
+	refreshToken string
+}
+
 type testSuite struct {
 	suite.Suite
 	cfg        *config.Config
@@ -78,15 +87,6 @@ func (s *testSuite) TeardownSuite() {
 
 }
 
-type request struct {
-	// Will default to GET
-	method string
-	body   map[string]any
-	// Access and refresh tokens are set in cookies as accessKey and refreshKey
-	accessToken  string
-	refreshToken string
-}
-
 func (s *testSuite) newRequest(url string, req *request) *httptest.ResponseRecorder {
 	//s.T().Helper()
 
@@ -99,8 +99,10 @@ func (s *testSuite) newRequest(url string, req *request) *httptest.ResponseRecor
 		buf = bytes.NewBuffer(mar)
 	}
 	r := httptest.NewRequestWithContext(s.T().Context(), req.method, url, buf)
+
 	r.AddCookie(&http.Cookie{Name: string(model.TokenAccess), Value: req.accessToken})
 	r.AddCookie(&http.Cookie{Name: string(model.TokenRefresh), Value: req.refreshToken})
+
 	w := httptest.NewRecorder()
 
 	s.handler.ServeHTTP(w, r)

@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"musicproject.com/internal/jsonutil"
-	"musicproject.com/internal/repository"
 	"musicproject.com/internal/services/auth"
 	"musicproject.com/pkg/model"
 )
@@ -30,21 +29,13 @@ func handleSignup(authService authService) http.HandlerFunc {
 
 		signup, err := jsonutil.ReadJson[model.SignupRequest](r.Body)
 		if err != nil {
-			jsonutil.WriteError(w, ErrInvalidRequestBody, http.StatusBadRequest)
+			jsonutil.WriteError(w, err)
 			return
 		}
 
 		user, tokenPair, err := authService.Signup(ctx, signup.Email, signup.Password)
 		if err != nil {
-			switch err {
-			case auth.ErrInvalidEmail,
-				auth.ErrInvalidPassword:
-				jsonutil.WriteError(w, err, http.StatusBadRequest)
-			case auth.ErrUserAlreadyExists:
-				jsonutil.WriteError(w, err, http.StatusConflict)
-			default:
-				jsonutil.InternalServerError(w, err)
-			}
+			jsonutil.WriteError(w, err)
 			return
 		}
 
@@ -66,20 +57,13 @@ func handleLogin(authService authService) http.HandlerFunc {
 
 		login, err := jsonutil.ReadJson[model.LoginRequest](r.Body)
 		if err != nil {
-			jsonutil.WriteError(w, ErrInvalidRequestBody, http.StatusBadRequest)
+			jsonutil.WriteError(w, err)
 			return
 		}
 
 		user, tokenPair, err := authService.Login(ctx, login.Email, login.Password)
 		if err != nil {
-			switch err {
-			case auth.ErrIncorrectLogin:
-				jsonutil.WriteError(w, err, http.StatusUnauthorized)
-			case repository.ErrNotFound:
-				jsonutil.WriteError(w, err, http.StatusNotFound)
-			default:
-				jsonutil.InternalServerError(w, err)
-			}
+			jsonutil.WriteError(w, err)
 			return
 		}
 
@@ -103,14 +87,14 @@ func handleRefresh(authService authService) http.HandlerFunc {
 		// Try getting refresh token from cookie
 		cookie, err := r.Cookie(string(model.TokenRefresh))
 		if err != nil {
-			jsonutil.WriteError(w, auth.ErrNoRefeshToken, http.StatusUnauthorized)
+			jsonutil.WriteError(w, err)
 			return
 		}
 		ctx := r.Context()
 
 		tokenPair, err := authService.Refresh(ctx, cookie.Value)
 		if err != nil {
-			jsonutil.WriteError(w, auth.ErrNoRefeshToken, http.StatusUnauthorized, err)
+			jsonutil.WriteError(w, err)
 			return
 		}
 
@@ -118,20 +102,7 @@ func handleRefresh(authService authService) http.HandlerFunc {
 		jsonutil.WriteJSON(w, tokenPair.AccessToken, http.StatusOK)
 	}
 }
-func requestRefreshToken(r *http.Request) (string, error) {
-	var refreshToken string
-	cookie, err := r.Cookie(string(model.TokenRefresh))
-	if err == nil {
-		refreshToken = cookie.Value
-	} else {
-		body, err := jsonutil.ReadJson[model.RefreshRequest](r.Body)
-		if err != nil {
-			return "", auth.ErrNoRefeshToken
-		}
-		refreshToken = body.RefreshToken
-	}
-	return refreshToken, nil
-}
+
 func handleLogout(authService authService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -148,18 +119,18 @@ func handleLogout(authService authService) http.HandlerFunc {
 		} else {
 			body, err := jsonutil.ReadJson[model.RefreshRequest](r.Body)
 			if err != nil {
-				jsonutil.WriteError(w, auth.ErrNoRefeshToken, http.StatusUnauthorized)
+				jsonutil.WriteError(w, err)
 				return
 			}
 			refreshToken = body.RefreshToken
 		}
 		if refreshToken == "" {
-			jsonutil.WriteError(w, auth.ErrNoRefeshToken, http.StatusUnauthorized)
+			jsonutil.WriteError(w, err)
 			return
 		}
 		// TODO USE authService.Logout function
 		if err := authService.Logout(ctx, cookie.Value); err != nil {
-			jsonutil.InternalServerError(w, err)
+			jsonutil.WriteError(w, err)
 			return
 		}
 
@@ -214,3 +185,18 @@ func handleOauthRedirect(oauth auth.Oauth) http.HandlerFunc {
 		jsonutil.WriteJSON(w, user, http.StatusOK)
 	}
 }
+
+//	func requestRefreshToken(r *http.Request) (string, error) {
+//		var refreshToken string
+//		cookie, err := r.Cookie(string(model.TokenRefresh))
+//		if err == nil {
+//			refreshToken = cookie.Value
+//		} else {
+//			body, err := jsonutil.ReadJson[model.RefreshRequest](r.Body)
+//			if err != nil {
+//				return "", err
+//			}
+//			refreshToken = body.RefreshToken
+//		}
+//		return refreshToken, nil
+//	}

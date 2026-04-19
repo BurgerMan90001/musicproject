@@ -15,9 +15,6 @@ type Repo[T any] interface {
 	Put(ctx context.Context, item T) (uuid.UUID, error)
 	DeleteByID(ctx context.Context, userId uuid.UUID) error
 }
-
-// type Search interface {
-// }
 type User interface {
 	Repo[*model.User]
 	GetByEmail(ctx context.Context, email string) (*model.User, error)

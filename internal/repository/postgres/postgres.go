@@ -39,7 +39,7 @@ func NewTestDB(t *testing.T, ctx context.Context, image string) *sql.DB {
 
 func newDBFromUri(ctx context.Context, uri string) (*sql.DB, error) {
 	// Verify that credentials are not empty
-	_, err := secrets.GetEnv("PG_USERNAME", "PG_PASSWORD", "PG_DATABASE", "PG_HOST")
+	_, err := secrets.GetEnvMap("PG_USERNAME", "PG_PASSWORD", "PG_DATABASE", "PG_HOST")
 	if err != nil {
 		return nil, err
 	}

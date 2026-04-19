@@ -1,0 +1,10 @@
+{
+  "invalidPassword": {
+    "code": "",
+    "message": "Invalid password"
+  },
+  "mismatchPassword": {
+    "code": "",
+    "message": ""
+  }
+}

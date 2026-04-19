@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"musicproject.com/internal/handler"
 	"musicproject.com/internal/jsonutil"
 	"musicproject.com/internal/services/auth"
 	"musicproject.com/pkg/model"
@@ -60,7 +59,7 @@ func (s *testSuite) TestSignup() {
 			},
 
 			WantCode:    http.StatusBadRequest,
-			WantMessage: handler.ErrInvalidRequestBody.Error(),
+			WantMessage: "Invalid request body",
 		},
 	}
 

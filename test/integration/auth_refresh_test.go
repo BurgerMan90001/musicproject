@@ -4,7 +4,8 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"musicproject.com/internal/services/auth"
+	"musicproject.com/internal/jsonutil"
+	"musicproject.com/pkg/model"
 )
 
 func (s *testSuite) TestRefreshSuccess() {
@@ -63,11 +64,11 @@ func (s *testSuite) TestRefresh() {
 			Req: &request{
 				refreshToken: access,
 			},
-			WantMessage: auth.ErrNoRefeshToken.Error(),
+			WantMessage: "",
 		},
 		{
 			Name:        "empty refresh token string",
-			WantMessage: auth.ErrNoRefeshToken.Error(),
+			WantMessage: "",
 			WantCode:    http.StatusUnauthorized,
 			Req:         &request{},
 		},
@@ -76,10 +77,10 @@ func (s *testSuite) TestRefresh() {
 		s.Run(tt.Name, func() {
 			w := s.newRequest(url, tt.Req)
 
-			//resBody := jsonutil.ReadJSONT[model.ErrorResponse](s.T(), w.Result().Body)
+			resBody := jsonutil.ReadJSONT[model.Error](s.T(), w.Result().Body)
 
 			s.Equal(tt.WantCode, w.Code, tt.Name)
-			//s.Equal(tt.WantMessage, resBody.Message)
+			s.Equal(tt.WantMessage, resBody.Message)
 		})
 	}
 }

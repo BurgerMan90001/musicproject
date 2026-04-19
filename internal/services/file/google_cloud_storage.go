@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -13,8 +14,9 @@ import (
 var _ Blobstore = (*GoogleCloud)(nil)
 
 type GoogleCloud struct {
-	client *storage.Client
-	urlTtl time.Duration
+	client   *storage.Client
+	accessId string
+	urlTtl   time.Duration
 }
 
 func NewGoogleCloud(ctx context.Context, urlTtl time.Duration) (*GoogleCloud, error) {
@@ -23,9 +25,12 @@ func NewGoogleCloud(ctx context.Context, urlTtl time.Duration) (*GoogleCloud, er
 		return nil, fmt.Errorf("New google cloud store: %w", err)
 	}
 
+	accessId := os.Getenv("GOOGLE_ACCESS_ID")
+
 	return &GoogleCloud{
-		client: client,
-		urlTtl: urlTtl,
+		client:   client,
+		accessId: accessId,
+		urlTtl:   urlTtl,
 	}, nil
 }
 
@@ -55,9 +60,9 @@ func (s *GoogleCloud) CreateObject(ctx context.Context, bucket, key string,
 func (s *GoogleCloud) CreateObjectUrl(ctx context.Context, bucket, key string,
 	cacheble bool) (string, error) {
 	opts := &storage.SignedURLOptions{
-
-		Method:  "PUT",
-		Expires: time.Now().Add(s.urlTtl),
+		GoogleAccessID: s.accessId,
+		Method:         "PUT",
+		Expires:        time.Now().Add(s.urlTtl),
 	}
 
 	return s.client.Bucket(bucket).SignedURL(key, opts)
@@ -78,8 +83,9 @@ func (s *GoogleCloud) GetObject(ctx context.Context, bucket, key string) ([]byte
 }
 func (s *GoogleCloud) GetObjectUrl(ctx context.Context, bucket, key string) (string, error) {
 	opts := &storage.SignedURLOptions{
-		Method:  "GET",
-		Expires: time.Now().Add(s.urlTtl),
+		GoogleAccessID: s.accessId,
+		Method:         "GET",
+		Expires:        time.Now().Add(s.urlTtl),
 	}
 
 	return s.client.Bucket(bucket).SignedURL(key, opts)

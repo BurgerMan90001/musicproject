@@ -29,14 +29,8 @@ func handleUsersID(userRepo repository.User) http.HandlerFunc {
 		case http.MethodGet:
 
 			user, err := userRepo.GetByID(ctx, id)
-
 			if err != nil {
-				switch err {
-				case repository.ErrNotFound:
-					jsonutil.WriteError(w, err, http.StatusNotFound)
-				default:
-					jsonutil.InternalServerError(w, err)
-				}
+				jsonutil.WriteError(w, err)
 				return
 			}
 			user.PasswordHash = ""
@@ -55,13 +49,7 @@ func handleUsersID(userRepo repository.User) http.HandlerFunc {
 
 			err := userRepo.DeleteByID(ctx, id)
 			if err != nil {
-				switch err {
-				case repository.ErrNotFound:
-					jsonutil.WriteError(w, err, http.StatusNotFound)
-
-				default:
-					jsonutil.InternalServerError(w, err)
-				}
+				jsonutil.WriteError(w, err)
 				return
 			}
 

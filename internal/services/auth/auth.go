@@ -169,7 +169,14 @@ func (s *Service) Refresh(ctx context.Context, refeshToken string) (*model.Token
 
 // Validates access token
 func (s *Service) Validate(tokenString string) (*model.Claims, error) {
-	return s.jwtAccess.ValidateToken(tokenString)
+	claims, err := s.jwtAccess.ValidateToken(tokenString)
+	if err != nil {
+		return nil, &model.Error{
+			Code:    http.StatusUnauthorized,
+			Message: "Invalid access token",
+		}
+	}
+	return claims, nil
 }
 
 func (s *Service) generateTokenPair(userId uuid.UUID, roles []string) (*model.TokenPair, error) {

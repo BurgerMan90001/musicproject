@@ -18,7 +18,7 @@ type GoogleOauth struct {
 }
 
 func NewOauth(redirectUrl string, scopes []string, endpoint oauth2.Endpoint) (*GoogleOauth, error) {
-	secretList, err := secrets.GetEnv("GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET")
+	secretList, err := secrets.GetEnvMap("GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET")
 	if err != nil {
 		return nil, err
 	}

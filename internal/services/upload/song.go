@@ -29,9 +29,9 @@ func New(parent string, encoding bool, store file.Blobstore, repo repository.Son
 		encoder = encode.NewFFmpeg(config.Encoder{})
 	}
 	// TODO Use local filesystem if the bucket is empty
-	if parent == "" {
-		parent = ""
-	}
+	// if parent == "" {
+	// 	parent = ""
+	// }
 	return &Song{parent, store, encoder, repo}
 }
 
@@ -53,7 +53,7 @@ func (s *Song) UploadMetadata(ctx context.Context,
 	if err != nil {
 		return "", err
 	}
-	
+
 	url, err := s.store.CreateObjectUrl(ctx, s.parent, filepath.Join("files/audio", songRequest.Filename), true)
 	if err != nil {
 		return "", err

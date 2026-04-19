@@ -1,20 +1,48 @@
 package auth
 
 import (
-	"github.com/golang-jwt/jwt/v5"
-	"musicproject.com/internal/services"
+	"net/http"
+
+	"musicproject.com/pkg/model"
 )
 
 var (
-	ErrInvalidPassword  = services.NewErr("Password must be at least 8 characters, contain uppercase, lowercase, number, and special character")
-	ErrMismatchPassword = services.NewErr("Incorrect password")
-	ErrInvalidEmail     = services.NewErr("Invalid email")
-	ErrIncorrectLogin   = services.NewErr("Incorrect password or email")
+	ErrInvalidPassword = &model.Error{
+		Code:    http.StatusBadRequest,
+		Message: "Password must be at least 8 characters, contain uppercase, lowercase, number, and special character",
+	}
+	ErrMismatchPassword = &model.Error{
+		Code:    http.StatusUnauthorized,
+		Message: "Incorrect password",
+	}
+	ErrInvalidEmail = &model.Error{
+		Code:    http.StatusBadRequest,
+		Message: "Invalid email",
+	}
+	ErrIncorrectLogin = &model.Error{
+		Code:    http.StatusUnauthorized,
+		Message: "Incorrect password or email",
+	}
 
-	ErrNoAccessToken    = services.NewErr("No access token cookie")
-	ErrNoRefeshToken    = services.NewErr("No refresh token cookie")
-	ErrTokenExpired     = jwt.ErrTokenExpired
-	ErrInvalidTokenType = services.NewErr("Invalid token type")
+	ErrNoAccessToken = &model.Error{
+		Code:    http.StatusUnauthorized,
+		Message: "No access token",
+	}
+	ErrInvalidClaims = &model.Error{
+		Code:    http.StatusUnauthorized,
+		Message: "Invalid claims",
+	}
+	ErrTokenExpired = &model.Error{
+		Code:    http.StatusUnauthorized,
+		Message: "Token is expired",
+	}
 
-	ErrUserAlreadyExists = services.NewErr("User already exists")
+	ErrInvalidTokenType = &model.Error{
+		Code:    http.StatusUnauthorized,
+		Message: "Invalid token type",
+	}
+	ErrUserAlreadyExists = &model.Error{
+		Code:    http.StatusConflict,
+		Message: "User already exists",
+	}
 )

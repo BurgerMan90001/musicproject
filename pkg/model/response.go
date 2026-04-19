@@ -2,11 +2,7 @@ package model
 
 import "time"
 
-type ErrorResponse struct {
-	Code    int      `json:"code"`
-	Message string   `json:"message,omitempty"`
-	Details []string `json:"details,omitempty"`
-}
+
 
 type HealthResponse struct {
 	Message   string    `json:"message"`

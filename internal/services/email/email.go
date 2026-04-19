@@ -29,7 +29,7 @@ type Service struct {
 }
 
 func New() (*Service, error) {
-	secretList, err := secrets.GetEnv("SMTP_EMAIL",
+	secretList, err := secrets.GetEnvMap("SMTP_EMAIL",
 		"SMTP_PASSWORD", "SMTP_HOST", "SMTP_PORT")
 	if err != nil {
 		return nil, err

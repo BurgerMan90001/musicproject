@@ -1,13 +1,15 @@
 package handler
 
-import (
-	"errors"
-)
-
 var _ error = (*HandlerErr)(nil)
 var (
-	ErrInternalServerError = errors.New("Internal server error")
-	ErrInvalidRequestBody  = errors.New("Invalid request body")
+// ErrInternalServerError = &model.Error{
+// 	Code:    http.StatusInternalServerError,
+// 	Message: "Internal server error",
+// }
+// ErrInvalidRequestBody = &model.Error{
+// 	Code:    http.StatusBadRequest,
+// 	Message: "Invalid request body",
+// }
 )
 
 type HandlerErr struct {
