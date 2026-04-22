@@ -10,13 +10,6 @@ services:
       - site
       - api
 
-  #site:
-  #  container_name: musicproject-site
-  #  build: site
-  #  environment:
-  #    - ENV=prod
-  #  depends_on:
-  #    - api
   api:
     container_name: musicproject-api
     build: .
