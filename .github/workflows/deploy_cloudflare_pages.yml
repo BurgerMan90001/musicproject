@@ -1,0 +1,43 @@
+name: Deploy Site
+
+on:
+  push:
+    # only check site folder
+    paths:
+      - site/**
+    branches:
+      - main
+defaults:
+  run:
+    working-directory: site
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm test
+      - run: npm build
+
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          # From github secrets
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: pages deploy dist --project-name=spume
+
+    needs: build
