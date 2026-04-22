@@ -24,7 +24,7 @@ jobs:
           node-version: 25
       - run: npm ci
       - run: npm test
-      - run: npm build
+      - run: npm run build
 
   deploy:
     runs-on: ubuntu-latest
