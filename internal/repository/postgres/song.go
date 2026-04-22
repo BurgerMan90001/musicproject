@@ -32,7 +32,7 @@ func (r *Song) GetByID(ctx context.Context, songId uuid.UUID) (*model.Song, erro
 	row := r.db.QueryRowContext(ctx, query, songId)
 	if err := row.Scan(&name, &genre, &streams, &duration, &image, &creationDate, &src); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, sql.ErrNoRows
+			return nil, repository.ErrNotFound
 		}
 		return nil, err
 	}

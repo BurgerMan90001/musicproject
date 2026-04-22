@@ -19,13 +19,13 @@ import (
 
 func main() {
 	var (
-		env        string
 		envFile    string
 		configFile string
 	)
-	flag.StringVar(&env, "env", "dev", "environment type")
+	
 	flag.StringVar(&envFile, "envFile", "config/.env.dev", "specifies the location of the env file")
 	flag.StringVar(&configFile, "config", "config/config.dev.yml", "specifies the location of the config file")
+
 	flag.Parse()
 
 	ctx, done := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

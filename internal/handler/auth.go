@@ -22,7 +22,7 @@ type emailService interface {
 func handleSignup(authService authService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			jsonutil.MethodNotAllowedError(w)
+			jsonutil.WriteMethodNotAllowed(w)
 			return
 		}
 		ctx := r.Context()
@@ -50,7 +50,7 @@ func handleSignup(authService authService) http.HandlerFunc {
 func handleLogin(authService authService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			jsonutil.MethodNotAllowedError(w)
+			jsonutil.WriteMethodNotAllowed(w)
 			return
 		}
 		ctx := r.Context()
@@ -80,14 +80,18 @@ func handleRefresh(authService authService) http.HandlerFunc {
 		// Allowed methods
 		case http.MethodPost, http.MethodGet:
 		default:
-			jsonutil.MethodNotAllowedError(w)
+			jsonutil.WriteMethodNotAllowed(w)
 			return
 		}
 
 		// Try getting refresh token from cookie
 		cookie, err := r.Cookie(string(model.TokenRefresh))
 		if err != nil {
-			jsonutil.WriteError(w, err)
+			jsonutil.WriteError(w, &model.Error{
+				Code:    http.StatusUnauthorized,
+				Message: "No refresh token",
+				Details: []string{err.Error()},
+			})
 			return
 		}
 		ctx := r.Context()
@@ -106,29 +110,17 @@ func handleRefresh(authService authService) http.HandlerFunc {
 func handleLogout(authService authService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			jsonutil.MethodNotAllowedError(w)
+			jsonutil.WriteMethodNotAllowed(w)
 			return
 		}
 		ctx := r.Context()
 
-		var refreshToken string
-		// Try getting refresh token from cookie
 		cookie, err := r.Cookie(string(model.TokenRefresh))
-		if err == nil {
-			refreshToken = cookie.Value
-		} else {
-			body, err := jsonutil.ReadJson[model.RefreshRequest](r.Body)
-			if err != nil {
-				jsonutil.WriteError(w, err)
-				return
-			}
-			refreshToken = body.RefreshToken
-		}
-		if refreshToken == "" {
-			jsonutil.WriteError(w, err)
+		if err != nil {
+			jsonutil.WriteError(w, auth.ErrNoToken)
 			return
 		}
-		// TODO USE authService.Logout function
+
 		if err := authService.Logout(ctx, cookie.Value); err != nil {
 			jsonutil.WriteError(w, err)
 			return
@@ -145,7 +137,7 @@ func handleLogout(authService authService) http.HandlerFunc {
 func handleEmailReset(emailService emailService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			jsonutil.MethodNotAllowedError(w)
+			jsonutil.WriteMethodNotAllowed(w)
 			return
 		}
 

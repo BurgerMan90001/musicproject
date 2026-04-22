@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 var _ Blobstore = (*FileSystem)(nil)
@@ -29,7 +30,7 @@ func (s *FileSystem) CreateObject(ctx context.Context, folder, filename string,
 	return nil
 }
 func (s *FileSystem) CreateObjectUrl(ctx context.Context, folder, filename string,
-	cacheble bool) (string, error) {
+	cacheble bool, ttl time.Duration) (string, error) {
 	if filename == "" {
 		return "", errors.New("Create object: filename is empty")
 	}
@@ -53,7 +54,8 @@ func (s *FileSystem) GetObject(ctx context.Context, folder string, filename stri
 	return data, nil
 }
 
-func (s *FileSystem) GetObjectUrl(ctx context.Context, bucket, key string) (string, error) {
+func (s *FileSystem) GetObjectUrl(ctx context.Context,
+	bucket, key string, ttl time.Duration) (string, error) {
 	return "", nil
 }
 func (s *FileSystem) DeleteObject(Ctx context.Context, folder string, filename string) error {

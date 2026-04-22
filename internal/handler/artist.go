@@ -13,7 +13,7 @@ func HandleArtists() http.HandlerFunc {
 		case http.MethodGet:
 			//artist, err
 		default:
-			jsonutil.MethodNotAllowedError(w)
+			jsonutil.WriteMethodNotAllowed(w)
 		}
 	}
 }

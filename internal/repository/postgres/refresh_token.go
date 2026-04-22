@@ -3,9 +3,9 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"errors"
 
 	"github.com/google/uuid"
+	"musicproject.com/internal/repository"
 )
 
 type RefreshToken struct {
@@ -27,15 +27,14 @@ func (r *RefreshToken) RevokeToken(ctx context.Context, tokenId uuid.UUID) error
 
 func (r *RefreshToken) Revoked(ctx context.Context, tokenId uuid.UUID) error {
 	query := "SELECT EXISTS(SELECT 1 FROM revoked_tokens WHERE token_id=$1)"
-	var (
-		exists    bool
-		existsErr error
-	)
+
+	var exists bool
 	row := r.db.QueryRowContext(ctx, query, tokenId)
+
 	err := row.Scan(&exists)
 	if exists {
-		existsErr = errors.New("Token revoked")
+		return repository.ErrTokenRevoked
 	}
 
-	return errors.Join(existsErr, err)
+	return err
 }

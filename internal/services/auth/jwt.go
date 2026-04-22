@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -65,9 +66,7 @@ func (s *JWTService) GenerateToken(userId uuid.UUID, roles []string) (string, er
 }
 
 func (s *JWTService) ValidateToken(tokenString string) (*model.Claims, error) {
-	// if tokenString == "" {
-	// 	return nil, ErrNoRefeshToken
-	// }
+	
 	token, err := jwt.ParseWithClaims(
 		tokenString,
 		&model.Claims{},
@@ -83,7 +82,11 @@ func (s *JWTService) ValidateToken(tokenString string) (*model.Claims, error) {
 		jwt.WithAudience(s.audience[0]),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("validate token: %v", err)
+		return nil, &model.Error{
+			Code:    http.StatusUnauthorized,
+			Message: "Invalid jwt token",
+			Details: []string{err.Error()},
+		}
 	}
 	claims, ok := token.Claims.(*model.Claims)
 	switch {

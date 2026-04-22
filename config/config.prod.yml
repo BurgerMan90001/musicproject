@@ -17,17 +17,15 @@ auth:
         - https://www.googleapis.com/auth/userinfo.profile
 
 upload:
-  store: aws
-  region: us-east-1
-  bucket: spume-musicproject-634220481321-us-east-1-an
+  #store: aws
+  region: northamerica-northeast1
+  bucket: spume-musicproject
   encoder:
     logging: false
     enabled: false
-  
-    
 
 middleware:
-  logger: false
+  logger: true
   ratelimit: false
 
 repository:

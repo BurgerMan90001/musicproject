@@ -1,21 +1,26 @@
 package handler
 
-var _ error = (*HandlerErr)(nil)
-var (
-// ErrInternalServerError = &model.Error{
-// 	Code:    http.StatusInternalServerError,
-// 	Message: "Internal server error",
-// }
-// ErrInvalidRequestBody = &model.Error{
-// 	Code:    http.StatusBadRequest,
-// 	Message: "Invalid request body",
-// }
+import (
+	"net/http"
+
+	"musicproject.com/internal/jsonutil"
+	"musicproject.com/pkg/model"
 )
 
-type HandlerErr struct {
-	s string
-}
 
-func (e *HandlerErr) Error() string {
-	return e.s
+func handleNotFound() http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		jsonutil.WriteError(w, &model.Error{
+			Code:    http.StatusNotFound,
+			Message: "Route not found",
+		})
+	})
+}
+func handleNotImplemented() http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		jsonutil.WriteError(w, &model.Error{
+			Code:    http.StatusNotImplemented,
+			Message: "Not implemented",
+		})
+	})
 }

@@ -2,12 +2,14 @@ package upload
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"musicproject.com/internal/config"
 	"musicproject.com/internal/repository"
@@ -17,22 +19,42 @@ import (
 )
 
 type Song struct {
-	parent  string
-	store   file.Blobstore
+	// Required
+	bucket string
+	// Prefix for files
+	prefix string
+
+	caching bool
+	// Should be 1 hour or less
+	urlTtl time.Duration
+	// Required
+	// File storage
+	store file.Blobstore
+	// Optional
+	// Encodes files before storing
 	encoder encode.HLSEncoder
-	repo    repository.Song
+	// Required
+	// Repository to store song metadata
+	repo repository.Song
 }
 
-func New(parent string, encoding bool, store file.Blobstore, repo repository.Song) *Song {
+func NewSong(bucket, prefix string, encoding bool, caching bool, urlTtl time.Duration,
+	store file.Blobstore, repo repository.Song) (*Song, error) {
 	var encoder encode.HLSEncoder
 	if encoding {
 		encoder = encode.NewFFmpeg(config.Encoder{})
 	}
-	// TODO Use local filesystem if the bucket is empty
-	// if parent == "" {
-	// 	parent = ""
-	// }
-	return &Song{parent, store, encoder, repo}
+	if bucket == "" {
+		return nil, errors.New("Upload.NewSong: bucket is empty")
+	}
+	if prefix == "" {
+		return nil, errors.New("Upload.NewSong: prefix is empty")
+	}
+
+	return &Song{bucket,
+		prefix, caching, urlTtl,
+		store, encoder,
+		repo}, nil
 }
 
 // Uploads the song's metadata to the repository.
@@ -53,8 +75,8 @@ func (s *Song) UploadMetadata(ctx context.Context,
 	if err != nil {
 		return "", err
 	}
-
-	url, err := s.store.CreateObjectUrl(ctx, s.parent, filepath.Join("files/audio", songRequest.Filename), true)
+	key := filepath.Join(s.prefix, songRequest.Filename)
+	url, err := s.store.CreateObjectUrl(ctx, s.bucket, key, s.caching, s.urlTtl)
 	if err != nil {
 		return "", err
 	}
@@ -62,7 +84,7 @@ func (s *Song) UploadMetadata(ctx context.Context,
 }
 
 // Local uploads of audio files
-// Handles file uploads if the url is here
+// Handles multipart file uploads if the service uses local uploads
 func (s *Song) UploadFile(ctx context.Context, file multipart.File,
 	header *multipart.FileHeader) error {
 

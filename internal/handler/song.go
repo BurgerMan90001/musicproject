@@ -20,6 +20,11 @@ func handleGetSongsMetadata(repo repository.Song) http.HandlerFunc {
 			jsonutil.WriteError(w, err)
 			return
 		}
+		params := r.URL.Query()
+		if params != nil {
+			jsonutil.WriteNotFound(w, errors.New(""))
+			return
+		}
 		ctx := r.Context()
 
 		// claims, ok := contextClaims(ctx)
@@ -28,11 +33,8 @@ func handleGetSongsMetadata(repo repository.Song) http.HandlerFunc {
 		case http.MethodGet:
 			song, err := repo.GetByID(ctx, id)
 			if err != nil {
-				if errors.Is(err, repository.ErrNotFound) {
-					http.Error(w, err.Error(), http.StatusNotFound)
-					return
-				}
-				jsonutil.InternalServerError(w, err)
+
+				jsonutil.WriteError(w, err)
 				return
 			}
 			jsonutil.WriteJSON(w, song, http.StatusOK)
@@ -44,7 +46,7 @@ func handleGetSongsMetadata(repo repository.Song) http.HandlerFunc {
 				return
 			}
 		default:
-			jsonutil.MethodNotAllowedError(w)
+			jsonutil.WriteMethodNotAllowed(w)
 		}
 	}
 }
@@ -80,7 +82,7 @@ func handleSongRating(ratingService *rating.Service) http.HandlerFunc {
 			jsonutil.WriteJSON(w, rating, http.StatusOK)
 
 		default:
-			jsonutil.MethodNotAllowedError(w)
+			jsonutil.WriteMethodNotAllowed(w)
 		}
 	}
 }
@@ -90,7 +92,7 @@ func handleSongRating(ratingService *rating.Service) http.HandlerFunc {
 func handleSongUpload(songService *upload.Song) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			jsonutil.MethodNotAllowedError(w)
+			jsonutil.WriteMethodNotAllowed(w)
 			return
 		}
 		// TODO context canceling for file uploads
@@ -132,3 +134,9 @@ func handleSongUpload(songService *upload.Song) http.HandlerFunc {
 		}
 	}
 }
+
+// func handleSongSearch() http.HandlerFunc {
+// 	return func(w http.ResponseWriter, r *http.Request) {
+
+// 	}
+// }

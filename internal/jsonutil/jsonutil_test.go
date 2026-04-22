@@ -36,7 +36,7 @@ func TestWriteJSON(t *testing.T) {
 		{
 			name:     "nil data",
 			code:     http.StatusOK,
-			wantCode: http.StatusInternalServerError,
+			wantCode: http.StatusOK,
 		},
 		{
 			name:     "empty error string",
@@ -90,6 +90,12 @@ func TestWriteJSON(t *testing.T) {
 
 		assert.Equal(t, user, resUser)
 	})
+	t.Run("nil data ", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		WriteJSON(w, nil, http.StatusOK)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
 }
 
 func TestWriteError(t *testing.T) {
@@ -109,7 +115,7 @@ func TestWriteError(t *testing.T) {
 			wantCode: http.StatusInternalServerError,
 		},
 		{
-			name:     "nil error",
+			name:     "nil error reason",
 			err:      nil,
 			wantCode: http.StatusInternalServerError,
 		},
@@ -141,6 +147,43 @@ func TestWriteError(t *testing.T) {
 	t.Run("normal error success", func(t *testing.T) {
 		w := httptest.NewRecorder()
 
-		WriteError(w, &model.Error{})
+		WriteError(w, &model.Error{
+			Code:    http.StatusBadGateway,
+			Message: "Gone",
+		})
+
+		var errorRes model.Error
+		err := json.NewDecoder(w.Body).Decode(&errorRes)
+		require.NoError(t, err)
+
+		// Assert all codes match
+		assert.Equal(t, http.StatusBadGateway, w.Code)
+		// Json error code
+		assert.Equal(t, http.StatusBadGateway, errorRes.Code)
+
+		assert.Equal(t, "Gone", errorRes.Message)
+	})
+}
+
+
+func TestReadJSON(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct{
+		name string
+
+	}{
+		{
+			name: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+		})
+	}
+	t.Run("success", func(t *testing.T) {
+		
 	})
 }

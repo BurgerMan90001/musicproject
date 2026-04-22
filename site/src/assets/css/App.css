@@ -29,16 +29,12 @@
 .bg-orange-900 {
   background-color: var(--orange-900);
 }
-
-
-#top-media-buttons > button:hover {
-  background-color: var(--orange-900);
+.bg-black {
+  background-color: var(--black);
 }
-
-#top-media-buttons > button:active {
-  background-color: var(--orange-500);
+.bg-black2 {
+  background-color: var(--black2);
 }
-
 .header {
   display: flex;
 }
@@ -188,7 +184,8 @@
 .height-250 {
   height: 250px;
 }
-
+/*
 #test {
   background-color: aliceblue;
 }
+*/

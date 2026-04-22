@@ -9,6 +9,10 @@ import (
 var (
 	ErrNotFound = &model.Error{
 		Code:    http.StatusNotFound,
-		Message: "not found",
+		Message: "Resource not found",
+	}
+	ErrTokenRevoked = &model.Error{
+		Code:    http.StatusUnauthorized,
+		Message: "Token revoked",
 	}
 )

@@ -3,6 +3,7 @@ package file
 import (
 	"context"
 	"sync"
+	"time"
 )
 
 var _ Blobstore = (*Memory)(nil)
@@ -26,13 +27,13 @@ func (s *Memory) CreateObject(ctx context.Context, parent string, name string,
 	return nil
 }
 func (s *Memory) CreateObjectUrl(ctx context.Context, parent, name string,
-	cacheble bool) (string, error) {
+	cacheble bool, ttl time.Duration) (string, error) {
 	return "", nil
 }
 func (s *Memory) GetObject(ctx context.Context, parent string, name string) ([]byte, error) {
 	return nil, nil
 }
-func (s *Memory) GetObjectUrl(ctx context.Context, bucket, key string) (string, error) {
+func (s *Memory) GetObjectUrl(ctx context.Context, bucket, key string, ttl time.Duration) (string, error) {
 	return "", nil
 }
 func (s *Memory) DeleteObject(Ctx context.Context, parrent string, name string) error {

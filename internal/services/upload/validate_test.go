@@ -24,6 +24,10 @@ func TestValidateUploadRequest(t *testing.T) {
 				Filename: "awwww",
 			},
 		},
+		{
+			name:    "nil request",
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {

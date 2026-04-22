@@ -2,14 +2,11 @@ package jsonutil
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
-	"testing"
 
-	"github.com/stretchr/testify/require"
 	"musicproject.com/pkg/model"
 )
 
@@ -28,7 +25,6 @@ func WriteJSON(w http.ResponseWriter, data any, code int, details ...string) {
 
 	switch {
 	case data == nil:
-
 		WriteError(w, &model.Error{
 			Code:    code,
 			Message: "Internal server error",
@@ -64,51 +60,53 @@ func WriteJSON(w http.ResponseWriter, data any, code int, details ...string) {
 		WriteError(w, err)
 	}
 }
-func validate(merr *model.Error, ok bool) error {
-
-	var m string
-	switch {
-	case !ok:
-		m = "WriteError: reason is not of type model.Error"
-	case merr == nil || merr.Message == "":
-		m = "WriteError: empty error message"
-	case merr.Code < 100 || merr.Code >= 600:
-		m = "WriteError: reason is not of type model.Error"
-	}
-	if m == "" {
-		return merr
-	}
-	return errors.New(m)
-}
 
 // Writes json response error
 // Use model.Error for status codes and error details
 // Sets header status code
 func WriteError(w http.ResponseWriter, reason error) {
 	w.Header().Set("Content-type", "application/json")
-	merr, ok := reason.(*model.Error)
-	err := validate(merr, ok)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(model.Error{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal server error",
-			Details: []string{err.Error()},
-		})
-		slog.Error(err.Error())
+	merr := validateErr(reason)
+	// Service error / internal error
+	if merr.Code >= 500 && merr.Code < 600 {
+		w.WriteHeader(merr.Code)
+		// When not testing
+		// if !testing.Testing() {
+		// 	merr.Details = nil
+		// }
+		json.NewEncoder(w).Encode(merr)
+
+		slog.Error(fmt.Sprintf("%v", reason))
 		return
 	}
 
-	// Check if service error
-	if merr.Code >= 500 && merr.Code < 600 {
-		for _, e := range merr.Details {
-			slog.Error(e)
-		}
-	}
 	w.WriteHeader(merr.Code)
 	json.NewEncoder(w).Encode(merr)
-
 }
+
+// TODO have better details in json response when an internal error occurs
+func validateErr(reason error) *model.Error {
+	merr, ok := reason.(*model.Error)
+
+	switch {
+	case merr == nil || !ok:
+		// Create new error
+		merr = &model.Error{}
+		merr.Details = append(merr.Details, "WriteError: reason is not of type model.Error")
+
+	case merr.Message == "":
+		merr.Details = append(merr.Details, "WriteError: empty error message")
+
+	case merr.Code < 100 || merr.Code >= 600:
+		merr.Details = append(merr.Details, "WriteError: invalid status code")
+	default:
+		return merr
+	}
+	merr.Code = http.StatusInternalServerError
+	merr.Message = "Internal server error"
+	return merr
+}
+
 func ReadJson[T any](r io.Reader) (T, error) {
 	var v T
 	if err := json.NewDecoder(r).Decode(&v); err != nil {
@@ -122,24 +120,31 @@ func ReadJson[T any](r io.Reader) (T, error) {
 	return v, nil
 }
 
-// Test helper for reading test responses
-func ReadJSONT[T any](t *testing.T, r io.Reader) T {
-	t.Helper()
-	data, err := ReadJson[T](r)
-	require.NoError(t, err)
-
-	return data
-}
-
-func MethodNotAllowedError(w http.ResponseWriter) {
+func WriteMethodNotAllowed(w http.ResponseWriter) {
 	WriteError(w, &model.Error{
 		Code:    http.StatusMethodNotAllowed,
 		Message: "Method not allowed",
 	})
 }
 
-func NotFoundError(w http.ResponseWriter, reason error) {
-	WriteJSON(w, errors.New("Resource not found"), http.StatusNotFound)
+func WriteNotFound(w http.ResponseWriter, reason error) {
+	err := &model.Error{
+		Code:    http.StatusNotFound,
+		Message: "Resource not found",
+		//Details: []string{reason.Error()},
+	}
+	if reason != nil {
+		err.Details = append(err.Details, reason.Error())
+	}
+	WriteError(w, err)
+}
+
+func WriteInvalidRequestBody(w http.ResponseWriter, reason error) {
+	WriteError(w, &model.Error{
+		Code:    http.StatusBadRequest,
+		Message: "Invalid request body",
+		Details: []string{reason.Error()},
+	})
 }
 
 // Responds with generic internal server error json response

@@ -11,7 +11,7 @@ import (
 func (s *testSuite) TestHandleOathGoogleLogin() {
 	//t := s.T()
 	url := "/v1/auth/google/login"
-	tests := []HandlerTest{
+	tests := []handlerTest{
 		{
 			Name: "login google oauth",
 			Req: &request{

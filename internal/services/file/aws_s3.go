@@ -43,7 +43,8 @@ func (s *AWSS3) CreateObject(ctx context.Context, bucket string, key string,
 }
 
 // Returns a presigned url to upload files to
-func (s *AWSS3) CreateObjectUrl(ctx context.Context, bucket, key string, cacheble bool) (string, error) {
+func (s *AWSS3) CreateObjectUrl(ctx context.Context,
+	bucket, key string, cacheble bool, ttl time.Duration) (string, error) {
 	putInput := s.newPutInput(bucket, key,
 		nil, cacheble, "")
 
@@ -94,7 +95,7 @@ func (s *AWSS3) GetObject(ctx context.Context, bucket string, key string) ([]byt
 
 	return data, nil
 }
-func (s *AWSS3) GetObjectUrl(ctx context.Context, bucket, key string) (string, error) {
+func (s *AWSS3) GetObjectUrl(ctx context.Context, bucket, key string, ttl time.Duration) (string, error) {
 	req, err := s.presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),

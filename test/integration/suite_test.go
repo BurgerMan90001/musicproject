@@ -2,10 +2,13 @@ package integration
 
 import (
 	"bytes"
+	"context"
+	"database/sql"
 	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -20,7 +23,7 @@ import (
 	"musicproject.com/pkg/model"
 )
 
-type HandlerTest struct {
+type handlerTest struct {
 	Name string
 	// Required field
 	Req *request
@@ -80,6 +83,9 @@ func (s *testSuite) SetupSuite() {
 	// Test postgres database container
 	db := postgres.NewTestDB(t, ctx, s.cfg.Repository.Postgres.Image)
 
+	err = loadTestData(ctx, db, filepath.Join("testdata", "testdata.sql"))
+	s.Require().NoError(err)
+	
 	s.handler, err = handler.NewMux(ctx, s.cfg, store, db)
 	s.Require().NoError(err)
 }
@@ -108,4 +114,14 @@ func (s *testSuite) newRequest(url string, req *request) *httptest.ResponseRecor
 	s.handler.ServeHTTP(w, r)
 
 	return w
+}
+func loadTestData(ctx context.Context, db *sql.DB, filename string) error {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+	if _, err := db.ExecContext(ctx, string(data)); err != nil {
+		return err
+	}
+	return nil
 }

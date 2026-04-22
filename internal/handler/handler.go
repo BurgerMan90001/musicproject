@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"net/http"
+	"time"
 
 	"musicproject.com/internal/config"
 	"musicproject.com/internal/jsonutil"
@@ -13,7 +14,6 @@ import (
 	"musicproject.com/internal/services/auth"
 	"musicproject.com/internal/services/file"
 	"musicproject.com/internal/services/upload"
-	"musicproject.com/pkg/model"
 )
 
 func NewMux(ctx context.Context, cfg *config.Config, store file.Blobstore, db *sql.DB) (http.Handler, error) {
@@ -28,8 +28,12 @@ func NewMux(ctx context.Context, cfg *config.Config, store file.Blobstore, db *s
 	if err != nil {
 		return nil, err
 	}
-	uploadService := upload.New(cfg.Upload.Bucket, false, store, songRepo)
 
+	uploadService, err := upload.NewSong(cfg.Upload.Bucket, "audio",
+		false, true, 30*time.Minute, store, songRepo)
+	if err != nil {
+		return nil, err
+	}
 	// emailService, err := email.New()
 	// if err != nil {
 	// 	return nil, err
@@ -56,7 +60,7 @@ func NewMux(ctx context.Context, cfg *config.Config, store file.Blobstore, db *s
 	mux.HandleFunc("/songs/{id}", handleGetSongsMetadata(songRepo))
 
 	// File routes
-	mux.HandleFunc("/upload/songs", handleSongUpload(uploadService))
+	mux.HandleFunc("/upload/songs", middleware.RequireAuth(authService)(handleSongUpload(uploadService)))
 	//mux.HandleFunc("/files/audio/{id}", handleAudio(songService))
 
 	// MAYBE
@@ -64,9 +68,6 @@ func NewMux(ctx context.Context, cfg *config.Config, store file.Blobstore, db *s
 
 	// MAYBE
 	//mux.HandleFunc("/artists/{id}", HandleArtists())
-
-	// Uploads audio encoded
-	//mux.HandleFunc("POST /files/audio/encode", HandleAudioEncode())
 
 	// Image
 	mux.HandleFunc("/files/image", handleImage())
@@ -82,23 +83,14 @@ func NewMux(ctx context.Context, cfg *config.Config, store file.Blobstore, db *s
 		rl := ratelimit.NewTokenBucket(15, 30)
 		handler = middleware.RateLimit(rl, handler)
 	}
+
 	root := http.NewServeMux()
 
 	root.Handle("/v1/", http.StripPrefix("/v1", handler))
 	root.Handle("/", handleNotFound())
+
 	return root, nil
 }
-
-func handleNotFound() http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		jsonutil.WriteError(w, &model.Error{
-			Code:    http.StatusNotFound,
-			Message: "route not found",
-		})
-	})
-
-}
-
 func handleTest() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 

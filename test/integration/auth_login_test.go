@@ -11,7 +11,7 @@ import (
 
 func (s *testSuite) TestLogin() {
 	url := "/v1/auth/login"
-	failTests := []HandlerTest{
+	failTests := []handlerTest{
 		{
 			Name:        "incorect password or email",
 			WantCode:    http.StatusUnauthorized,
@@ -70,7 +70,7 @@ func (s *testSuite) TestLogin() {
 			s.Equal(tt.WantCode, resBody.Code, tt.Name)
 		})
 	}
-	tt := HandlerTest{
+	tt := handlerTest{
 		Name:     "successful login",
 		WantCode: http.StatusOK,
 		Req: &request{

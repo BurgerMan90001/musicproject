@@ -1,4 +1,4 @@
-package schema
+package database
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"fmt"
 )
 
-//go:embed schema.sql testdata.sql
+//go:embed schema.sql
 var schemaFS embed.FS
 
 func LoadSchema(ctx context.Context, db *sql.DB) error {
@@ -17,17 +17,6 @@ func LoadSchema(ctx context.Context, db *sql.DB) error {
 	}
 	if _, err := db.ExecContext(ctx, string(schema)); err != nil {
 		return fmt.Errorf("Postgres load schema: %w", err)
-	}
-	return nil
-}
-
-func LoadTestData(ctx context.Context, db *sql.DB) error {
-	data, err := schemaFS.ReadFile("testdata.sql")
-	if err != nil {
-		return err
-	}
-	if _, err := db.ExecContext(ctx, string(data)); err != nil {
-		return err
 	}
 	return nil
 }

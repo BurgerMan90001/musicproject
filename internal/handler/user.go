@@ -11,7 +11,7 @@ import (
 func handleUsers(userRepo repository.User) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
-			jsonutil.MethodNotAllowedError(w)
+			jsonutil.WriteMethodNotAllowed(w)
 			return
 		}
 	}
@@ -54,7 +54,7 @@ func handleUsersID(userRepo repository.User) http.HandlerFunc {
 			}
 
 		default:
-			jsonutil.MethodNotAllowedError(w)
+			jsonutil.WriteMethodNotAllowed(w)
 		}
 	}
 }

@@ -21,8 +21,10 @@ type Email struct {
 }
 
 type Sender interface {
-	Send(ctx context.Context, to, subject, body string) error
+	SendMail(ctx context.Context, email *Email) error
 }
+
+var _ Sender = (*Service)(nil)
 
 type Service struct {
 	client *smtp.Client
@@ -59,7 +61,7 @@ func New() (*Service, error) {
 	return &Service{client: client}, nil
 }
 
-func (s *Service) SendMail(email *Email) error {
+func (s *Service) SendMail(ctx context.Context, email *Email) error {
 	if email == nil {
 		return errors.New("email is nil")
 	}
@@ -88,7 +90,7 @@ func (s *Service) SendMail(email *Email) error {
 	}
 	return nil
 }
-func (s *Service) sendMailTemplate(email *Email, templatePath string) error {
+func (s *Service) sendMailTemplate(ctx context.Context, email *Email, templatePath string) error {
 	var body bytes.Buffer
 	t, err := template.ParseFiles(templatePath)
 	if err != nil {
@@ -98,7 +100,7 @@ func (s *Service) sendMailTemplate(email *Email, templatePath string) error {
 	email.body = body.Bytes()
 	email.headers = "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";"
 
-	return s.SendMail(email)
+	return s.SendMail(ctx, email)
 }
 func (s *Service) Cleanup() {
 	s.client.Quit()

@@ -3,7 +3,10 @@
   --orange-700: rgba(228, 110, 0, 0.726);
   --orange-900: rgba(219, 138, 63, 0.87);
   --white: #fdfdf6;
-  --black: #161616ee;
+  --black: hsl(0, 0%, 25%);
+  --black2: hsl(0, 0%, 20%);
+  --black3: hsl(0, 0%, 15%);
+  --test: #30292f;
 
   --box-shadow: rgba(0, 0, 0, 0.11) 3px 8px 8px;
 }
@@ -16,7 +19,7 @@
   color-scheme: light dark;
 
   color: var(--white);
-  background-color: var(--white);
+  background-color: var(--black3);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;

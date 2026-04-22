@@ -1,4 +1,4 @@
-const DefaultProfile = () => {
+function DefaultProfile() {
   return (
     <main className="dashboard">
       <aside className="bg-orange-900 padding-8">
@@ -7,6 +7,6 @@ const DefaultProfile = () => {
       <div className="color-black"></div>
     </main>
   );
-};
+}
 
 export default DefaultProfile;

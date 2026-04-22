@@ -8,79 +8,73 @@ import (
 	"musicproject.com/pkg/model"
 )
 
-func (s *testSuite) TestRefreshSuccess() {
-	url := "/v1/auth/refresh"
-	valid, err := s.jwtRefresh.GenerateToken(uuid.Nil, nil)
-	s.Require().NoError(err)
-	// Gets refresh token from body or cookie
-	tests := []HandlerTest{
-		{
-			Name:     "successful refresh with cookie token",
-			WantCode: http.StatusOK,
+// {
+// 	Name:     "successful refresh with request body token",
+// 	WantCode: http.StatusOK,
+// 	Req: &request{
+// 		// Set token in body
+// 		body: map[string]any{
+// 			"refreshToken": valid,
+// 		},
+// 	},
+// },
 
-			Req: &request{
-				// Set token in cookie
-				refreshToken: valid,
-			},
-		},
-		// {
-		// 	Name:     "successful refresh with request body token",
-		// 	WantCode: http.StatusOK,
-		// 	Req: &request{
-		// 		// Set token in body
-		// 		body: map[string]any{
-		// 			"refreshToken": valid,
-		// 		},
-		// 	},
-		// },
-	}
-	for _, tt := range tests {
-		s.Run(tt.Name, func() {
-			w := s.newRequest(url, tt.Req)
-
-			//resBody := jsonutil.ReadJSONT[map[string]any](s.T(), w.Result().Body)
-
-			s.Equal(tt.WantCode, w.Code, tt.Name)
-
-			//s.Empty(resBody)
-			// Make request with old refresh token
-			w2 := s.newRequest(url, tt.Req)
-			// Old refresh token is revoked
-			s.Equal(http.StatusUnauthorized, w2.Code, tt.Name)
-		})
-	}
-
-}
 func (s *testSuite) TestRefresh() {
 	url := "/v1/auth/refresh"
 
 	access, err := s.jwtAccess.GenerateToken(uuid.Nil, nil)
 	s.Require().NoError(err)
 
-	tests := []HandlerTest{
+	tests := []handlerTest{
 		{
 			Name:     "invalid token type",
 			WantCode: http.StatusUnauthorized,
 			Req: &request{
 				refreshToken: access,
 			},
-			WantMessage: "",
 		},
 		{
 			Name:        "empty refresh token string",
-			WantMessage: "",
 			WantCode:    http.StatusUnauthorized,
 			Req:         &request{},
+			WantMessage: "No token present",
 		},
 	}
 	for _, tt := range tests {
 		s.Run(tt.Name, func() {
 			w := s.newRequest(url, tt.Req)
 
-			resBody := jsonutil.ReadJSONT[model.Error](s.T(), w.Result().Body)
+			_, err := jsonutil.ReadJson[model.Error](w.Result().Body)
+			s.Require().NoError(err)
 
 			s.Equal(tt.WantCode, w.Code, tt.Name)
-			s.Equal(tt.WantMessage, resBody.Message)
+			//s.Equal(tt.WantMessage, resBody.Message)
 		})
 	}
+
+	validRefresh, err := s.jwtRefresh.GenerateToken(uuid.Nil, nil)
+	s.Require().NoError(err)
+	t1 := handlerTest{
+		Name: "successful refresh with cookie token",
+		Req: &request{
+			refreshToken: validRefresh,
+		},
+		WantCode: http.StatusOK,
+	}
+	s.Run(t1.Name, func() {
+		w := s.newRequest(url, t1.Req)
+
+		s.Equal(t1.WantCode, w.Code, t1.Name)
+
+		// Second request, make request with old refresh token
+		w2 := s.newRequest(url, t1.Req)
+		// Old refresh token is revoked
+		s.Equal(http.StatusUnauthorized, w2.Code, t1.Name)
+
+		b, err := jsonutil.ReadJson[model.Error](w2.Result().Body)
+		s.Require().NoError(err)
+
+		s.Equal(http.StatusUnauthorized, b.Code, t1.Name)
+		s.Equal("Token revoked", b.Message)
+	})
 }

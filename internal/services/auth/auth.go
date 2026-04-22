@@ -15,28 +15,29 @@ import (
 
 var defaultRoles = []string{"user"}
 
-type userRepo interface {
-	GetByEmail(ctx context.Context, email string) (*model.User, error)
-	Put(ctx context.Context, user *model.User) (uuid.UUID, error)
-}
+// type userRepo interface {
+// 	GetByEmail(ctx context.Context, email string) (*model.User, error)
+// 	Put(ctx context.Context, user *model.User) (uuid.UUID, error)
+// }
 
-//	type refreshTokenRepo interface {
-//		RevokeToken(ctx context.Context, refreshToken uui) error
-//	}
 type Oauth interface {
 	Login(ctx context.Context, code string) (*model.User, *model.TokenPair, error)
 	RedirectURL(w http.ResponseWriter) string
 }
 
 type Service struct {
-	userRepo         userRepo
+	userRepo         repository.User
 	refreshTokenRepo repository.Token
 	jwtAccess        *JWTService
 	jwtRefresh       *JWTService
 	Google           Oauth
 }
 
-func New(ctx context.Context, cfg config.Auth, refreshTokenRepo repository.Token, repo userRepo) (*Service, error) {
+func New(ctx context.Context, 
+	cfg config.Auth, 
+	refreshTokenRepo repository.Token, 
+	repo repository.User) (*Service, error) {
+		
 	google, err := NewOauth(cfg.Oauth.Google.RedirectURL, cfg.Oauth.Google.Scopes, google.Endpoint)
 	if err != nil {
 		return nil, err
@@ -127,7 +128,6 @@ func (s *Service) Login(ctx context.Context, email string, password string) (*mo
 	return user, pair, nil
 }
 
-// TODO
 func (s *Service) Logout(ctx context.Context, refeshToken string) error {
 	claims, err := s.jwtRefresh.ValidateToken(refeshToken)
 	if err != nil {
@@ -174,6 +174,7 @@ func (s *Service) Validate(tokenString string) (*model.Claims, error) {
 		return nil, &model.Error{
 			Code:    http.StatusUnauthorized,
 			Message: "Invalid access token",
+			Details: []string{err.Error()},
 		}
 	}
 	return claims, nil

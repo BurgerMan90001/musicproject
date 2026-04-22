@@ -1,6 +1,6 @@
-
-/*CREATE DATABASE musicproject;*/
-
+/* 
+CREATE DATABASE musicproject;
+*/
 CREATE TABLE IF NOT EXISTS revoked_tokens (
     token_id UUID PRIMARY KEY,
     revocation_date timestamp default now()

@@ -9,10 +9,8 @@ function ErrorPage() {
         <Header />
         <main className="bg-white">
           <div className="full-height flex justifiy-content-center flex-column">
-            <h1>Oh no, this route doesn't exist!</h1>
-            <Link to="/">
-              You can go back to the home page by clicking here, though!
-            </Link>
+            <h1>Resource not found!</h1>
+            <Link to="/">Go back to the home page?</Link>
           </div>
         </main>
       </div>

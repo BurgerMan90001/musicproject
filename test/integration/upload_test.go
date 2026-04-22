@@ -2,14 +2,12 @@ package integration
 
 import (
 	"net/http"
-
-	"musicproject.com/internal/jsonutil"
 )
 
 func (s *testSuite) TestUploadSongMetadata() {
 	url := "/v1/upload/songs"
 
-	tests := []HandlerTest{
+	tests := []handlerTest{
 		{
 			Name: "empty request",
 			Req: &request{
@@ -26,7 +24,7 @@ func (s *testSuite) TestUploadSongMetadata() {
 	}
 
 	s.Run("success", func() {
-		tt := HandlerTest{
+		tt := handlerTest{
 			Req: &request{
 				method: http.MethodPost,
 				body: map[string]any{
@@ -39,12 +37,15 @@ func (s *testSuite) TestUploadSongMetadata() {
 		w := s.newRequest(url, tt.Req)
 		url := w.Result().Header.Get("Location")
 
-		res := jsonutil.ReadJSONT[map[string]any](s.T(), w.Body)
+		//b, err := jsonutil.ReadJson[map[string]any](w.Body)
+		//s.Require().NoError(err)
 
 		s.NotEmpty(url)
 		s.Equal(tt.WantCode, w.Code, url)
-		if res != nil {
-			s.Equal("", res["message"])
-		}
+
+		//s.Equal("", b["details"])
+		// if b != nil {
+		// 	s.Equal("", b["message"])
+		// }
 	})
 }

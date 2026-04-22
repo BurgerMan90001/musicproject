@@ -16,7 +16,7 @@ func New(ctx context.Context, T Blobstore, region string) (Blobstore, error) {
 	case *AWSS3:
 		return NewS3(ctx, region)
 	case *GoogleCloud:
-		return NewGoogleCloud(ctx, 30*time.Minute)
+		return NewGoogleCloud(ctx)
 	default:
 		return NewFileSystem(), nil
 	}
@@ -29,10 +29,11 @@ type Blobstore interface {
 
 	// Returns an authenticated url location to upload files at
 	CreateObjectUrl(ctx context.Context, bucket, key string,
-		cacheble bool) (string, error)
+		cacheble bool, ttl time.Duration) (string, error)
 
 	GetObject(ctx context.Context, bucket, key string) ([]byte, error)
-	GetObjectUrl(ctx context.Context, bucket, key string) (string, error)
+	// Returns an authenticated url location to download files from
+	GetObjectUrl(ctx context.Context, bucket, key string, ttl time.Duration) (string, error)
 
 	DeleteObject(Ctx context.Context, bucket, key string) error
 }

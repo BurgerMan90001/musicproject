@@ -5,14 +5,18 @@ WORKDIR /app/site
 COPY package.json .
 COPY package-lock.json .
 
-# some legacy dependancies are cooked
-RUN npm install --legacy-peer-deps
-
+RUN npm ci
 COPY . .
 
 RUN npm run build
 
-FROM nginx:alpine
+#FROM nginx:stable-alpine
 
-COPY nginx/nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/site/dist /usr/share/nginx/html
+#COPY --from=build /app/site/nginx/nginx.conf /etc/nginx/conf.d/default.conf
+#COPY --from=build /app/site/dist /usr/share/nginx/html
+
+#RUN chmod -R 755 /usr/share/nginx/html
+
+#EXPOSE 80
+
+#ENTRYPOINT [ "nginx", "-g", "daemon off;" ]

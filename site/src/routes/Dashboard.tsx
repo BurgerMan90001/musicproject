@@ -44,9 +44,7 @@ function Dashboard() {
   return (
     <>
       <div className="" id="dashboard">
-        <aside className="bg-orange-900 padding-8" id="sidebar">
-          asdasdadadasdasdasdsaddasdawawdawdawd
-        </aside>
+        <Sidebar />
         <main className="flex flex-column flex-1">
           <div className="grid-item-container gap-16 padding-16 ">
             <Item />
@@ -63,6 +61,13 @@ function Dashboard() {
         </main>
       </div>
     </>
+  );
+}
+function Sidebar() {
+  return (
+    <aside className="bg-black2 padding-8" id="sidebar">
+      asdasdadadasdasdasdsaddasdawawdawdawd
+    </aside>
   );
 }
 function Item() {

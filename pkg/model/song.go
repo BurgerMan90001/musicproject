@@ -24,12 +24,12 @@ type Song struct {
 	Source   string    `json:"src"`
 }
 
-type SongFile struct {
-}
-
+// Upload song metadata
 type UploadSongRequest struct {
-	Name     string `json:"name"`
-	Genre    string `json:"genre"`
+	// Required
+	Name  string `json:"name"`
+	Genre string `json:"genre"`
+	// Optional
 	Image    string `json:"image,omitempty"`
 	Filename string `json:"filename,omitempty"`
 }

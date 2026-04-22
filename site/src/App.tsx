@@ -10,10 +10,7 @@ const ListContext = createContext<ListContextType>({
 });
 
 function App() {
-  let outlet = <Outlet />;
-  // if (test == null) {
-  //   test = <Dashboard/>;
-  // }
+  const outlet = <Outlet />;
   
   return (
     <div className="grid-layout">

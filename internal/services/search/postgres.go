@@ -7,6 +7,7 @@ import (
 	"musicproject.com/pkg/model"
 )
 
+// Pgvector full text searching
 type Postgres struct {
 	db *sql.DB
 }

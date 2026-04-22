@@ -1,9 +1,28 @@
+# .dockerignore
 
-main
+#main
+#test
+#bin
+#dist
+
 .git
-node_modules
-test
+.gitignore
 
+
+node_modules
+.wrangler
+
+# env files
 .env.dev
 .env.template
-.env
+
+config.dev.*
+
+#Dockerfile*
+#.dockerignore
+#docker-compose.yml
+
+.vscode
+.idea
+# ignore test files
+**/*_test.go

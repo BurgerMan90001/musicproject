@@ -12,7 +12,7 @@ import (
 func (s *testSuite) TestSignup() {
 	url := "/v1/auth/signup"
 
-	tests := []HandlerTest{
+	tests := []handlerTest{
 		{
 			Name:     "user already exists",
 			WantCode: http.StatusConflict,
@@ -77,7 +77,7 @@ func (s *testSuite) TestSignup() {
 			s.Equal(tt.WantCode, w.Code, mes)
 		})
 	}
-	success := HandlerTest{
+	success := handlerTest{
 		Name: "successful signup",
 		Req: &request{
 			method: http.MethodPost,

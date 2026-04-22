@@ -1,22 +1,34 @@
 package upload
 
 import (
-	"errors"
+	"net/http"
 
 	"musicproject.com/pkg/model"
 )
 
 func validateUploadRequest(req *model.UploadSongRequest) error {
-	if req == nil {
-		return errors.New("Song request is empty")
+	var err = &model.Error{
+		Code: http.StatusBadRequest,
+		Message: "Invalid upload song request body",
+
 	}
-	var errorList []error
+	if req == nil {
+		return &model.Error{
+			Code:    http.StatusBadRequest,
+			Message: "Song request is empty",
+		}
+	}
 	if req.Filename == "" {
-		errorList = append(errorList, errors.New("Filename is empty"))
+		err.Details = append(err.Details, "Filename is empty")
 	}
 	if req.Genre == "" {
-		errorList = append(errorList, errors.New("Genre is empty"))
+		err.Details = append(err.Details, "Genre is empty")
 	}
 
-	return errors.Join(errorList...)
+	// Any errors apear
+	if len(err.Details) > 0 {
+		return err
+	}
+
+	return nil
 }

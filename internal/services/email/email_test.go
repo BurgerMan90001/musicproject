@@ -22,7 +22,6 @@ func TestSendEmail(t *testing.T) {
 
 	emailService, err := New()
 	require.NoError(t, err)
-	
 
 	//err = os.Setenv("SMTP_EMAIL", "paulcasigay@gmail.com")
 	//require.NoError(t, err)
@@ -47,7 +46,7 @@ func TestSendEmail(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := emailService.SendMail(tt.email)
+			err := emailService.SendMail(t.Context(), tt.email)
 			require.NoError(t, err)
 		})
 	}
@@ -68,7 +67,7 @@ func TestSendEmail(t *testing.T) {
 	}
 	for _, tt := range templateTests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := emailService.sendMailTemplate(tt.email, tt.templatePath)
+			err := emailService.sendMailTemplate(t.Context(), tt.email, tt.templatePath)
 			require.NoError(t, err)
 		})
 	}
