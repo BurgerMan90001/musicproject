@@ -6,79 +6,75 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
-	"musicproject.com/internal/repository"
-	"musicproject.com/pkg/model"
+	"github.com/lib/pq"
+	"github.com/lib/pq/pqerror"
+	"songsled.com/internal/repository"
+	"songsled.com/internal/repository/postgres/gensqlc"
+	"songsled.com/pkg/model"
 )
 
-type User struct {
-	db *sql.DB
+type UserRepo struct {
+	queries *gensqlc.Queries
 }
 
-var _ repository.User = (*User)(nil)
-
-func NewUser(db *sql.DB) *User {
-	return &User{db}
+func NewUser(queries *gensqlc.Queries) *UserRepo {
+	return &UserRepo{queries}
 }
 
 // Gets a user's email and password hash by their uuid
-func (r *User) GetByID(ctx context.Context, userId uuid.UUID) (*model.User, error) {
-	var (
-		email        string
-		passwordHash string
-	)
-	query := "SELECT email, password_hash FROM users WHERE user_id=$1"
-	row := r.db.QueryRowContext(ctx, query, userId)
-	if err := row.Scan(&email, &passwordHash); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, repository.ErrNotFound
-		}
-		return nil, err
-	}
-	return &model.User{
-		ID:           userId,
-		Email:        email,
-		PasswordHash: passwordHash,
-	}, nil
-}
-
-func (r *User) GetByEmail(ctx context.Context, email string) (*model.User, error) {
-	var (
-		userId       uuid.UUID
-		passwordHash string
-	)
-	query := "SELECT user_id, password_hash FROM users WHERE email=$1"
-	row := r.db.QueryRowContext(ctx, query, email)
-	if err := row.Scan(&userId, &passwordHash); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, repository.ErrNotFound
-		}
-		return nil, err
-	}
-	return &model.User{
-		ID:           userId,
-		Email:        email,
-		PasswordHash: passwordHash,
-	}, nil
-}
-func (r *User) Put(ctx context.Context, user *model.User) (uuid.UUID, error) {
-	query := "INSERT INTO users (email, password_hash) VALUES($1, $2) RETURNING user_id"
-
-	row := r.db.QueryRowContext(ctx, query, user.Email, user.PasswordHash)
-	var id uuid.UUID
-	if err := row.Scan(&id); err != nil {
-		return uuid.Nil, err
-	}
-	return id, nil
-}
-
-func (r *User) DeleteByID(ctx context.Context, userId uuid.UUID) error {
-	query := "DELETE FROM users WHERE user_id=$1"
-	_, err := r.db.ExecContext(ctx, query, userId)
+func (r *UserRepo) GetUserByID(ctx context.Context, userId uuid.UUID) (*model.User, error) {
+	u, err := r.queries.GetUserByID(ctx, userId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return repository.ErrNotFound
+			return nil, repository.ErrNotFound
 		}
-		return err
 	}
-	return nil
+
+	return &model.User{
+		ID:           userId,
+		Email:        u.Email,
+		PasswordHash: u.PasswordHash.String,
+	}, nil
+}
+
+func (r *UserRepo) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
+	u, err := r.queries.GetUserByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, repository.ErrUserNotFound
+		}
+		return nil, err
+	}
+
+	// Null password
+	// if !u.PasswordHash.Valid {
+
+	// }
+	return &model.User{
+		ID:           u.UserID,
+		Email:        email,
+		PasswordHash: u.PasswordHash.String,
+
+		// AvatarURL:    u.AvatarURL,
+	}, nil
+}
+func (r *UserRepo) PutUser(ctx context.Context, user *model.User) (uuid.UUID, error) {
+	// Password will be null if empty
+	valid := user.PasswordHash != ""
+	userId, err := r.queries.PutUser(ctx, gensqlc.PutUserParams{
+		Email: user.Email, PasswordHash: sql.NullString{String: user.PasswordHash, Valid: valid},
+	})
+
+	if pgerr, ok := err.(*pq.Error); ok {
+		// The email is already taken
+		if pgerr.Code == pqerror.UniqueViolation {
+			return uuid.Nil, repository.ErrEmailTaken
+		}
+	}
+
+	return userId, nil
+}
+
+func (r *UserRepo) DeleteUserByID(ctx context.Context, userId uuid.UUID) error {
+	return r.queries.DeleteUserByID(ctx, userId)
 }

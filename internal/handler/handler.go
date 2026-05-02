@@ -2,29 +2,39 @@ package handler
 
 import (
 	"context"
-	"database/sql"
 	"net/http"
+	"testing"
 	"time"
 
-	"musicproject.com/internal/config"
-	"musicproject.com/internal/jsonutil"
-	"musicproject.com/internal/middleware"
-	"musicproject.com/internal/middleware/ratelimit"
-	"musicproject.com/internal/repository/postgres"
-	"musicproject.com/internal/services/auth"
-	"musicproject.com/internal/services/file"
-	"musicproject.com/internal/services/upload"
+	"github.com/go-chi/chi/v5"
+	"github.com/redis/go-redis/v9"
+	"songsled.com/internal/config"
+	"songsled.com/internal/jsonutil"
+	"songsled.com/internal/middleware"
+	"songsled.com/internal/middleware/ratelimit"
+	"songsled.com/internal/repository/postgres"
+	"songsled.com/internal/services/auth"
+	"songsled.com/internal/services/file"
+	"songsled.com/internal/services/search"
+	"songsled.com/internal/services/upload"
+	"songsled.com/pkg/model"
 )
 
-func NewMux(ctx context.Context, cfg *config.Config, store file.Blobstore, db *sql.DB) (http.Handler, error) {
-	mux := http.NewServeMux()
+func New(
+	ctx context.Context,
+	cfg *config.Config,
+	store file.Blobstore,
+	repo *postgres.Repo,
+	rdb *redis.Client,
+) (http.Handler, error) {
+	root := chi.NewRouter()
 
-	userRepo := postgres.NewUser(db)
-	songRepo := postgres.NewSong(db)
-	refreshTokenRepo := postgres.NewRefreshToken(db)
-	//ratingRepo := postgres.NewRating(db)
+	userRepo := postgres.NewUser(repo.Queries)
+	songRepo := postgres.NewSong(repo.Queries)
+	playlistRepo := postgres.NewPlaylist(repo.Queries)
 
-	authService, err := auth.New(ctx, cfg.Auth, refreshTokenRepo, userRepo)
+	searchService := search.NewPostgres()
+	authService, err := auth.New(ctx, cfg.Auth, rdb, userRepo)
 	if err != nil {
 		return nil, err
 	}
@@ -34,63 +44,77 @@ func NewMux(ctx context.Context, cfg *config.Config, store file.Blobstore, db *s
 	if err != nil {
 		return nil, err
 	}
-	// emailService, err := email.New()
-	// if err != nil {
-	// 	return nil, err
-	// }
 
-	mux.HandleFunc("/", handleNotFound())
-	mux.HandleFunc("/health", handleHealth)
+	authMw := middleware.NewAuth(authService.Validate)
+	rl := ratelimit.NewTokenBucket(15, 30)
 
-	// auth routes
-	mux.HandleFunc("/auth/login", handleLogin(authService))
-	mux.HandleFunc("/auth/signup", handleSignup(authService))
-	mux.HandleFunc("/auth/refresh", handleRefresh(authService))
-	mux.HandleFunc("/auth/logout", handleLogout(authService))
-	//mux.HandleFunc("/auth/reset", authHandler.handleEmailReset(emailService))
-
-	// oauth routes
-	mux.HandleFunc("/auth/google/login", handleOauthLogin(authService.Google))
-	mux.HandleFunc("/auth/google/redirect", handleOauthRedirect(authService.Google))
-
-	// Metadata routes
-	mux.HandleFunc("/users", handleUsers(userRepo))
-	mux.HandleFunc("/users/{id}", handleUsersID(userRepo))
-
-	mux.HandleFunc("/songs/{id}", handleGetSongsMetadata(songRepo))
-
-	// File routes
-	mux.HandleFunc("/upload/songs", middleware.RequireAuth(authService)(handleSongUpload(uploadService)))
-	//mux.HandleFunc("/files/audio/{id}", handleAudio(songService))
-
-	// MAYBE
-	//mux.HandleFunc("/songs/{id}/rating", handleSongRating())
-
-	// MAYBE
-	//mux.HandleFunc("/artists/{id}", HandleArtists())
-
-	// Image
-	mux.HandleFunc("/files/image", handleImage())
-
-	// Test routes
-	mux.Handle("/protected", middleware.RequireAuth(authService)(handleTest()))
-
-	var handler http.Handler = mux
-	if cfg.Middleware.Logger {
-		handler = middleware.Logger(handler)
+	if !testing.Testing() {
+		root.Use(middleware.Logger())
+		root.Use(middleware.Limit(rl))
 	}
-	if cfg.Middleware.Ratelimit {
-		rl := ratelimit.NewTokenBucket(15, 30)
-		handler = middleware.RateLimit(rl, handler)
-	}
+	// rl := ratelimit.NewTokenBucket(15, 30)
+	root.Route("/v1", func(api chi.Router) {
 
-	root := http.NewServeMux()
+		api.Route("/auth", func(r chi.Router) {
+			r.HandleFunc("/signup", handleSignup(authService))
+			r.HandleFunc("/login", handleLogin(authService))
+			r.HandleFunc("/refresh", handleRefresh(authService))
+			r.HandleFunc("/logout", handleLogout(authService))
+			//mux.HandleFunc("/auth/reset", authHandler.handleEmailReset(emailService))
 
-	root.Handle("/v1/", http.StripPrefix("/v1", handler))
-	root.Handle("/", handleNotFound())
+			// oauth routes
+			r.HandleFunc("/google/login", handleOauthLogin(authService.Google))
+			r.HandleFunc("/google/redirect", handleOauthRedirect(authService.Google))
+		})
+
+		api.Route("/users", func(r chi.Router) {
+			r.Get("/", handleUsers(userRepo))
+
+			r.Get("/{id}", handleGetUsersId(userRepo))
+			r.Delete("/{id}", handleDelteUsersId(userRepo))
+
+			r.Get("/{id}/history", handleUserHistory())
+		})
+
+		api.Route("/songs", func(r chi.Router) {
+			r.HandleFunc("/", handleSongs(searchService, songRepo))
+			r.HandleFunc("/{id}", handleGetSong(songRepo))
+
+			r.HandleFunc("/upload", handleSongUpload(uploadService))
+
+		})
+		api.Route("/playlists", func(r chi.Router) {
+			r.HandleFunc("/", handlePlaylists(playlistRepo))
+			r.HandleFunc("/{id}", handlePlaylistsID(playlistRepo))
+		})
+
+		api.Route("/admin", func(r chi.Router) {
+			r.Use(authMw.RequireAuth(auth.RoleAdmin))
+			r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+				jsonutil.WriteJSON(w, nil, http.StatusOK)
+			})
+
+		})
+	})
+
+	root.Get("/health", handleHealth)
+
+	root.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		jsonutil.WriteError(w, &model.Error{
+			Code:    http.StatusNotFound,
+			Message: "Route not found",
+		})
+	})
+	root.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
+		jsonutil.WriteError(w, &model.Error{
+			Code:    http.StatusMethodNotAllowed,
+			Message: "Method not allowed",
+		})
+	})
 
 	return root, nil
 }
+
 func handleTest() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 

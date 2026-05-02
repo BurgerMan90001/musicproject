@@ -3,7 +3,7 @@ package auth
 import (
 	"net/http"
 
-	"musicproject.com/pkg/model"
+	"songsled.com/pkg/model"
 )
 
 var (
@@ -18,40 +18,45 @@ var (
 	}
 
 	// Login errors
-	ErrMismatchPassword = &model.Error{
-		Code:    http.StatusUnauthorized,
-		Message: "Incorrect password",
-	}
-
 	ErrIncorrectLogin = &model.Error{
 		Code:    http.StatusUnauthorized,
 		Message: "Incorrect password or email",
 	}
-
-	ErrNoToken = &model.Error{
-		Code:    http.StatusUnauthorized,
-		Message: "No token present",
-	}
-	ErrTokenRevoked = &model.Error{
-		Code:    http.StatusUnauthorized,
-		Message: "Token revoked",
-	}
-	ErrInvalidClaims = &model.Error{
-		Code:    http.StatusUnauthorized,
-		Message: "Invalid claims",
-	}
-	ErrTokenExpired = &model.Error{
-		Code:    http.StatusUnauthorized,
-		Message: "Token is expired",
-	}
-
-	ErrInvalidTokenType = &model.Error{
-		Code:    http.StatusUnauthorized,
-		Message: "Invalid token type",
-	}
-
-	ErrUserAlreadyExists = &model.Error{
-		Code:    http.StatusConflict,
-		Message: "User already exists",
-	}
 )
+
+// Reason is optional
+func ErrInvalidToken(reasons ...error) *model.Error {
+	jerr := &model.Error{
+		Code:    http.StatusUnauthorized,
+		Message: "Invalid token",
+	}
+	for _, r := range reasons {
+		if r != nil {
+			jerr.Details += r.Error()
+		}
+	}
+
+	return jerr
+}
+
+// ErrNoToken = &model.Error{
+// 	Code:    http.StatusUnauthorized,
+// 	Message: "No token present",
+// }
+// ErrTokenRevoked = &model.Error{
+// 	Code:    http.StatusUnauthorized,
+// 	Message: "Token revoked",
+// }
+// ErrInvalidClaims = &model.Error{
+// 	Code:    http.StatusUnauthorized,
+// 	Message: "Invalid claims",
+// }
+// ErrTokenExpired = &model.Error{
+// 	Code:    http.StatusUnauthorized,
+// 	Message: "Token is expired",
+// }
+
+// ErrInvalidTokenType = &model.Error{
+// 	Code:    http.StatusUnauthorized,
+// 	Message: "Invalid token type",
+// }

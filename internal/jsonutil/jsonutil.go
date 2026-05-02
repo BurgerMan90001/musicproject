@@ -2,12 +2,14 @@ package jsonutil
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
 
-	"musicproject.com/pkg/model"
+	"songsled.com/pkg/model"
 )
 
 // type ContentType string
@@ -16,19 +18,15 @@ import (
 
 // Sets header status code
 func WriteJSON(w http.ResponseWriter, data any, code int, details ...string) {
-	w.Header().Set("Content-type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 	jsonEncoder := json.NewEncoder(w)
-
-	// if len(details) > 10 {
-	// 	details = details[:10]
-	// }
 
 	switch {
 	case data == nil:
 		WriteError(w, &model.Error{
 			Code:    code,
 			Message: "Internal server error",
-			Details: append(details, "WriteJSON: data is nil"),
+			Details: fmt.Sprintf("%v; WriteJSON: data is nil", details),
 		})
 	// Not an error code
 	case code >= 200 && code < 300:
@@ -40,7 +38,7 @@ func WriteJSON(w http.ResponseWriter, data any, code int, details ...string) {
 			WriteError(w, &model.Error{
 				Code:    code,
 				Message: "Internal server error",
-				Details: append(details, fmt.Sprintf("WriteJSON: marshal data error %v", err)),
+				Details: fmt.Sprintf("%v; WriteJSON: marshal data error %v", details, err),
 			})
 			return
 		}
@@ -52,7 +50,7 @@ func WriteJSON(w http.ResponseWriter, data any, code int, details ...string) {
 		WriteError(w, &model.Error{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal server error",
-			Details: append(details, fmt.Sprintf("WriteJSON invalid code: %d", code)),
+			Details: fmt.Sprintf("%v; WriteJSON invalid code: %d", details, code),
 		})
 
 	default:
@@ -66,94 +64,125 @@ func WriteJSON(w http.ResponseWriter, data any, code int, details ...string) {
 // Sets header status code
 func WriteError(w http.ResponseWriter, reason error) {
 	w.Header().Set("Content-type", "application/json")
-	merr := validateErr(reason)
+	jerr := newJsonErr(reason)
+
+	if os.Getenv("SHOW_ERROR_DETAILS") != "true" {
+		jerr.Details = ""
+	}
 	// Service error / internal error
-	if merr.Code >= 500 && merr.Code < 600 {
-		w.WriteHeader(merr.Code)
-		// When not testing
+	if jerr.Code >= 500 && jerr.Code < 600 {
+		w.WriteHeader(jerr.Code)
+		// When testing
 		// if !testing.Testing() {
-		// 	merr.Details = nil
+		// 	jerr.Details = nil
 		// }
-		json.NewEncoder(w).Encode(merr)
+
+		json.NewEncoder(w).Encode(jerr)
 
 		slog.Error(fmt.Sprintf("%v", reason))
 		return
 	}
 
-	w.WriteHeader(merr.Code)
-	json.NewEncoder(w).Encode(merr)
+	w.WriteHeader(jerr.Code)
+	json.NewEncoder(w).Encode(jerr)
 }
 
 // TODO have better details in json response when an internal error occurs
-func validateErr(reason error) *model.Error {
-	merr, ok := reason.(*model.Error)
+func newJsonErr(reason error) *model.Error {
 
-	switch {
-	case merr == nil || !ok:
-		// Create new error
-		merr = &model.Error{}
-		merr.Details = append(merr.Details, "WriteError: reason is not of type model.Error")
+	var jerr *model.Error
+	if errors.As(reason, &jerr) {
+		switch {
+		case jerr == nil:
+			jerr = &model.Error{}
+			// if reason != nil {
+			// 	jerr.Details = reason.Error()
+			// }
+		case jerr.Message == "":
+			jerr.Details = "WriteError: empty error message"
 
-	case merr.Message == "":
-		merr.Details = append(merr.Details, "WriteError: empty error message")
-
-	case merr.Code < 100 || merr.Code >= 600:
-		merr.Details = append(merr.Details, "WriteError: invalid status code")
-	default:
-		return merr
+		case jerr.Code < 100 || jerr.Code >= 600:
+			jerr.Details = fmt.Sprintf("WriteError: invalid status code %d", jerr.Code)
+		// Error is not an internal server error
+		default:
+			return jerr
+		}
+	} else {
+		jerr = &model.Error{}
+		if reason != nil {
+			jerr.Details = reason.Error()
+		}
 	}
-	merr.Code = http.StatusInternalServerError
-	merr.Message = "Internal server error"
-	return merr
+	jerr.Code = http.StatusInternalServerError
+	jerr.Message = "Internal server error"
+
+	return jerr
 }
 
 func ReadJson[T any](r io.Reader) (T, error) {
 	var v T
-	if err := json.NewDecoder(r).Decode(&v); err != nil {
-		return v, &model.Error{
+
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return v, err
+	}
+	if len(data) == 0 {
+		return v, nil
+	}
+
+	if err := json.Unmarshal(data, &v); err != nil {
+
+		jerr := &model.Error{
 			Code:    http.StatusBadRequest,
-			Message: "Invalid request body",
-			Details: []string{err.Error()},
+			Message: fmt.Sprintf("Body is not of type %T %s", *new(T), string(data)),
+			Details: fmt.Sprintf("ReadJson: %T\n Reason: %s\n JSON: %s", *new(T), err.Error(), string(data)),
 		}
+		// if testing.Testing() {
+		// 	slog.Info(jerr.Details)
+		// }
+
+		return v, jerr
 	}
 
 	return v, nil
-}
-
-func WriteMethodNotAllowed(w http.ResponseWriter) {
-	WriteError(w, &model.Error{
-		Code:    http.StatusMethodNotAllowed,
-		Message: "Method not allowed",
-	})
 }
 
 func WriteNotFound(w http.ResponseWriter, reason error) {
 	err := &model.Error{
 		Code:    http.StatusNotFound,
 		Message: "Resource not found",
-		//Details: []string{reason.Error()},
 	}
 	if reason != nil {
-		err.Details = append(err.Details, reason.Error())
+		err.Details = reason.Error()
 	}
 	WriteError(w, err)
 }
 
 func WriteInvalidRequestBody(w http.ResponseWriter, reason error) {
-	WriteError(w, &model.Error{
+	err := &model.Error{
 		Code:    http.StatusBadRequest,
 		Message: "Invalid request body",
-		Details: []string{reason.Error()},
-	})
+	}
+	if reason != nil {
+		err.Details = reason.Error()
+	}
+	WriteError(w, err)
 }
 
 // Responds with generic internal server error json response
 // Logs error
-func InternalServerError(w http.ResponseWriter, err error) {
-	// TODO USE better logging
-	slog.Error("internal server error: ", err.Error(), "")
+func InternalServerError(w http.ResponseWriter, reason error) {
+
+	slog.Error("Internal server error: ", reason.Error(), "")
 	WriteError(w, &model.Error{
 		Code:    http.StatusInternalServerError,
 		Message: "Internal server error",
+	})
+}
+
+func NotImplemented(w http.ResponseWriter) {
+	WriteError(w, &model.Error{
+		Code:    http.StatusNotImplemented,
+		Message: "Route is not implemented yet!",
 	})
 }

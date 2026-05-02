@@ -1,0 +1,50 @@
+package integration
+
+import (
+	"net/http"
+
+	"songsled.com/internal/jsonutil"
+	"songsled.com/pkg/model"
+)
+
+func (s *testSuite) TestAuth() {
+	s.Run("auth root route", func() {
+		tt := handlerTest{
+
+			WantCode: http.StatusNotFound,
+		}
+
+		w := s.newRequest("/v1/auth", tt.Req)
+
+		s.Equal(tt.WantCode, w.Code, tt.Name)
+	})
+}
+
+/* Oauth tests */
+func (s *testSuite) TestHandleOathGoogleLogin() {
+	//t := s.T()
+	url := "/v1/auth/google/login"
+	tests := []handlerTest{
+		{
+			Name: "login google oauth",
+			Req: &request{
+				method: http.MethodGet,
+			},
+
+			WantCode: http.StatusOK,
+		},
+	}
+	s.T().Skip()
+	for _, tt := range tests {
+		s.Run(tt.Name, func() {
+			w := s.newRequest(url, tt.Req)
+
+			userInfo, err := jsonutil.ReadJson[model.OauthUserInfo](w.Result().Body)
+			s.Require().NoError(err)
+
+			s.Equal(tt.WantCode, w.Code, tt.Name)
+			s.Empty(userInfo.Email)
+		})
+	}
+
+}

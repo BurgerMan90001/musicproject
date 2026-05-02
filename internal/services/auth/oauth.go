@@ -8,37 +8,55 @@ import (
 	"time"
 
 	"golang.org/x/oauth2"
-	"musicproject.com/internal/config/secrets"
-	"musicproject.com/internal/jsonutil"
-	"musicproject.com/pkg/model"
+	"songsled.com/internal/config/secrets"
+	"songsled.com/internal/jsonutil"
+	"songsled.com/pkg/model"
 )
 
 type GoogleOauth struct {
-	cfg *oauth2.Config
+	cfg         *oauth2.Config
+	userInfoUrl string
+	userRepo    userRepo
 }
 
-func NewOauth(redirectUrl string, scopes []string, endpoint oauth2.Endpoint) (*GoogleOauth, error) {
-	secretList, err := secrets.GetEnvMap("GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET")
+func NewOauth(scopes []string,
+	userInfoUrl, redirectUrl,
+	clientIdVar, clientSecretVar string,
+	endpoint oauth2.Endpoint,
+	userRepo userRepo,
+) (*GoogleOauth, error) {
+	secretList, err := secrets.GetenvMap(clientIdVar, clientSecretVar)
 	if err != nil {
 		return nil, err
 	}
-	return &GoogleOauth{&oauth2.Config{
-		ClientID:     secretList["GOOGLE_OAUTH_CLIENT_ID"],
-		ClientSecret: secretList["GOOGLE_OAUTH_CLIENT_SECRET"],
-		RedirectURL:  redirectUrl,
-		Scopes:       scopes,
-		Endpoint:     endpoint,
-	}}, nil
+
+	return &GoogleOauth{
+		userInfoUrl: userInfoUrl,
+		cfg: &oauth2.Config{
+			ClientID:     secretList[clientIdVar],
+			ClientSecret: secretList[clientSecretVar],
+			RedirectURL:  redirectUrl,
+			Scopes:       scopes,
+			Endpoint:     endpoint,
+		}}, nil
 }
 func (s *GoogleOauth) Login(ctx context.Context, code string) (*model.User, *model.TokenPair, error) {
-	userInfo, err := s.getUserInfo(ctx, &oauth2.Token{})
+	token, err := s.cfg.Exchange(ctx, code)
 	if err != nil {
 		return nil, nil, err
 	}
+	userInfo, err := s.getUserInfo(ctx, token)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	user := &model.User{
 		Email: userInfo.Email,
 	}
-
+	user.ID, err = s.userRepo.PutUser(ctx, user)
+	if err != nil {
+		return nil, nil, err
+	}
 	return user, nil, nil
 }
 
@@ -55,7 +73,7 @@ func (s *GoogleOauth) getUserInfo(ctx context.Context, token *oauth2.Token) (*mo
 
 	client := s.cfg.Client(ctx, token)
 
-	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
+	resp, err := client.Get(s.userInfoUrl)
 	if err != nil {
 		return nil, err
 	}

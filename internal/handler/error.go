@@ -3,10 +3,9 @@ package handler
 import (
 	"net/http"
 
-	"musicproject.com/internal/jsonutil"
-	"musicproject.com/pkg/model"
+	"songsled.com/internal/jsonutil"
+	"songsled.com/pkg/model"
 )
-
 
 func handleNotFound() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -16,6 +15,7 @@ func handleNotFound() http.HandlerFunc {
 		})
 	})
 }
+
 func handleNotImplemented() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		jsonutil.WriteError(w, &model.Error{

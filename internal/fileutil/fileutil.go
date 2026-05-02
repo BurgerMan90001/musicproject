@@ -14,6 +14,7 @@ func ReadYaml[T any](filename string) (*T, error) {
 	if err != nil {
 		return nil, err
 	}
+	
 
 	var v T
 	if err := yaml.NewDecoder(bytes.NewReader(f)).Decode(&v); err != nil {

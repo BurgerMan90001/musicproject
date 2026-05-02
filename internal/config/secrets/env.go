@@ -16,22 +16,22 @@ func ReadEnvFile(file string) error {
 }
 
 // Returns a map of secrets from the names
-func GetEnvMap(keys ...string) (map[string]string, error) {
+func GetenvMap(keys ...string) (map[string]string, error) {
 	var secrets = make(map[string]string, 4)
 	for _, key := range keys {
-		secret := os.Getenv(key)
-		if secret == "" {
-			return nil, fmt.Errorf("Env var %v is empty", key)
+		secret, err := Getenv(key)
+		if err != nil {
+			return nil, err
 		}
 		secrets[key] = secret
 	}
 	return secrets, nil
 }
 
-// func GetEnv(key string) (string, error) {
-// 	secret := os.Getenv(key)
-// 	if secret == "" {
-// 		return "", fmt.Errorf("Env var %v is empty", key)
-// 	}
-// 	return secret, nil
-// }
+func Getenv(key string) (string, error) {
+	secret := os.Getenv(key)
+	if secret == "" {
+		return "", fmt.Errorf("Env var %v is empty", key)
+	}
+	return secret, nil
+}

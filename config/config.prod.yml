@@ -17,17 +17,17 @@ auth:
         - https://www.googleapis.com/auth/userinfo.profile
 
 upload:
-  #store: aws
   region: northamerica-northeast1
   bucket: spume-musicproject
   encoder:
     logging: false
     enabled: false
 
-middleware:
-  logger: true
-  ratelimit: false
-
 repository:
   postgres:
+    schema: database/schema.sql
     image: postgres:alpine
+
+test:
+  showErrorDetails: false
+  loadTestdata: false

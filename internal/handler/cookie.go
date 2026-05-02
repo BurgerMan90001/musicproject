@@ -15,3 +15,7 @@ func setCookie(w http.ResponseWriter, cookie Cookie, value string, maxAge int) {
 func clearCookie(w http.ResponseWriter, cookie Cookie) {
 	http.SetCookie(w, cookie.Clear())
 }
+
+func setCookieHeader() {
+	
+}

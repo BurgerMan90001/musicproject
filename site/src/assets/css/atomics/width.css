@@ -1,0 +1,35 @@
+
+.width-75 {
+  width: 75px;
+}
+.width-100 {
+  width: 100px;
+}
+.width-150 {
+  width: 150px;
+}
+.width-200 {
+  width: 200px;
+}
+.width-250 {
+  width: 250px;
+}
+.width-300 {
+  width: 300px;
+}
+
+.max-width-250 {
+  max-width: 250px;
+}
+
+.width-auto {
+  width: auto;
+}
+
+.width-full {
+  width: 100%;
+}
+
+.height-full {
+  min-height: 100%;
+}

@@ -2,78 +2,68 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 
 	"github.com/google/uuid"
-	"musicproject.com/internal/repository"
-	"musicproject.com/pkg/model"
+	"songsled.com/internal/repository/postgres/gensqlc"
+	"songsled.com/pkg/model"
 )
 
 type Song struct {
-	db *sql.DB
+	q *gensqlc.Queries
 }
 
-func NewSong(db *sql.DB) *Song {
-	return &Song{db}
+func toSong(s gensqlc.Song) *model.Song {
+	return &model.Song{
+		SongID: s.SongID,
+		// AlbumID:  s.AlbumID,
+		// UserID:   s.UserID,
+
+		Name:     s.SongName,
+		Streams:  int(s.Streams),
+		Duration: int(s.Duration),
+		Image:    s.SongImage.String,
+		URL:      s.SongUrl,
+	}
 }
 
-func (r *Song) GetByID(ctx context.Context, songId uuid.UUID) (*model.Song, error) {
-	var (
-		name         string
-		genre        string
-		streams      int
-		duration     int
-		image        string
-		creationDate string
-		src          string
-	)
-	query := "SELECT name, genre, streams, duration, image, creation_date FROM songs WHERE song_id=$1"
-	row := r.db.QueryRowContext(ctx, query, songId)
-	if err := row.Scan(&name, &genre, &streams, &duration, &image, &creationDate, &src); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, repository.ErrNotFound
-		}
-		return nil, err
-	}
-	song := &model.Song{
-		ID:       songId,
-		Name:     name,
-		Genre:    genre,
-		Streams:  streams,
-		Duration: duration,
-		Image:    image,
-		Source:   src,
-	}
-	return song, nil
+func NewSong(q *gensqlc.Queries) *Song {
+	return &Song{q}
 }
-func (r *Song) GetSongsByGenre(ctx context.Context, genre string) ([]*model.Song, error) {
-	query := "SELECT id, WHERE genre=$1"
-	rows, err := r.db.QueryContext(ctx, query, genre)
+
+func (r *Song) GetSongByID(ctx context.Context, songId uuid.UUID) (*model.Song, error) {
+	s, err := r.q.GetSongByID(ctx, songId)
+	
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, repository.ErrNotFound
-		}
 		return nil, err
 	}
-	defer rows.Close()
+	s.SongID = songId
+	return toSong(s), nil
+}
 
-	var songs []model.Song
-	for rows.Next() {
-		var ()
-		//rows.Scan(&)
-		songs = append(songs, model.Song{})
+// func (r *Song) GetSongsByGenre(ctx context.Context, genre string) ([]*model.Song, error) {
+
+//		return nil, nil
+//	}
+func (r *Song) GetSongRandom(ctx context.Context, n int) ([]model.Song, error) {
+	res, err := r.q.GetSongRandom(ctx, int32(n))
+	if err != nil {
+		return nil, err
 	}
+	var songs []model.Song
+	for _, s := range res {
+		songs = append(songs, *toSong(s))
+
+	}
+	return songs, nil
+}
+func (r *Song) PutSong(ctx context.Context, s *model.Song) (uuid.UUID, error) {
+	return uuid.Max, nil
+}
+func (r *Song) Search(ctx context.Context) ([]model.Song, error) {
 	return nil, nil
 }
-func (r *Song) Put(ctx context.Context, song *model.Song) (uuid.UUID, error) {
-	return uuid.Nil, nil
-}
-func (r *Song) DeleteByID(ctx context.Context, id uuid.UUID) error {
+
+func (r *Song) DeleteSongByID(ctx context.Context, id uuid.UUID) error {
 
 	return nil
-}
-
-func (r *Song) SearchSongs(ctx context.Context) ([]*model.Song, error) {
-	return nil, nil
 }

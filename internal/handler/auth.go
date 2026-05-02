@@ -2,12 +2,11 @@ package handler
 
 import (
 	"context"
-	"log"
 	"net/http"
 
-	"musicproject.com/internal/jsonutil"
-	"musicproject.com/internal/services/auth"
-	"musicproject.com/pkg/model"
+	"songsled.com/internal/jsonutil"
+	"songsled.com/internal/services/auth"
+	"songsled.com/pkg/model"
 )
 
 type authService interface {
@@ -21,15 +20,15 @@ type emailService interface {
 
 func handleSignup(authService authService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			jsonutil.WriteMethodNotAllowed(w)
-			return
-		}
+
 		ctx := r.Context()
 
 		signup, err := jsonutil.ReadJson[model.SignupRequest](r.Body)
 		if err != nil {
-			jsonutil.WriteError(w, err)
+			jsonutil.WriteError(w, &model.Error{
+				Code:    http.StatusBadRequest,
+				Message: "Invalid signup credentials",
+			})
 			return
 		}
 
@@ -49,10 +48,7 @@ func handleSignup(authService authService) http.HandlerFunc {
 
 func handleLogin(authService authService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			jsonutil.WriteMethodNotAllowed(w)
-			return
-		}
+
 		ctx := r.Context()
 
 		login, err := jsonutil.ReadJson[model.LoginRequest](r.Body)
@@ -76,13 +72,13 @@ func handleLogin(authService authService) http.HandlerFunc {
 
 func handleRefresh(authService authService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		// Allowed methods
-		case http.MethodPost, http.MethodGet:
-		default:
-			jsonutil.WriteMethodNotAllowed(w)
-			return
-		}
+		// switch r.Method {
+		// // Allowed methods
+		// case http.MethodPost, http.MethodGet:
+		// default:
+		// 	jsonutil.WriteMethodNotAllowed(w)
+		// 	return
+		// }
 
 		// Try getting refresh token from cookie
 		cookie, err := r.Cookie(string(model.TokenRefresh))
@@ -90,7 +86,7 @@ func handleRefresh(authService authService) http.HandlerFunc {
 			jsonutil.WriteError(w, &model.Error{
 				Code:    http.StatusUnauthorized,
 				Message: "No refresh token",
-				Details: []string{err.Error()},
+				Details: err.Error(),
 			})
 			return
 		}
@@ -109,15 +105,12 @@ func handleRefresh(authService authService) http.HandlerFunc {
 
 func handleLogout(authService authService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			jsonutil.WriteMethodNotAllowed(w)
-			return
-		}
+
 		ctx := r.Context()
 
 		cookie, err := r.Cookie(string(model.TokenRefresh))
 		if err != nil {
-			jsonutil.WriteError(w, auth.ErrNoToken)
+			jsonutil.WriteError(w, auth.ErrInvalidToken())
 			return
 		}
 
@@ -136,10 +129,7 @@ func handleLogout(authService authService) http.HandlerFunc {
 
 func handleEmailReset(emailService emailService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			jsonutil.WriteMethodNotAllowed(w)
-			return
-		}
+		jsonutil.NotImplemented(w)
 
 	}
 }
@@ -160,17 +150,16 @@ func handleOauthRedirect(oauth auth.Oauth) http.HandlerFunc {
 
 		stateCookie, err := r.Cookie("oauthState")
 		if state != stateCookie.Value || err != nil {
-			log.Println("invalid google oauth state")
-			http.Redirect(w, r, "/", http.StatusFound)
+			jsonutil.WriteError(w, err)
 			return
 		}
 
 		user, tokenPair, err := oauth.Login(ctx, code)
 		if err != nil {
-			http.Redirect(w, r, "/", http.StatusFound)
+			jsonutil.WriteError(w, err)
 			return
 		}
-		// TODO set proper max ages
+
 		setCookie(w, model.TokenAccess, tokenPair.AccessToken, 86400)
 		setCookie(w, model.TokenRefresh, tokenPair.RefreshToken, 86400)
 

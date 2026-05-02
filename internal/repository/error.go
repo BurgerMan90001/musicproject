@@ -3,7 +3,7 @@ package repository
 import (
 	"net/http"
 
-	"musicproject.com/pkg/model"
+	"songsled.com/pkg/model"
 )
 
 var (
@@ -11,8 +11,16 @@ var (
 		Code:    http.StatusNotFound,
 		Message: "Resource not found",
 	}
-	ErrTokenRevoked = &model.Error{
-		Code:    http.StatusUnauthorized,
-		Message: "Token revoked",
+	ErrUserNotFound = &model.Error{
+		Code:    http.StatusNotFound,
+		Message: "User not found",
+	}
+	ErrEmailTaken = &model.Error{
+		Code:    http.StatusConflict,
+		Message: "Email is already taken",
+	}
+	ErrSongNotFound = &model.Error{
+		Code:    http.StatusNotFound,
+		Message: "Song not found",
 	}
 )

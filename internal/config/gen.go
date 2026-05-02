@@ -17,6 +17,7 @@ type Jwt struct {
 	Audience []string `yaml:"audience"`
 }
 type Google struct {
+	UserInfoURL string   `yaml:"userInfoUrl"`
 	RedirectURL string   `yaml:"redirectUrl"`
 	Scopes      []string `yaml:"scopes"`
 }
@@ -32,7 +33,6 @@ type Encoder struct {
 	Enabled bool `yaml:"enabled"`
 }
 type Upload struct {
-	Store   string  `yaml:"store"`
 	Region  string  `yaml:"region"`
 	Bucket  string  `yaml:"bucket"`
 	Encoder Encoder `yaml:"encoder"`
@@ -42,7 +42,8 @@ type Middleware struct {
 	Ratelimit bool `yaml:"ratelimit"`
 }
 type Postgres struct {
-	Image string `yaml:"image"`
+	Schema string `yaml:"schema"`
+	Image  string `yaml:"image"`
 }
 type Repository struct {
 	Postgres Postgres `yaml:"postgres"`

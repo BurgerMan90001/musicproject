@@ -10,9 +10,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"musicproject.com/pkg/model"
+	"songsled.com/pkg/model"
 )
 
+func BenchmarkWriteJSON(b *testing.B) {
+
+}
 func TestWriteJSON(t *testing.T) {
 	t.Parallel()
 
@@ -127,6 +130,13 @@ func TestWriteError(t *testing.T) {
 			},
 			wantCode: http.StatusInternalServerError,
 		},
+		{
+			name: "no message",
+			err: &model.Error{
+				Code: http.StatusBadGateway,
+			},
+			wantCode: http.StatusInternalServerError,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -165,13 +175,11 @@ func TestWriteError(t *testing.T) {
 	})
 }
 
-
 func TestReadJSON(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct{
+	tests := []struct {
 		name string
-
 	}{
 		{
 			name: "",
@@ -184,6 +192,6 @@ func TestReadJSON(t *testing.T) {
 		})
 	}
 	t.Run("success", func(t *testing.T) {
-		
+
 	})
 }

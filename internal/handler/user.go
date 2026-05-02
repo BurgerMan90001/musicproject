@@ -1,60 +1,69 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/google/uuid"
-	"musicproject.com/internal/jsonutil"
-	"musicproject.com/internal/repository"
+	"songsled.com/internal/jsonutil"
+	"songsled.com/pkg/model"
 )
 
-func handleUsers(userRepo repository.User) http.HandlerFunc {
+type userRepo interface {
+	GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error)
+	DeleteUserByID(ctx context.Context, id uuid.UUID) error
+}
+
+func handleUsers(userRepo userRepo) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			jsonutil.WriteMethodNotAllowed(w)
-			return
-		}
+
+		jsonutil.NotImplemented(w)
 	}
 }
-func handleUsersID(userRepo repository.User) http.HandlerFunc {
+func handleGetUsersId(userRepo userRepo) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(r.PathValue("id"))
 		if err != nil {
-			jsonutil.WriteJSON(w, err, http.StatusBadRequest)
+			jsonutil.WriteError(w, &model.Error{
+				Code:    http.StatusNotFound,
+				Message: "User not found",
+			})
 			return
 		}
 		ctx := r.Context()
 
-		switch r.Method {
-		case http.MethodGet:
-
-			user, err := userRepo.GetByID(ctx, id)
-			if err != nil {
-				jsonutil.WriteError(w, err)
-				return
-			}
-			user.PasswordHash = ""
-			jsonutil.WriteJSON(w, user, http.StatusOK)
-
-		case http.MethodDelete:
-			/*
-				claims, err := auth.JWTParseToken(jwtKey, r)
-
-				if err != nil {
-					w.WriteHeader(http.StatusUnauthorized)
-					fmt.Fprintln(w, "Invalid token:", err)
-					return
-				}
-			*/
-
-			err := userRepo.DeleteByID(ctx, id)
-			if err != nil {
-				jsonutil.WriteError(w, err)
-				return
-			}
-
-		default:
-			jsonutil.WriteMethodNotAllowed(w)
+		user, err := userRepo.GetUserByID(ctx, id)
+		if err != nil {
+			jsonutil.WriteError(w, err)
+			return
 		}
+		user.PasswordHash = ""
+		jsonutil.WriteJSON(w, user, http.StatusOK)
+
+	}
+}
+
+func handleDelteUsersId(userRepo userRepo) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := uuid.Parse(r.PathValue("id"))
+		if err != nil {
+			jsonutil.WriteError(w, &model.Error{
+				Code:    http.StatusNotFound,
+				Message: "User not found",
+			})
+			return
+		}
+		ctx := r.Context()
+
+		if err := userRepo.DeleteUserByID(ctx, id); err != nil {
+			jsonutil.WriteError(w, err)
+			return
+		}
+
+	}
+}
+
+func handleUserHistory() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 	}
 }

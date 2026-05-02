@@ -5,11 +5,10 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
-	"musicproject.com/internal/repository"
-	"musicproject.com/pkg/model"
+	"songsled.com/internal/repository"
+	"songsled.com/pkg/model"
 )
 
-var _ repository.User = (*User)(nil)
 
 type User struct {
 	mu     sync.RWMutex

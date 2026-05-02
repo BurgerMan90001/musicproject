@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"musicproject.com/pkg/model"
+	"songsled.com/pkg/model"
 )
 
 var ErrRateLimit = &model.Error{

@@ -10,6 +10,7 @@ type User struct {
 	ID           uuid.UUID `json:"id"`
 	Email        string    `json:"email"`
 	PasswordHash string    `json:" - "`
+	Roles        []string  `json:"roles"`
 	CreatedAt    time.Time `json:"createdAt"`
 	AvatarURL    string    `json:"avatarUrl,omitempty"`
 }

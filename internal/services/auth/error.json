@@ -6,5 +6,9 @@
   "mismatchPassword": {
     "code": "",
     "message": ""
+  },
+  "test": {
+    "code": "",
+    "message": ""
   }
 }

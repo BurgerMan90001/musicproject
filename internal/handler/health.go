@@ -4,11 +4,11 @@ import (
 	"net/http"
 	"time"
 
-	"musicproject.com/internal/jsonutil"
-	"musicproject.com/pkg/model"
+	"songsled.com/internal/jsonutil"
+	"songsled.com/pkg/model"
 )
 
-func handleHealth(w http.ResponseWriter, r *http.Request) {
+func handleHealth(w http.ResponseWriter, _ *http.Request) {
 	jsonutil.WriteJSON(w, model.HealthResponse{
 		Message:   "alive",
 		Timestamp: time.Now().UTC(),

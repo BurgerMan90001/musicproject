@@ -1,0 +1,57 @@
+/* Font weight */
+.font-weight-semilight {
+  font-weight: 200;
+}
+.font-weight-light {
+  font-weight: 100;
+}
+
+.font-weight-normal {
+  font-weight: var(--font-weight-normal);
+}
+
+.font-weight-bold {
+  font-weight: 700;
+}
+
+.font-weight-semibold {
+  font-weight: 600;
+}
+/* Font size */
+.font-size-xxs {
+  font-size: 0.5rem;
+}
+.font-size-xs {
+  font-size: 0.75rem;
+}
+.font-size-sm {
+  font-size: 0.9rem;
+}
+.font-size-md {
+  font-size: 1rem;
+}
+.font-size-lg {
+  font-size: 1.25rem;
+}
+.font-size-xl {
+  font-size: 1.5rem;
+}
+.font-size-xxl {
+  font-size: 1.75rem;
+}
+
+.text-align-left {
+  text-align: left;
+}
+
+.text-align-center {
+  text-align: center;
+}
+
+.line-height {
+  line-height: normal;
+}
+
+.letter-spacing-wide {
+  letter-spacing: 0.2rem;
+}

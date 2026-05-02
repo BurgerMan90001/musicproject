@@ -1,0 +1,40 @@
+.image {
+  display: block;
+  position: relative;
+}
+
+.image.image-16 {
+  width: 16px;
+  height: 16px;
+}
+.image.image-32 {
+  width: 32px;
+  height: 32px;
+}
+
+.image.image-36 {
+    width: 36px;
+  height: 36px;
+}
+.image.image-48 {
+  width: 48px;
+  height: 48px;
+}
+
+.image.image-64 {
+  width: 64px;
+  height: 64px;
+}
+.image.image-88 {
+  width: 88px;
+  height: 88px;
+}
+.image.image-112 {
+  width: 112px;
+  height: 112px;
+}
+
+.image.image-128 {
+  width: 128px;
+  height: 128px;
+}

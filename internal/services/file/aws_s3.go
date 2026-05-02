@@ -44,7 +44,7 @@ func (s *AWSS3) CreateObject(ctx context.Context, bucket string, key string,
 
 // Returns a presigned url to upload files to
 func (s *AWSS3) CreateObjectUrl(ctx context.Context,
-	bucket, key string, cacheble bool, ttl time.Duration) (string, error) {
+	bucket, key string, cacheble bool, ttl time.Duration) (string, string, error) {
 	putInput := s.newPutInput(bucket, key,
 		nil, cacheble, "")
 
@@ -52,10 +52,10 @@ func (s *AWSS3) CreateObjectUrl(ctx context.Context,
 		s3.WithPresignExpires(30 * time.Minute)
 	})
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-
-	return presignUrl.URL, nil
+	// TODO
+	return presignUrl.URL, "", nil
 }
 func (s *AWSS3) newPutInput(bucket string, key string,
 	contents []byte, cacheble bool, contentType string) *s3.PutObjectInput {

@@ -30,16 +30,16 @@ func (s *FileSystem) CreateObject(ctx context.Context, folder, filename string,
 	return nil
 }
 func (s *FileSystem) CreateObjectUrl(ctx context.Context, folder, filename string,
-	cacheble bool, ttl time.Duration) (string, error) {
+	cacheble bool, ttl time.Duration) (string, string, error) {
 	if filename == "" {
-		return "", errors.New("Create object: filename is empty")
+		return "", "", errors.New("Create object: filename is empty")
 	}
 	path := filepath.Join(folder, filename)
 
 	// if err := os.WriteFile(path, contents, 0o600); err != nil {
 	// 	return "", fmt.Errorf("Create object: %w", err)
 	// }
-	return path, nil
+	return path, "", nil
 }
 func (s *FileSystem) GetObject(ctx context.Context, folder string, filename string) ([]byte, error) {
 	path := filepath.Join(folder, filename)

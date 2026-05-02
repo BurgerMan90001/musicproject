@@ -1,0 +1,66 @@
+/* Modification of Atlas Design by Microsoft */
+
+@import url("./root.css");
+@import url("./atomics/color.css");
+@import url("./atomics/spacing.css");
+@import url("./atomics/typography.css");
+@import url("./atomics/display.css");
+@import url("./atomics/width.css");
+@import url("./components/button.css");
+@import url("./components/input.css");
+@import url("./components/popover.css");
+@import url("./atomics/border.css");
+@import url("./atomics/position.css");
+@import url("./components/image.css");
+/* #root {
+  display: flex;
+} */
+
+#test {
+  display: grid;
+
+  grid-template-rows: auto 1fr auto;
+}
+.hero {
+  min-height: var(--hero-height);
+}
+.toggle {
+}
+.scroll-horizontal {
+  overflow: auto hidden;
+}
+
+.scroll-vertical {
+  overflow: hidden auto;
+}
+
+.box-shadow {
+  box-shadow: var(--box-shadow);
+}
+/* Media */
+.media {
+}
+.media-content {
+}
+
+.icon {
+  width: 1em;
+  height: 1em;
+}
+
+/* .border-radius-8 {
+  border-radius: 8px;
+}
+.border-radius-16 {
+  border-radius: 16px;
+} */
+
+@media (max-width: 700px) {
+  .colapse-700 {
+    visibility: hidden;
+  }
+}
+
+.height-250 {
+  height: 250px;
+}

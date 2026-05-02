@@ -1,0 +1,64 @@
+/* .button:hover {
+  background-color: var(--color-body-medium);
+} */
+/* button {
+  border: none;
+  cursor: pointer;
+} */
+.button-clear {
+  border: none;
+  cursor: pointer;
+  background-color: inherit;
+}
+.button-clear:hover {
+  filter: brightness(75%);
+}
+.button-clear:active {
+  filter: brightness(50%);
+}
+
+/* .button, */
+.button-dark {
+  border: none;
+  cursor: pointer;
+  background-color: var(--color-body-dark);
+}
+.button-dark:hover {
+  background-color: var(--color-body-darker);
+}
+.button-dark:active {
+  background-color: var(--color-body-darkest);
+}
+
+.button-filled {
+  background-color: var(--color-alt);
+}
+.button-filled:hover {
+  background-color: var(--color-alt-medium);
+}
+.button-filled:active {
+  background-color: var(--color-alt-dark);
+}
+/* a,
+button,
+input {
+  background-color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+} */
+
+.button-primary {
+  background-color: var(--color-primary);
+  transition: background-color 0.25s;
+}
+
+.button-primary:hover {
+  background-color: var(--color-primary-medium);
+}
+.button-primary:active {
+  background-color: var(--color-primary-dark);
+}
+/* button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+} */

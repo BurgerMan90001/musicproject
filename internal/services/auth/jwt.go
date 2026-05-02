@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -8,9 +9,45 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"musicproject.com/internal/config"
-	"musicproject.com/pkg/model"
+	"github.com/redis/go-redis/v9"
+	"songsled.com/pkg/model"
 )
+
+type blocklist struct {
+	rdb *redis.Client
+}
+
+func newBlocklist(rdb *redis.Client) (*blocklist, error) {
+	if rdb == nil {
+		return nil, fmt.Errorf("newBlocklist: Redis.Client is nil")
+	}
+	return &blocklist{rdb}, nil
+}
+
+func (r *blocklist) revokeToken(ctx context.Context, claims *model.Claims) error {
+	ttl := time.Until(claims.ExpiresAt.Time)
+	// Already expired
+	if ttl <= 0 {
+		return nil
+	}
+	// jti is the token's id
+	key := fmt.Sprintf("blocklist:jti:%s", claims.ID)
+
+	return r.rdb.Set(ctx, key, "1", ttl).Err()
+}
+
+func (r *blocklist) revoked(ctx context.Context, jti string) error {
+	exists, err := r.rdb.Exists(ctx, fmt.Sprintf("blocklist:jti:%s", jti)).Result()
+	if err != nil {
+		return fmt.Errorf("blocklist.revoked: %w", err)
+
+	}
+	// Token revoked
+	if exists > 0 {
+		return ErrInvalidToken(err)
+	}
+	return nil
+}
 
 type JWTService struct {
 	key       []byte
@@ -20,29 +57,36 @@ type JWTService struct {
 	ttl       time.Duration
 }
 
-func NewJWTService(cfg config.Jwt, envVar string, tokenType model.TokenType, ttl time.Duration) (*JWTService, error) {
+func NewJWTService(
+	issuer string,
+	audience []string,
+	tokenType model.TokenType,
+	ttl time.Duration,
+	envVar string,
+) (*JWTService, error) {
 	key := os.Getenv(envVar)
 	if len(key) < 32 {
-		return nil, fmt.Errorf("env var %q must be at least 32 bytes long", envVar)
+		return nil, fmt.Errorf("NewJWTService: env var %q must be at least 32 bytes long", envVar)
 	}
-	if len(cfg.Audience) == 0 || cfg.Audience[0] == "" {
-		return nil, fmt.Errorf("jwt audience is empty")
+	if len(audience) == 0 || audience[0] == "" {
+		return nil, fmt.Errorf("NewJWTService: jwt audience is empty")
 	}
 	switch tokenType {
 	// Valid types
 	case model.TokenAccess, model.TokenRefresh:
 	default:
-		return nil, ErrInvalidTokenType
+		return nil, fmt.Errorf("NewJWTService: invalid tokenType %v", tokenType)
 	}
+
 	return &JWTService{
 		key:       []byte(key),
-		issuer:    cfg.Issuer,
+		issuer:    issuer,
 		tokenType: tokenType,
-		audience:  cfg.Audience,
+		audience:  audience,
 		ttl:       ttl,
 	}, nil
 }
-func (s *JWTService) GenerateToken(userId uuid.UUID, roles []string) (string, error) {
+func (s *JWTService) GenerateToken(userId uuid.UUID, roles ...string) (string, error) {
 	if roles == nil {
 		roles = defaultRoles
 	}
@@ -65,8 +109,8 @@ func (s *JWTService) GenerateToken(userId uuid.UUID, roles []string) (string, er
 	return token.SignedString(s.key)
 }
 
-func (s *JWTService) ValidateToken(tokenString string) (*model.Claims, error) {
-	
+func (s *JWTService) ValidateToken(ctx context.Context, tokenString string) (*model.Claims, error) {
+
 	token, err := jwt.ParseWithClaims(
 		tokenString,
 		&model.Claims{},
@@ -85,15 +129,16 @@ func (s *JWTService) ValidateToken(tokenString string) (*model.Claims, error) {
 		return nil, &model.Error{
 			Code:    http.StatusUnauthorized,
 			Message: "Invalid jwt token",
-			Details: []string{err.Error()},
+			Details: err.Error(),
 		}
 	}
 	claims, ok := token.Claims.(*model.Claims)
 	switch {
-	case !ok || !token.Valid:
-		return nil, ErrInvalidClaims
-	case claims.TokenType != string(s.tokenType):
-		return nil, ErrInvalidTokenType
+	case !ok || !token.Valid,
+		claims.TokenType != string(s.tokenType):
+		return nil, ErrInvalidToken(err)
+
 	}
+
 	return claims, nil
 }

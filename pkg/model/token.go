@@ -21,7 +21,6 @@ func (t TokenType) Cookie(value string, maxAge int) *http.Cookie {
 		MaxAge:   maxAge,
 	}
 }
-
 func (t TokenType) Clear() *http.Cookie {
 	return t.Cookie("", -1)
 }

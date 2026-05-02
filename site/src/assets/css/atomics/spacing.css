@@ -1,0 +1,169 @@
+/* Gap */
+
+.gap-xxs {
+  gap: 0.5rem;
+}
+
+.gap-xs {
+  gap: 1rem;
+}
+.gap-sm {
+  gap: 1.5rem;
+}
+.gap-md {
+  gap: 2rem;
+}
+.gap-lg {
+  gap: 3rem;
+}
+
+/* Padding */
+.padding-xxs {
+  padding: 0.5rem;
+}
+.padding-xs {
+  padding: 1rem;
+}
+.padding-sm {
+  padding: 1.5rem;
+}
+.padding-md {
+  padding: 2rem;
+}
+.padding-lg {
+  padding: 3rem;
+}
+.padding-xl {
+  padding: 4rem;
+}
+.padding-xxl {
+  padding: 6rem;
+}
+.padding-block-xxs {
+  padding-block: 0.5rem;
+}
+.padding-block-xs {
+  padding-block: 1rem;
+}
+.padding-block-sm {
+  padding-block: 1.5rem;
+}
+.padding-block-md {
+  padding-block: 2rem;
+}
+.padding-block-lg {
+  padding-block: 3rem;
+}
+.padding-block-xl {
+  padding-block: 4rem;
+}
+.padding-block-auto {
+  padding-block: auto;
+}
+.padding-inline-xxs {
+  padding-inline: 0.5rem;
+}
+.padding-inline-xs {
+  padding-inline: 1rem;
+}
+.padding-inline-sm {
+  padding-inline: 1.5rem;
+}
+.padding-inline-md {
+  padding-inline: 2rem;
+}
+.padding-inline-lg {
+  padding-inline: 3rem;
+}
+
+.padding-auto {
+  padding: auto;
+}
+/* Margin */
+.margin-xxs {
+  margin: 0.75rem;
+}
+.margin-xs {
+  margin: 1rem;
+}
+.margin-sm {
+  margin: 1.5rem;
+}
+.margin-md {
+  margin: 2rem;
+}
+.margin-lg {
+  margin: 3rem;
+}
+.margin-xl {
+  margin: 4rem;
+}
+.margin-xxl {
+  margin: 6rem;
+}
+
+.margin-0 {
+  margin: 0;
+}
+/* Margin Block  */
+.margin-block-sm {
+  margin-block: 1.5rem;
+}
+
+/* Margin Inline */
+.margin-inline-xxs {
+  margin-inline: 0.75rem;
+}
+.margin-inline-xs {
+  margin-inline: 1rem;
+}
+.margin-inline-sm {
+  margin-inline: 1.5rem;
+}
+.margin-inline-md {
+  margin-inline: 2rem;
+}
+.margin-inline-lg {
+  margin-inline: 3rem;
+}
+.margin-inline-xl {
+  margin-inline: 4rem;
+}
+.margin-inline-xxl {
+  margin-inline: 6rem;
+}
+.margin-inline-xxxl {
+  margin-inline: 8rem;
+}
+/* Margin Block */
+.margin-block-xxs {
+  margin-block: 0.75rem;
+}
+.margin-block-xs {
+  margin-block: 1rem;
+}
+.margin-block-sm {
+  margin-block: 1.5rem;
+}
+.margin-block-md {
+  margin-block: 2rem;
+}
+.margin-block-lg {
+  margin-block: 3rem;
+}
+.margin-left-auto {
+  margin-left: auto;
+}
+.margin-right-auto {
+  margin-right: auto;
+}
+.margin-auto {
+  margin: auto;
+}
+
+.margin-auto-0 {
+  margin: auto 0;
+}
+.margin-0-auto {
+  margin: 0 auto;
+}

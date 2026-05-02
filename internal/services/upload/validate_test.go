@@ -4,10 +4,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"musicproject.com/pkg/model"
+	"songsled.com/pkg/model"
 )
 
-func TestValidateUploadRequest(t *testing.T) {
+func TestUploadRequestValidate(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -28,10 +28,29 @@ func TestValidateUploadRequest(t *testing.T) {
 			name:    "nil request",
 			wantErr: true,
 		},
+		{
+			name:    "empty name",
+			wantErr: true,
+			req: &model.UploadSongRequest{
+				Genre:    "asdasd",
+				Image:    "asdasd",
+				Filename: "awwww",
+			},
+		},
+		{
+			name:    "empty genre",
+			wantErr: true,
+			req: &model.UploadSongRequest{
+				Name:     "asdasd",
+				Image:    "asdasd",
+				Filename: "awwww",
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			err := validateUploadRequest(tt.req)
 			if tt.wantErr {
 				assert.Error(t, err)

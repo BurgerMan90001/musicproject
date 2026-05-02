@@ -6,26 +6,30 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
-	"musicproject.com/internal/config"
-	"musicproject.com/internal/config/secrets"
-	"musicproject.com/internal/handler"
-	"musicproject.com/internal/repository/postgres"
-	"musicproject.com/internal/server"
-	"musicproject.com/internal/services/file"
+	"github.com/redis/go-redis/v9"
+	"songsled.com/internal/config"
+	"songsled.com/internal/config/secrets"
+	"songsled.com/internal/handler"
+	"songsled.com/internal/repository/postgres"
+	"songsled.com/internal/server"
+	"songsled.com/internal/services/file"
 )
 
 func main() {
 	var (
 		envFile    string
 		configFile string
+		schemaFile string
 	)
-	
-	flag.StringVar(&envFile, "envFile", "config/.env.dev", "specifies the location of the env file")
-	flag.StringVar(&configFile, "config", "config/config.dev.yml", "specifies the location of the config file")
 
+	flag.StringVar(&envFile, "envFile", filepath.Join("config", ".env.dev"), "specifies the location of the env file")
+	flag.StringVar(&configFile, "config", filepath.Join("config", "config.dev.yml"), "specifies the location of the config file")
+	flag.StringVar(&schemaFile, "schema", filepath.Join("database", "schema.sql"), "specifies the location of the schema file")
 	flag.Parse()
 
 	ctx, done := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -36,15 +40,14 @@ func main() {
 		}
 	}()
 
-	if err := run(ctx, configFile, envFile); err != nil {
+	if err := run(ctx, configFile, envFile, schemaFile); err != nil {
 		log.Fatal(err)
 	}
 
 	slog.Info("Server shutdown")
 }
 
-func run(ctx context.Context, configFile, envFile string) error {
-
+func run(ctx context.Context, configFile, envFile, schemaFile string) error {
 	if err := secrets.ReadEnvFile(envFile); err != nil {
 		return fmt.Errorf("Load env file: %v", err)
 	}
@@ -55,9 +58,16 @@ func run(ctx context.Context, configFile, envFile string) error {
 	}
 
 	//create database connection
-	db, err := postgres.NewDB(ctx)
+	repo, err := postgres.New(ctx)
 	if err != nil {
 		return fmt.Errorf("New postgres connection: %v", err)
+	}
+	defer repo.DB.Close()
+	if err := repo.ExecFile(ctx, schemaFile); err != nil {
+		return err
+	}
+	if os.Getenv("LOAD_TESTDATA") == "true" {
+		err = repo.ExecFile(ctx, filepath.Join("test", "integration", "testdata", "testdata.sql"))
 	}
 	// create server
 	server, err := server.NewServer(cfg.API.Port)
@@ -69,8 +79,17 @@ func run(ctx context.Context, configFile, envFile string) error {
 	if err != nil {
 		return err
 	}
+
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+
+	defer rdb.Close()
+
 	// create handler
-	handler, err := handler.NewMux(ctx, cfg, store, db)
+	handler, err := handler.New(ctx, cfg, store, repo, rdb)
 	if err != nil {
 		return fmt.Errorf("New mux handler: %w", err)
 	}

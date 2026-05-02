@@ -4,13 +4,17 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"embed"
 	"errors"
 	"fmt"
 	"html/template"
 	"net/smtp"
 
-	"musicproject.com/internal/config/secrets"
+	"songsled.com/internal/config/secrets"
 )
+
+//go:embed template/*
+var templates embed.FS
 
 type Email struct {
 	subject string
@@ -30,8 +34,9 @@ type Service struct {
 	client *smtp.Client
 }
 
+// Creates a new smtp service
 func New() (*Service, error) {
-	secretList, err := secrets.GetEnvMap("SMTP_EMAIL",
+	secretList, err := secrets.GetenvMap("SMTP_EMAIL",
 		"SMTP_PASSWORD", "SMTP_HOST", "SMTP_PORT")
 	if err != nil {
 		return nil, err

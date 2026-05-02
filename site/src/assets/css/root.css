@@ -1,0 +1,133 @@
+/* Default settings */
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  overflow-wrap: break-word;
+}
+:root {
+  /* --orange-500: rgba(168, 81, 0, 0.726);
+  --orange-700: rgba(228, 110, 0, 0.726); */
+  --red-50: hsl(0, 76%, 47%);
+
+  --orange-60: hsl(24, 80%, 60%);
+  --orange-50: hsl(24, 80%, 50%);
+
+  --blue-50: hsl(221, 80%, 50%);
+  --blue-40: hsl(221, 80%, 40%);
+  --blue-30: hsl(221, 80%, 30%);
+
+  --black-20: hsl(0, 0%, 20%);
+  --black-15: hsl(0, 0%, 15%);
+  --black-10: hsl(0, 0%, 10%);
+  --black-8: hsl(0, 0%, 8%);
+  --black-5: hsl(0, 0%, 5%);
+}
+:root {
+  --box-shadow: rgba(0, 0, 0, 0.11) 3px 8px 8px;
+
+  --navbar-height: 40px;
+
+  /* Dark theme */
+  --color-text: hsl(0, 0%, 95%);
+  --color-text-subtle: hsl(0, 0%, 70%);
+
+  --color-text-invert: var(--black-15);
+  --color-text-invert-medium: var(--black-10);
+  --color-text-invert-dark: var(--black-8);
+
+  --color-body: var(--black-20);
+  --color-body-medium: var(--black-15);
+  --color-body-dark: var(--black-10);
+  --color-body-darker: var(--black-8);
+  --color-body-darkest: var(--black-5);
+
+  --color-alt: hsl(0, 0%, 95%);
+  --color-alt-medium: hsl(0, 0%, 90%);
+  --color-alt-dark: hsl(0, 0%, 86%);
+
+  --theme-border: rgb(83, 83, 83);
+
+  --color-primary: var(--blue-50);
+  --color-primary-medium: var(--blue-40);
+  --color-primary-dark: var(--blue-30);
+
+  --color-danger: var(--red-50);
+
+  --font-weight-normal: 400;
+
+  /* Defaults */
+  color: var(--color-text);
+  background-color: var(--color-body-medium);
+
+  font-weight: var(--font-weight-normal);
+
+  --hero-height: 200px;
+}
+
+/* @media (prefers-color-scheme: light) {
+
+  :root {
+    background-color: var(--white);
+  }
+  button {
+    background-color: var(--white);
+  }
+} */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+  }
+}
+button {
+  border: none;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+}
+input {
+  font-size: inherit;
+  border: none;
+  text-decoration: none;
+  background-color: inherit;
+}
+input:focus {
+  outline: none;
+}
+
+ul {
+  list-style: none;
+}
+
+p,
+h1,
+h2,
+h3,
+h4,
+h5 {
+  margin: 0;
+  padding: 0;
+}
+ul {
+  margin: 0;
+  padding: 0;
+}
+a {
+  color: var(--color);
+  text-decoration: none;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  height: 100%;
+}

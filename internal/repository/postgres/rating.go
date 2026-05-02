@@ -2,62 +2,31 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 
 	"github.com/google/uuid"
-	"musicproject.com/internal/repository"
-	"musicproject.com/pkg/model"
+	"songsled.com/internal/repository/postgres/gensqlc"
 )
 
 type Rating struct {
-	db *sql.DB
+	q *gensqlc.Queries
 }
 
-func NewRating(db *sql.DB) *Rating {
-	return &Rating{db}
+func NewRating(q *gensqlc.Queries) *Rating {
+	return &Rating{q}
 }
 
+// TODO FIX rating conversions
 // Song rating methods
-func (r *Rating) GetRatings(ctx context.Context, songId uuid.UUID) ([]model.Rating, error) {
-	query := "SELECT user_id, value FROM ratings WHERE song_id=$1"
-	rows, err := r.db.QueryContext(ctx, query, songId)
+func (r *Rating) GetAggregatedRating(ctx context.Context, songId uuid.UUID) (float64, error) {
+	ratings, err := r.q.GetAggregatedRating(ctx, songId)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, repository.ErrNotFound
-		}
-		return nil, err
-	}
-	defer rows.Close()
-
-	var ratings []model.Rating
-
-	for rows.Next() {
-		var (
-			userId uuid.UUID
-			value  float64
-		)
-		if err := rows.Scan(&userId, &value); err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, repository.ErrNotFound
-			}
-			return nil, err
-		}
-		ratings = append(ratings, model.Rating{
-			SongID: songId,
-			UserID: userId,
-			Value:  value,
-		})
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	return ratings, nil
+	return float64(ratings), nil
 }
 func (r *Rating) PutRating(ctx context.Context, songId uuid.UUID, userId uuid.UUID, value float64) error {
-	query := "INSERT INTO ratings (song_id, user_id, value) VALUES($1, $2, $3) RETURNING  "
-	_, err := r.db.ExecContext(ctx, query, songId, userId, value)
-
-	return err
+	return r.q.PutRating(ctx, gensqlc.PutRatingParams{
+		SongID: songId, UserID: userId, RatingValue: int32(value),
+	})
 }

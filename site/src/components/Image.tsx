@@ -1,29 +1,30 @@
 import { useState, useEffect } from "react";
+import { HTTPError } from "../lib/error";
 
-function useImgURL(URL: string) {
+const useImgUrl = (url: string) => {
   const [imgUrl, setImgUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch(URL)
+    fetch(url)
       .then((response) => {
         if (!response.ok) {
-          throw new Error(`HTTP error: Status ${response.status}`);
+          HTTPError(response);
         }
         return response.json();
       })
       .then((response) => {
-        setImgUrl(response.image.original.url);
+        setImgUrl(response.url);
       })
       .catch((error) => setError(error))
       .finally(() => setLoading(false));
   }, []);
 
   return { imgUrl, error, loading };
-}
-function Image({ URL }: { URL: string }) {
-  const { imgUrl, error, loading } = useImgURL(URL);
+};
+function Image(url: string) {
+  const { imgUrl, error, loading } = useImgUrl(url);
 
   if (loading) {
     return <p>Loading...</p>;

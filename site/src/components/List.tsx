@@ -1,11 +1,18 @@
 import { useContext } from "react";
-import { ListContext } from "../App";
+import { createContext } from "react";
 
 function ListItem({ animal }: { animal: string }) {
   return <li className="animal">{animal}</li>;
 }
-function List() {
-  const { animals } = useContext(ListContext);
+
+interface ListContextType {
+  animals: string[];
+}
+const ListContext = createContext<ListContextType>({
+  animals: [],
+});
+const List = () => {
+  const { animals }: { animals: string[] } = useContext(ListContext);
   if (!animals) {
     return <div>Loading...</div>;
   }
@@ -19,6 +26,6 @@ function List() {
       })}
     </ul>
   );
-}
+};
 
 export default List;

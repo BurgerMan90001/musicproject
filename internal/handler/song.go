@@ -1,56 +1,64 @@
 package handler
 
 import (
-	"errors"
+	"context"
 	"net/http"
 	"strings"
 
 	"github.com/google/uuid"
-	"musicproject.com/internal/jsonutil"
-	"musicproject.com/internal/repository"
-	"musicproject.com/internal/services/rating"
-	"musicproject.com/internal/services/upload"
-	"musicproject.com/pkg/model"
+	"songsled.com/internal/jsonutil"
+	"songsled.com/internal/services/rating"
+	"songsled.com/internal/services/search"
+	"songsled.com/internal/services/upload"
+	"songsled.com/pkg/model"
 )
 
-func handleGetSongsMetadata(repo repository.Song) http.HandlerFunc {
+type songRepo interface {
+	GetSongByID(ctx context.Context, id uuid.UUID) (*model.Song, error)
+	PutSong(ctx context.Context, s *model.Song) (uuid.UUID, error)
+}
+
+func handleSongs(searchService search.Service, repo songRepo) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		jsonutil.NotImplemented(w)
+	}
+}
+func handleGetSong(repo songRepo) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(r.PathValue("id"))
+		if err != nil {
+			jsonutil.WriteError(w, &model.Error{
+				Code:    http.StatusNotFound,
+				Message: "Song not found",
+			})
+			return
+		}
+		// params := r.URL.Query()
+		// if params != nil {
+		// 	jsonutil.WriteNotFound(w, errors.New(""))
+		// 	return
+		// }
+		ctx := r.Context()
+
+		song, err := repo.GetSongByID(ctx, id)
 		if err != nil {
 			jsonutil.WriteError(w, err)
 			return
 		}
-		params := r.URL.Query()
-		if params != nil {
-			jsonutil.WriteNotFound(w, errors.New(""))
-			return
-		}
+		jsonutil.WriteJSON(w, song, http.StatusOK)
+
+	}
+}
+func handlePutSongsMetadata(repo songRepo) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-
-		// claims, ok := contextClaims(ctx)
-
-		switch r.Method {
-		case http.MethodGet:
-			song, err := repo.GetByID(ctx, id)
-			if err != nil {
-
-				jsonutil.WriteError(w, err)
-				return
-			}
-			jsonutil.WriteJSON(w, song, http.StatusOK)
-
-		case http.MethodPut:
-			_, err := repo.Put(ctx, nil)
-			if err != nil {
-				jsonutil.InternalServerError(w, err)
-				return
-			}
-		default:
-			jsonutil.WriteMethodNotAllowed(w)
+		_, err := repo.PutSong(ctx, nil)
+		if err != nil {
+			jsonutil.InternalServerError(w, err)
+			return
 		}
 	}
 }
-
 func handleSongRating(ratingService *rating.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		songId, err := uuid.Parse(r.PathValue("songId"))
@@ -82,7 +90,6 @@ func handleSongRating(ratingService *rating.Service) http.HandlerFunc {
 			jsonutil.WriteJSON(w, rating, http.StatusOK)
 
 		default:
-			jsonutil.WriteMethodNotAllowed(w)
 		}
 	}
 }
@@ -90,11 +97,8 @@ func handleSongRating(ratingService *rating.Service) http.HandlerFunc {
 // Takes metadata first
 // Then returns url for the cloud file upload or service file handler
 func handleSongUpload(songService *upload.Song) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			jsonutil.WriteMethodNotAllowed(w)
-			return
-		}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
 		// TODO context canceling for file uploads
 		ctx := r.Context()
 		contentType := r.Header.Get("Content-Type")
@@ -132,7 +136,7 @@ func handleSongUpload(songService *upload.Song) http.HandlerFunc {
 			w.Header().Set("Location", url)
 			w.WriteHeader(http.StatusOK)
 		}
-	}
+	})
 }
 
 // func handleSongSearch() http.HandlerFunc {

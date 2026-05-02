@@ -11,11 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"musicproject.com/internal/config"
-	"musicproject.com/internal/repository"
-	"musicproject.com/internal/services/encode"
-	"musicproject.com/internal/services/file"
-	"musicproject.com/pkg/model"
+	"github.com/google/uuid"
+	"songsled.com/internal/config"
+	"songsled.com/internal/services/encode"
+	"songsled.com/internal/services/file"
+	"songsled.com/pkg/crand"
+	"songsled.com/pkg/model"
 )
 
 type Song struct {
@@ -35,11 +36,17 @@ type Song struct {
 	encoder encode.HLSEncoder
 	// Required
 	// Repository to store song metadata
-	repo repository.Song
+	repo songRepo
 }
 
-func NewSong(bucket, prefix string, encoding bool, caching bool, urlTtl time.Duration,
-	store file.Blobstore, repo repository.Song) (*Song, error) {
+type songRepo interface {
+	PutSong(ctx context.Context, s *model.Song) (uuid.UUID, error)
+}
+
+func NewSong(bucket, prefix string,
+	encoding, caching bool,
+	urlTtl time.Duration,
+	store file.Blobstore, repo songRepo) (*Song, error) {
 	var encoder encode.HLSEncoder
 	if encoding {
 		encoder = encode.NewFFmpeg(config.Encoder{})
@@ -65,22 +72,28 @@ func (s *Song) UploadMetadata(ctx context.Context,
 	if err := validateUploadRequest(songRequest); err != nil {
 		return "", err
 	}
+	//https://storage.googleapis.com/spume-musicproject/audio/24e692e5-mysong.mp3
+
+	// Add additional random characters to avoid collisions
+	filename := fmt.Sprintf("%s-%s", crand.NewShort(), songRequest.Filename)
+	key := filepath.Join(s.prefix, filename)
+	presignUrl, objectUrl, err := s.store.CreateObjectUrl(ctx, s.bucket, key, s.caching, s.urlTtl)
+	if err != nil {
+		return "", err
+	}
 
 	// Put song metadata in repository
-	_, err := s.repo.Put(ctx, &model.Song{
+	if _, err := s.repo.PutSong(ctx, &model.Song{
 		Name:  songRequest.Name,
 		Genre: songRequest.Genre,
 		Image: songRequest.Image,
-	})
-	if err != nil {
+
+		URL: objectUrl,
+	}); err != nil {
 		return "", err
 	}
-	key := filepath.Join(s.prefix, songRequest.Filename)
-	url, err := s.store.CreateObjectUrl(ctx, s.bucket, key, s.caching, s.urlTtl)
-	if err != nil {
-		return "", err
-	}
-	return url, nil
+
+	return presignUrl, nil
 }
 
 // Local uploads of audio files

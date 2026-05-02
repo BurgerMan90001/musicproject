@@ -3,17 +3,17 @@ package handler
 import (
 	"net/http"
 
-	"musicproject.com/internal/jsonutil"
+	"songsled.com/internal/jsonutil"
 )
 
-func HandleArtists() http.HandlerFunc {
+func handleArtists() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		jsonutil.NotImplemented(w)
 		//id := r.FormValue("id")
 		switch r.Method {
 		case http.MethodGet:
 			//artist, err
 		default:
-			jsonutil.WriteMethodNotAllowed(w)
 		}
 	}
 }

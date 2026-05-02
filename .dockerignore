@@ -13,16 +13,17 @@ node_modules
 .wrangler
 
 # env files
-.env.dev
-.env.template
+.env.*
+.env
 
 config.dev.*
 
-#Dockerfile*
-#.dockerignore
-#docker-compose.yml
+Dockerfile*
+.dockerignore
+docker-compose.yml
 
 .vscode
 .idea
-# ignore test files
+
+# ignore test go files
 **/*_test.go

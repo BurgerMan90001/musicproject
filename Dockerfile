@@ -29,4 +29,6 @@ COPY --from=build /src/database database
 #RUN apk add ffmpeg
 #RUN apk add postgresql18 postgresql18-contrib
 
+EXPOSE 8081
+
 CMD [ "./main" ]

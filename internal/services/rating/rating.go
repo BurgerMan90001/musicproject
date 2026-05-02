@@ -6,17 +6,21 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"musicproject.com/internal/repository"
-	"musicproject.com/pkg/model"
+	"songsled.com/internal/repository"
+	"songsled.com/pkg/model"
 )
 
+type ratingRepo interface {
+	GetRatings(ctx context.Context, songId uuid.UUID) ([]model.Rating, error)
+	UpdateRating(ctx context.Context, r *model.Rating) error
+}
 type Service struct {
 	min  int
 	max  int
-	repo repository.Rating
+	repo ratingRepo
 }
 
-func New(min, max int, repo repository.Rating) *Service {
+func New(min, max int, repo ratingRepo) *Service {
 	if max == 0 {
 		max = 5
 	}
@@ -53,9 +57,9 @@ func (s *Service) Put(ctx context.Context, rating *model.Rating) error {
 		return fmt.Errorf("Invalid rating: %v rating too big", rating.Value)
 	}
 	// Update rating if it exists
-	if err := s.repo.Update(ctx, rating); !errors.Is(err, repository.ErrNotFound) {
+	if err := s.repo.UpdateRating(ctx, rating); !errors.Is(err, repository.ErrNotFound) {
 		return err
 	}
-	_, err := s.repo.Put(ctx, rating)
-	return err
+	//_, err := s.repo.PutRating(ctx, rating)
+	return nil
 }

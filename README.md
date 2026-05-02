@@ -1,6 +1,16 @@
-# the music project
+# songsled.com
 
 music streaming web application
+
+songsled.com
+
+## COMMANDS
+
+sqlc generate
+
+## NOTES
+
+.env files are only used for local development
 
 ## api
 
@@ -15,3 +25,6 @@ PUT /user
 
 health route
 /health
+
+
+Email me at paulcasigay@gmail.com for suggestions

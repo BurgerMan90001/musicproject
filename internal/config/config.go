@@ -1,41 +1,46 @@
 package config
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
+	"os"
 
-	"musicproject.com/internal/fileutil"
+	"songsled.com/internal/fileutil"
 )
-
-// //go:embed config.dev.yml
-// var configFS embed.FS
 
 const (
 	DevConfig  = "config.dev.yml"
 	ProdConfig = "config.prod.yml"
 )
 
-type Env int
+// func LoadEnvironment(env Env) {
+// 	switch env {
+// 	case Dev:
 
-const (
-	Dev Env = iota
-	Prod
-)
+// 	case Prod:
+// 	default:
 
-func LoadEnvironment(env Env) {
-	switch env {
-	case Dev:
-
-	case Prod:
-	default:
-
-	}
-}
+// 	}
+// }
 
 func LoadConfig(filename string) (*Config, error) {
+
 	cfg, err := fileutil.ReadYaml[Config](filename)
 	if err != nil {
 		return nil, fmt.Errorf("Load config: %w", err)
 	}
-	
+
 	return cfg, nil
+}
+
+func LoadSchema(ctx context.Context, filename string, db *sql.DB) error {
+	schema, err := os.ReadFile(filename)
+	if err != nil {
+		return fmt.Errorf("Postgres load schema: %w", err)
+	}
+	if _, err := db.ExecContext(ctx, string(schema)); err != nil {
+		return fmt.Errorf("Postgres load schema: %w", err)
+	}
+	return nil
 }

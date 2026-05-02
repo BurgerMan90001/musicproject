@@ -3,14 +3,13 @@ package upload
 import (
 	"net/http"
 
-	"musicproject.com/pkg/model"
+	"songsled.com/pkg/model"
 )
 
 func validateUploadRequest(req *model.UploadSongRequest) error {
 	var err = &model.Error{
-		Code: http.StatusBadRequest,
+		Code:    http.StatusBadRequest,
 		Message: "Invalid upload song request body",
-
 	}
 	if req == nil {
 		return &model.Error{
@@ -18,11 +17,14 @@ func validateUploadRequest(req *model.UploadSongRequest) error {
 			Message: "Song request is empty",
 		}
 	}
+	if req.Name == "" {
+		err.Details = "Name is empty"
+	}
 	if req.Filename == "" {
-		err.Details = append(err.Details, "Filename is empty")
+		err.Details = "Filename is empty"
 	}
 	if req.Genre == "" {
-		err.Details = append(err.Details, "Genre is empty")
+		err.Details = "Genre is empty"
 	}
 
 	// Any errors apear

@@ -8,10 +8,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"musicproject.com/internal/config"
-	"musicproject.com/internal/middleware"
-	"musicproject.com/internal/services/encode"
+
+	"songsled.com/internal/config"
+	"songsled.com/internal/middleware"
+	"songsled.com/internal/services/encode"
 )
 
 func main() {
@@ -52,8 +54,9 @@ func fs() http.Handler {
 
 }
 func run() {
-	http.Handle("/segment", handleSegment())
-	http.Handle("/audio/", middleware.Logger(addHeaders(http.StripPrefix("/audio/", fs()))))
+	r := chi.NewRouter()
+	r.Handle("/segment", handleSegment())
+	r.With(middleware.Logger(), addHeaders).Handle("/audio/", http.StripPrefix("/audio/", fs()))
 	log.Println("serving on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

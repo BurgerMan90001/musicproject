@@ -5,10 +5,13 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
+	"net/url"
 	"time"
 
 	"cloud.google.com/go/storage"
+	"github.com/google/uuid"
+	"google.golang.org/api/option"
+	"songsled.com/internal/config/secrets"
 )
 
 var _ Blobstore = (*GoogleCloud)(nil)
@@ -16,19 +19,30 @@ var _ Blobstore = (*GoogleCloud)(nil)
 type GoogleCloud struct {
 	client   *storage.Client
 	accessId string
+	endpoint string
 }
 
-func NewGoogleCloud(ctx context.Context) (*GoogleCloud, error) {
-	client, err := storage.NewClient(ctx)
+// Requires env: GOOGLE_ACCESS_ID
+// Set endpoint to empty to use default google cloud storage endpoint
+func NewGoogleCloud(ctx context.Context, endpoint string) (*GoogleCloud, error) {
+	if endpoint == "" {
+		// Public object storage endpoint
+		endpoint = "https://storage.googleapis.com"
+	}
+	client, err := storage.NewClient(ctx, option.WithEndpoint(endpoint))
 	if err != nil {
 		return nil, fmt.Errorf("New google cloud store: %w", err)
 	}
 
-	accessId := os.Getenv("GOOGLE_ACCESS_ID")
+	accessId, err := secrets.Getenv("GOOGLE_ACCESS_ID")
+	if err != nil {
+		return nil, err
+	}
 
 	return &GoogleCloud{
 		client:   client,
 		accessId: accessId,
+		endpoint: endpoint,
 	}, nil
 }
 
@@ -56,7 +70,7 @@ func (s *GoogleCloud) CreateObject(ctx context.Context, bucket, key string,
 }
 
 func (s *GoogleCloud) CreateObjectUrl(ctx context.Context, bucket, key string,
-	cacheble bool, ttl time.Duration) (string, error) {
+	cacheble bool, ttl time.Duration) (string, string, error) {
 	opts := &storage.SignedURLOptions{
 		GoogleAccessID: s.accessId,
 		Method:         "PUT",
@@ -65,7 +79,15 @@ func (s *GoogleCloud) CreateObjectUrl(ctx context.Context, bucket, key string,
 	}
 	//s.client.Bucket()
 
-	return s.client.Bucket(bucket).SignedURL(key, opts)
+	presignUrl, err := s.client.Bucket(bucket).SignedURL(key, opts)
+	if err != nil {
+		return "", "", err
+	}
+	objectUrl, err := url.JoinPath(s.endpoint, bucket, key)
+	if err != nil {
+		return "", "", err
+	}
+	return presignUrl, objectUrl, err
 }
 
 func (s *GoogleCloud) GetObject(ctx context.Context, bucket, key string) ([]byte, error) {
@@ -89,7 +111,7 @@ func (s *GoogleCloud) GetObjectUrl(ctx context.Context,
 		Expires:        time.Now().Add(ttl),
 	}
 
-	return s.client.Bucket(bucket).SignedURL(key, opts)
+	return s.client.Bucket(bucket).SignedURL(uuid.New().String()+key, opts)
 }
 func (s *GoogleCloud) DeleteObject(ctx context.Context, bucket, key string) error {
 	return s.client.Bucket(bucket).Object(key).Delete(ctx)

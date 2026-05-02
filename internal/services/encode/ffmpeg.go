@@ -9,7 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"musicproject.com/internal/config"
+	"songsled.com/internal/config"
 )
 
 var _ HLSEncoder = (*FFmpeg)(nil)

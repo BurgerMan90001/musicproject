@@ -1,0 +1,33 @@
+.popover,
+.popover-bottom {
+  display: inline-block;
+  cursor: pointer;
+  position: relative;
+  z-index: 1000;
+}
+
+.popover summary {
+  list-style: none;
+}
+
+.popover-content {
+  visibility: hidden;
+  position: absolute;
+
+  top: var(--navbar-height);
+}
+.popover-left {
+  right: 0;
+}
+.popover-right {
+  left: 0;
+}
+.popover:hover .popover-content {
+  visibility: visible;
+}
+
+.popover-bottom {
+}
+
+.popover-top {
+}
