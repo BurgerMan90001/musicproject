@@ -3,12 +3,14 @@
 // }
 
 import { Link } from "react-router";
-import Header from "../../../components/header/Header";
+import api from "../../../lib/api";
 
 async function onLogin() {
-  fetch("http://localhost:8081/v1/auth/login").then((res) => {
-    console.log(res.headers.getSetCookie());
-  });
+  const res = api<string>("/auth/login", {});
+  // fetch("http://localhost:8081/v1/auth/login").then((res) => {
+  //   console.log(res.headers.getSetCookie());
+  // });
+  console.log(res);
 }
 
 //function redirectToLogin() {}

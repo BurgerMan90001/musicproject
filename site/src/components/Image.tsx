@@ -23,7 +23,7 @@ const useImgUrl = (url: string) => {
 
   return { imgUrl, error, loading };
 };
-function Image(url: string) {
+const Image = (url: string) => {
   const { imgUrl, error, loading } = useImgUrl(url);
 
   if (loading) {
@@ -33,5 +33,5 @@ function Image(url: string) {
     return <p>A network error was encountered</p>;
   }
   return imgUrl && <img src={imgUrl} alt="placeholder text" />;
-}
+};
 export default Image;

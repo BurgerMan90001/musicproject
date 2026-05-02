@@ -1,16 +1,12 @@
 import Header from "../../components/header/Header";
-import { apiUrl } from "../../config/env";
+import api from "../../lib/api";
 import type { User } from "../../types/auth.types";
 
 function Profile() {
-  fetch(`${apiUrl}/users`, {
+  const res = api<string>("/users", {
     method: "GET",
-  }).then((res) => {
-    if (!res.ok) {
-      throw new Error();
-    }
-    res.json();
   });
+  console.log(res);
 
   const user: User = {
     id: "",
@@ -18,7 +14,7 @@ function Profile() {
     email: "paulcasigay@gmail.com",
     provider: "",
   };
-  
+
   var hero = null;
   if (!user.hero) {
     hero = (

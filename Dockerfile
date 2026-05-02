@@ -18,7 +18,6 @@ RUN --mount=type=cache,target=/gomod-cache \
 
 
 FROM scratch
-#FROM alpine:latest AS run
 
 WORKDIR /src
 

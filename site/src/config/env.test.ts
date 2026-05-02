@@ -1,12 +1,12 @@
-import { apiUrl, companyName } from "./env";
+import { API_URL, COMPANY_NAME } from "./env";
 import { describe, it, expect } from "vitest";
 
 describe("config defined", () => {
   it("apiUrl", () => {
-    expect(apiUrl).toBeDefined();
+    expect(API_URL).toBeDefined();
   });
 
   it("company name", () => {
-    expect(companyName).toBeDefined();
+    expect(COMPANY_NAME).toBeDefined();
   });
 });

@@ -1,14 +1,21 @@
-import { createContext } from "react";
 
-export interface ThemeContextType {
+import { create } from "zustand";
+
+interface ThemeState {
   theme: string;
+  toggle: () => void;
 }
 
 const ThemeLight = "light";
 const ThemeDark = "dark";
 
-const ThemeContext = createContext<ThemeContextType>({
+export const useTheme = create<ThemeState>()((set, get) => ({
   theme: ThemeDark,
-});
-
-export default ThemeContext;
+  toggle: () => {
+    if (get().theme === ThemeDark) {
+      set({ theme: ThemeDark });
+      return;
+    }
+    set({ theme: ThemeLight });
+  },
+}));

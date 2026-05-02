@@ -31,3 +31,18 @@
 
 .popover-top {
 }
+
+.player-popover {
+}
+/* .player-popover summary {
+  list-style-type: none;
+} */
+/* .player-popover * {
+  list-style-type: none;
+} */
+/* .player-popover-content {
+  visibility: hidden;
+}
+.player-popover:hover .player-popover-content {
+  visibility: visible; */
+

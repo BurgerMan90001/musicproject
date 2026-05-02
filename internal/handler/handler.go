@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 	"github.com/redis/go-redis/v9"
 	"songsled.com/internal/config"
 	"songsled.com/internal/jsonutil"
 	"songsled.com/internal/middleware"
-	"songsled.com/internal/middleware/ratelimit"
 	"songsled.com/internal/repository/postgres"
 	"songsled.com/internal/services/auth"
 	"songsled.com/internal/services/file"
@@ -46,13 +46,23 @@ func New(
 	}
 
 	authMw := middleware.NewAuth(authService.Validate)
-	rl := ratelimit.NewTokenBucket(15, 30)
+	// rl := ratelimit.NewTokenBucket(15, 30)
 
 	if !testing.Testing() {
 		root.Use(middleware.Logger())
-		root.Use(middleware.Limit(rl))
+		root.Use(middleware.Limit(nil))
+
 	}
-	// rl := ratelimit.NewTokenBucket(15, 30)
+	root.Use(cors.Handler(cors.Options{
+
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
+
 	root.Route("/v1", func(api chi.Router) {
 
 		api.Route("/auth", func(r chi.Router) {

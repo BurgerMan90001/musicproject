@@ -17,9 +17,9 @@ export interface TokenResponse {
   refresh_token: string;
 }
 
-export interface AuthContextType {
-  login: (provider: string) => Promise<void>;
-  logout: () => Promise<void>;
-  handleCallback: (code: string, state: string) => Promise<void>;
-  refreshAccessToken: () => Promise<void>;
-}
+// export interface AuthContextType {
+//   login: (provider: string) => Promise<void>;
+//   logout: () => Promise<void>;
+//   handleCallback: (code: string, state: string) => Promise<void>;
+//   refreshAccessToken: () => Promise<void>;
+// }

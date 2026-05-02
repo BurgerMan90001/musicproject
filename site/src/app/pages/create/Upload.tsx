@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import type { Song } from "../../../types/song.types";
+import api from "../../../lib/api";
 function Upload() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   // Location for song upload endpoint
@@ -30,36 +31,41 @@ function Upload() {
       setSelectedFile(null);
     }
   };
-  const uploadMetadata = (song: Song) => {
-    fetch("http://server:8081/v1/upload/songs", {
+  const uploadMetadata = async (song: Song) => {
+    // interface response {
+
+    // }
+    const res = await api<string>("/upload/songs", {
       method: "POST",
       body: JSON.stringify(song),
       headers: {
         "Content-Type": "application/json",
       },
-    })
-      .then((response) => {
-        // Save the location header url
-        const url = response.headers.get("Location");
-        if (url) {
-          setLocation(url);
-        }
-
-        console.log(url);
-        console.log(response.headers);
-      })
-      .then((json) => console.log(json));
+    });
+    setLocation("");
+    console.log(res);
+    //   .then((response) => {
+    //     // Save the location header url
+    //     const url = response.headers.get("Location");
+    //     if (url) {
+    //       setLocation(url);
+    //     }
+    //     console.log(url);
+    //     console.log(response.headers);
+    //   })
+    //   .then((json) => console.log(json));
   };
   const onSubmit = () => {
-    const test: Song = {
+    const song: Song = {
       name: "",
       genre: "",
+      artist: "",
       streams: 0,
       duration: 0,
       image: "",
       url: "",
     };
-    uploadMetadata(test);
+    uploadMetadata(song);
 
     uploadFile();
   };

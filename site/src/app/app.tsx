@@ -5,12 +5,12 @@ import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter } from "react-router";
 import routes from "./routes";
-import { companyName } from "../config/env";
+import { COMPANY_NAME } from "../config/env";
 
 const router = createBrowserRouter(routes);
 function App() {
   useEffect(() => {
-    document.title = `${companyName}`;
+    document.title = `${COMPANY_NAME}`;
   });
   return (
     <StrictMode>

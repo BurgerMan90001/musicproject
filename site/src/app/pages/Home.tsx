@@ -1,9 +1,10 @@
 import Header from "../../components/header/Header";
 //import { useContext, createContext } from "react";
 // import test from "../../assets/images/history.svg";
-import SongQueue from "../../components/menu/SongQueue";
-import SongPlayer from "../../components/menu/SongPlayer";
+import SongQueue from "../../components/menu/SongQueue/SongQueue";
+import SongPlayer from "../../components/menu/SongPlayer/SongPlayer";
 import Menu from "../../components/menu/Menu";
+import Media from "../../components/Media";
 function Card({ title }: { title: string }) {
   // fetch("", {
   //   method: "GET",
@@ -18,21 +19,22 @@ function Card({ title }: { title: string }) {
 function Home() {
   return (
     <>
-      <div className="layout-holy-grail" id="home">
+      <div className="layout-holy-grail height-full" id="home">
         <Header />
         <Menu />
 
-        <main className="layout-main height-full scroll-vertical">
+        <main className="layout-main">
           <div className="gap-xxs margin-inline-xxxl display-flex flex-column">
-      
             {/* <Card title="Genre" />
             <Card title="Genre" />
             <Card title="Genre" />
             <Card title="Genre" />
             <Card title="Genre " /> */}
+            <Media />
           </div>
         </main>
-        <footer className="layout-footer bg-color-body-dark flex-0">
+
+        <footer className="layout-footer bg-color-body-dark">
           <span>asdasd</span>
         </footer>
       </div>
