@@ -16,6 +16,7 @@ config.dev.yaml
 
 node_modules
 
+keycloak
 dist
 dist-ssr
 *.local
