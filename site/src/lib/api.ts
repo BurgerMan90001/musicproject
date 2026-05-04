@@ -1,14 +1,10 @@
 import { API_URL } from "../config/env";
-import { HTTPError } from "./error";
 
-async function api<T>(path: string, init?: RequestInit): Promise<T> {
+// Starts a request at the API_URL
+async function fetchApi(path: string, init?: RequestInit): Promise<Response> {
   const res = await fetch(`${API_URL}${path}`, init);
 
-  if (!res.ok) {
-    HTTPError(res);
-  }
-
-  return (await res.json()) as T;
+  return res;
 }
 
-export default api;
+export default fetchApi;

@@ -35,7 +35,7 @@ function Upload() {
     // interface response {
 
     // }
-    const res = await api<string>("/upload/songs", {
+    const res = await api("/v1/upload/songs", {
       method: "POST",
       body: JSON.stringify(song),
       headers: {
@@ -71,19 +71,22 @@ function Upload() {
   };
 
   return (
-    <form className="margin-auto">
-      <div className="bg-black-25 font-weight-bold">Upload Song</div>
+    <main className="layout-main display-flex">
+      <form className="display-flex flex-column bg-color-body-darker font-size-md padding-xxl margin-auto">
+        <h1 className="font-weight-bold">Upload Song</h1>
 
-      <input type="text" name="genre" required={true} />
-      <input type="text" name="name" required={true} />
+        <input type="text" id="genre" aria-label="Genre" required={true} />
+        <label htmlFor="name">Song Name</label>
+        <input type="text" id="name" aria-label="Song name" required={true} />
 
-      <label htmlFor="file">Song File</label>
-      <input type="file" name="file" onChange={onFileChange}></input>
+        <label htmlFor="file">Song File</label>
+        <input type="file" id="file" onChange={onFileChange}></input>
 
-      <button type="submit" onClick={onSubmit} className="bg-black-25">
-        Submit
-      </button>
-    </form>
+        <button type="submit" onClick={onSubmit} className="bg-black-25">
+          Submit
+        </button>
+      </form>
+    </main>
   );
 }
 

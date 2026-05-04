@@ -3,7 +3,7 @@ import SongQueue from "./SongQueue/SongQueue";
 
 const Menu = () => {
   return (
-    <aside className="layout-menu height-full scroll-vertical border-radius-lg">
+    <aside className="height-full scroll-vertical border-radius-lg">
       <SongPlayer />
       <SongQueue />
     </aside>

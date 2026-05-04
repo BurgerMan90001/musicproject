@@ -1,7 +1,7 @@
-import { useVolume } from "../../../hooks/player";
+import { usePlayerStore } from "../../../hooks/player";
 
 const VolumeControl = () => {
-  const volume = useVolume();
+  const volume = usePlayerStore();
 
   return (
     <div className="display-flex align-items-center padding-inline-xxs ">

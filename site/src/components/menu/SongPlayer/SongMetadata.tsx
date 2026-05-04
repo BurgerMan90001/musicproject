@@ -1,9 +1,7 @@
-// import { usePlayer } from "../../../hooks/player";
-
-import { useSongQueue } from "../../../hooks/player";
+import { usePlayerStore } from "../../../hooks/player";
 
 const SongMetadata = () => {
-  const queue = useSongQueue();
+  const queue = usePlayerStore();
 
   if (!queue.empty()) {
     return (
@@ -13,7 +11,12 @@ const SongMetadata = () => {
       </div>
     );
   }
-  return <div className="padding-xxs"></div>;
+  return (
+    <div className="padding-xxs">
+      <summary>No songs playing</summary>
+      {/* <span>By: {queue.queue[0].artist}</span> */}
+    </div>
+  );
 };
 
 export default SongMetadata;

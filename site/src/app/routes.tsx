@@ -1,4 +1,4 @@
-import Dashboard from "./pages/create/Create";
+import Dashboard from "./pages/create/Dashboard";
 import ErrorPage from "./pages/NotFound";
 import Legal from "./pages/legal/Legal";
 import Home from "./pages/Home";
@@ -6,7 +6,10 @@ import Upload from "./pages/create/Upload";
 import Signup from "./pages/auth/Signup";
 import Login from "./pages/auth/Login";
 import Profile from "./pages/Profile";
-import Create from "./pages/create/Create";
+import Logout from "./pages/auth/Logout";
+import Playlists from "./pages/playlists/Playlists";
+import NewPlaylist from "./pages/playlists/NewPlaylist";
+import Discovery from "./pages/playlists/Discovery";
 
 const routes = [
   {
@@ -20,11 +23,6 @@ const routes = [
     // ],
   },
   {
-    path: "/dashboard",
-    element: <Dashboard />,
-    children: [{ path: "upload", element: <Upload /> }],
-  },
-  {
     path: "/signup",
     element: <Signup />,
   },
@@ -33,12 +31,25 @@ const routes = [
     element: <Login />,
   },
   {
+    path: "/logout",
+    element: <Logout />,
+  },
+  {
     path: "/profile",
     element: <Profile />,
   },
   {
     path: "/create",
-    element: <Create />,
+    element: <Dashboard />,
+    children: [{ path: "upload", element: <Upload /> }],
+  },
+  {
+    path: "/playlists",
+    element: <Playlists />,
+    children: [
+      { path: "new", element: <NewPlaylist /> },
+      { path: "discovery", element: <Discovery /> },
+    ],
   },
   {
     path: "/legal",

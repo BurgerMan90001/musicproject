@@ -55,11 +55,10 @@
 
   grid-template-rows: auto 1fr auto;
   grid-template-columns: minmax(auto, max-content);
-  /* grid-template: ; */
 
   grid-template-areas:
     "header  header"
-    "menu main"
+    "main    main"
     "footer footer";
 }
 .layout-single {

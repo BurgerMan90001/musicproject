@@ -15,7 +15,7 @@
 
 /* Default settings */
 :root {
-  font-family:  Avenir, Helvetica, Arial, sans-serif;
+  font-family: Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
@@ -31,7 +31,7 @@
 :root {
   /* --orange-500: rgba(168, 81, 0, 0.726);
   --orange-700: rgba(228, 110, 0, 0.726); */
-  --red-50: hsl(0, 76%, 47%);
+  --red-50: hsl(0, 56%, 50%);
 
   --orange-60: hsl(24, 80%, 60%);
   --orange-50: hsl(24, 80%, 50%);

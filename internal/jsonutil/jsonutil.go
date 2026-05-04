@@ -72,10 +72,7 @@ func WriteError(w http.ResponseWriter, reason error) {
 	// Service error / internal error
 	if jerr.Code >= 500 && jerr.Code < 600 {
 		w.WriteHeader(jerr.Code)
-		// When testing
-		// if !testing.Testing() {
-		// 	jerr.Details = nil
-		// }
+		
 
 		json.NewEncoder(w).Encode(jerr)
 

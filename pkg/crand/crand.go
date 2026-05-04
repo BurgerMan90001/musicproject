@@ -2,8 +2,10 @@ package crand
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"hash/fnv"
 	mathrand "math/rand"
 	"strings"
@@ -47,4 +49,10 @@ func NewB64Url(n int) string {
 	b := make([]byte, n)
 	rand.Read(b)
 	return escaper.Replace(base64.RawURLEncoding.EncodeToString(b))
+}
+
+func HashSha256(s string) string {
+	// h := sha256.New()
+	// h.Write([]byte(s))
+	return fmt.Sprintf("%v", sha256.Sum256([]byte(s)))
 }

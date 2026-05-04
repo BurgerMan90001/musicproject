@@ -13,10 +13,10 @@ node_modules
 .wrangler
 
 # env files
-.env.*
+# .env.*
 .env
 
-config.dev.*
+# config.dev.*
 
 Dockerfile*
 .dockerignore

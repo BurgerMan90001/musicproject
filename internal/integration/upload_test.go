@@ -7,22 +7,20 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/google/uuid"
 )
 
 func (s *testSuite) TestUploadSongMetadata() {
 	endpoint := "/v1/songs/upload"
 
-	token, err := s.jwtAccess.GenerateToken(uuid.Nil)
-	s.Require().NoError(err)
+	// token, err := s.jwtAccess.GenerateToken(uuid.Nil)
+	// s.Require().NoError(err)
 
 	tests := []handlerTest{
 		{
 			Name: "empty request",
 			Req: &request{
-				method:      http.MethodPost,
-				accessToken: token,
+				method: http.MethodPost,
+				// accessToken: token,
 			},
 			WantCode: http.StatusBadRequest,
 		},
@@ -43,7 +41,7 @@ func (s *testSuite) TestUploadSongMetadata() {
 					"genre":    "Rock",
 					"filename": "mysong.mp3",
 				},
-				accessToken: token,
+				// accessToken: token,
 			},
 			WantCode: http.StatusOK,
 		}
@@ -78,7 +76,6 @@ func (s *testSuite) TestUploadSongMetadata() {
 		w2 := s.newRequest(metadataEndpoint, &request{
 			method: "GET",
 		})
-
 
 		s.Equal(http.StatusOK, w2.Code)
 

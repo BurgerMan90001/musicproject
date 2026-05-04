@@ -1,54 +1,70 @@
 import { useState } from "react";
-import type { FormInput } from "../../../types/form.types";
-import api from "../../../lib/api";
+import type { ApiError } from "../../../lib/error";
+import { useNavigate } from "react-router";
+import { useAuthStore } from "../../../hooks/auth";
+import type { User } from "../../../types/auth.types";
 
 const SignupForm = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const FormInput = (input: FormInput) => {
-    return (
-      <input
-        name={input.name}
-        type={input.type}
-        className="bg-color-body-darker border font-size-md padding-inline-xs padding-block-xxs"
-        placeholder={input.placeholder}
-        required
-      ></input>
-    );
-  };
-  const emailSignup = async (formData: FormData) => {
-    const res = await api<string>("/auth/signup");
 
-    console.log(res);
-    // fetch(`${apiUrl}/auth/signup`, {
-    //   method: "POST",
-    //   body: JSON.stringify({
-    //     email: formData.get("email"),
-    //     password: formData.get("password"),
-    //   }),
-    // })
-    //   .then((res) => res.json())
-    //   .then(data) => d);
+  const navigate = useNavigate();
+  const auth = useAuthStore();
+
+  const action = async () => {
+    const res = await auth.signup(email, password);
+
+    if (!res) {
+      return;
+    }
+    const json = await res.json();
+    if (res.ok) {
+      const user = json as unknown as User;
+      auth.setUser(user);
+      auth.setUser({
+        id: "",
+        email: email,
+        username: "",
+      });
+
+      navigate("/");
+    }
+
+    const error = json as unknown as ApiError;
+
+    setError(error.message);
   };
 
   return (
     <>
-      <span className="font-size-md font-weight-semilight color-text-subtle">
-        Or signup with email
-      </span>
-      <form action={emailSignup} className="display-flex flex-column gap-xxs">
-        <FormInput name="email" type="email" placeholder="Your Email" />
-        <FormInput
-          name="password"
-          type="password"
-          placeholder="Your Password"
-        />
+      <form action={action} className="display-flex flex-column gap-xxs">
+        {/* <input
+          type="username"
+          aria-label="Your Username"
+          className="bg-color-body-darker padding-xxs"
+          placeholder="Your Username"
+          onChange={(e) => setUsername(e.target.value)}
+        ></input> */}
+        <input
+          type="email"
+          aria-label="Your Email"
+          className="bg-color-body-darker padding-xxs"
+          placeholder="Your Email"
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        ></input>
 
-        <button
-          className="button border font-size-md font-weight-semibold padding-xxs"
-          type="submit"
-        >
-          Signup with email
-        </button>
+        <input
+          type="password"
+          aria-label="Your Password"
+          className="bg-color-body-darker padding-xxs"
+          placeholder="Your Password"
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        ></input>
+
+        <span className="color-text-danger">{error}</span>
       </form>
     </>
   );

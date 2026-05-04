@@ -11,31 +11,41 @@ import (
 
 type playlistRepo interface {
 	GetPlaylistByID(ctx context.Context, playlistId uuid.UUID) (*model.Playlist, error)
+	PutPlaylist(ctx context.Context, p *model.Playlist) (uuid.UUID, error)
 }
 
-func handlePlaylistsID(playlistRepo playlistRepo) http.HandlerFunc {
+func handlePlaylistsId(playlistRepo playlistRepo) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		playlistId, err := uuid.Parse(r.PathValue("id"))
+		if err != nil {
+			jsonutil.WriteError(w, err)
+			return
+		}
+		ctx := r.Context()
+		
+		playlistRepo.GetPlaylistByID(ctx, playlistId)
 	}
 }
 func handlePlaylists(playlistRepo playlistRepo) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			playlistId, err := uuid.Parse(r.PathValue("id"))
-			if err != nil {
-				jsonutil.WriteError(w, err)
-				return
-			}
-			ctx := r.Context()
+			// playlistId, err := uuid.Parse(r.PathValue("id"))
+			// if err != nil {
+			// 	jsonutil.WriteError(w, err)
+			// 	return
+			// }
+			// ctx := r.Context()
 
-			playlist, err := playlistRepo.GetPlaylistByID(ctx, playlistId)
-			if err != nil {
-				jsonutil.WriteError(w, err)
-				return
-			}
+			// playlist, err := playlistRepo.GetPlaylistByID(ctx, playlistId)
+			// if err != nil {
+			// 	jsonutil.WriteError(w, err)
+			// 	return
+			// }
 
-			jsonutil.WriteJSON(w, playlist, http.StatusOK)
+			// jsonutil.WriteJSON(w, playlist, http.StatusOK)
 		case http.MethodPut:
+
 		case http.MethodDelete:
 
 		default:

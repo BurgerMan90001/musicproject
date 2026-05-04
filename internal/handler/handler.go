@@ -7,13 +7,12 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/cors"
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"songsled.com/internal/config"
 	"songsled.com/internal/jsonutil"
 	"songsled.com/internal/middleware"
 	"songsled.com/internal/repository/postgres"
-	"songsled.com/internal/services/auth"
 	"songsled.com/internal/services/file"
 	"songsled.com/internal/services/search"
 	"songsled.com/internal/services/upload"
@@ -29,15 +28,14 @@ func New(
 ) (http.Handler, error) {
 	root := chi.NewRouter()
 
-	userRepo := postgres.NewUser(repo.Queries)
 	songRepo := postgres.NewSong(repo.Queries)
 	playlistRepo := postgres.NewPlaylist(repo.Queries)
 
 	searchService := search.NewPostgres()
-	authService, err := auth.New(ctx, cfg.Auth, rdb, userRepo)
-	if err != nil {
-		return nil, err
-	}
+	// authService, err := auth.New(ctx, cfg.Auth, rdb, userRepo)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	uploadService, err := upload.NewSong(cfg.Upload.Bucket, "audio",
 		false, true, 30*time.Minute, store, songRepo)
@@ -45,43 +43,42 @@ func New(
 		return nil, err
 	}
 
-	authMw := middleware.NewAuth(authService.Validate)
+	// authMw := middleware.NewAuth(nil)
 	// rl := ratelimit.NewTokenBucket(15, 30)
 
 	if !testing.Testing() {
 		root.Use(middleware.Logger())
-		root.Use(middleware.Limit(nil))
+		// root.Use(middleware.Limit(nil))
 
 	}
-	root.Use(cors.Handler(cors.Options{
+	// oidc, err := auth.NewClient(ctx, "OIDC_ISSUER",
+	// 	"OIDC_REDIRECT",
+	// 	"OIDC_CLIENT_ID",
+	// 	"OIDC_CLIENT_SECRET",
+	// )
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: false,
-		MaxAge:           300,
-	}))
+	root.Use(middleware.Cors())
 
 	root.Route("/v1", func(api chi.Router) {
+		// api.Route("/auth", func(r chi.Router) {
+		// r.HandleFunc("/signup", handleSignup(authService))
+		// r.HandleFunc("/login", handleLogin(authService))
+		// r.HandleFunc("/refresh", handleRefresh(authService))
+		// r.HandleFunc("/logout", handleLogout(authService))
+		//mux.HandleFunc("/auth/reset", authHandler.handleEmailReset(emailService))
 
-		api.Route("/auth", func(r chi.Router) {
-			r.HandleFunc("/signup", handleSignup(authService))
-			r.HandleFunc("/login", handleLogin(authService))
-			r.HandleFunc("/refresh", handleRefresh(authService))
-			r.HandleFunc("/logout", handleLogout(authService))
-			//mux.HandleFunc("/auth/reset", authHandler.handleEmailReset(emailService))
-
-			// oauth routes
-			r.HandleFunc("/google/login", handleOauthLogin(authService.Google))
-			r.HandleFunc("/google/redirect", handleOauthRedirect(authService.Google))
-		})
+		// 	r.HandleFunc("/songsled/login", handleOidcLogin(oidc))
+		// 	r.HandleFunc("/songsled/callback", handleOidcRedirect(oidc))
+		// })
 
 		api.Route("/users", func(r chi.Router) {
-			r.Get("/", handleUsers(userRepo))
+			// r.Get("/", handleUsers(userRepo))
 
-			r.Get("/{id}", handleGetUsersId(userRepo))
-			r.Delete("/{id}", handleDelteUsersId(userRepo))
+			// r.Get("/{id}", handleGetUsersId(userRepo))
+			// r.Delete("/{id}", handleDelteUsersId(userRepo))
 
 			r.Get("/{id}/history", handleUserHistory())
 		})
@@ -91,20 +88,27 @@ func New(
 			r.HandleFunc("/{id}", handleGetSong(songRepo))
 
 			r.HandleFunc("/upload", handleSongUpload(uploadService))
-
 		})
 		api.Route("/playlists", func(r chi.Router) {
 			r.HandleFunc("/", handlePlaylists(playlistRepo))
-			r.HandleFunc("/{id}", handlePlaylistsID(playlistRepo))
+			r.HandleFunc("/{id}", handlePlaylistsId(playlistRepo))
+		})
+		api.Route("/albums", func(r chi.Router) {
+			r.HandleFunc("/", handleAlbums())
+			r.HandleFunc("/{id}", handleAlbumsId())
+		})
+		// ?to=
+		api.Route("/download", func(r chi.Router) {
+			r.HandleFunc("/{id}", nil)
 		})
 
-		api.Route("/admin", func(r chi.Router) {
-			r.Use(authMw.RequireAuth(auth.RoleAdmin))
-			r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-				jsonutil.WriteJSON(w, nil, http.StatusOK)
-			})
+		// api.Route("/admin", func(r chi.Router) {
+		// 	// r.Use(authMw.RequireAuth(auth.RoleAdmin))
+		// 	// r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// 	// 	jsonutil.WriteJSON(w, nil, http.StatusOK)
+		// 	// })
 
-		})
+		// })
 	})
 
 	root.Get("/health", handleHealth)
@@ -125,6 +129,10 @@ func New(
 	return root, nil
 }
 
+// Gets pathvalue {id} from request
+func pathValId(r *http.Request) (uuid.UUID, error) {
+	return uuid.Parse(r.PathValue("id"))
+}
 func handleTest() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 

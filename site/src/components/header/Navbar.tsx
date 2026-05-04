@@ -1,34 +1,32 @@
 import { Link } from "react-router";
 import { useAuthStore } from "../../hooks/auth";
 import { Popover, type NavItem } from "./Popover";
+const create: NavItem[] = [
+  { name: "Dashboard", to: "/create" },
+  { name: "Upload Song", to: "/create/upload?type=song" },
+];
 
+const playlists: NavItem[] = [
+  { name: "Discovery", to: "/playlists/discovery" },
+  { name: "Library", to: "/playlists" },
+  { name: "New", to: "/playlists/new" },
+];
 function Navbar() {
   const auth = useAuthStore();
 
-  const create: NavItem[] = [
-    { name: "Upload Song", to: "/upload?type=uploadSong" },
-  ];
-
-  const playlists: NavItem[] = [];
-  if (playlists.length == 0) {
-    playlists[0] = { name: "New", to: "/playlists?type=new" };
-  }
-
-  const signupButton = { name: "Signup", to: "/signup" };
-  const loginButton = { name: "Login", to: "/login" };
-  const settingsButton = { name: "Settings", to: "/settings" };
-
-  var profile: NavItem[] = [signupButton, loginButton, settingsButton];
-  if (!auth.authenticated()) {
-    profile = [signupButton, loginButton, settingsButton];
+  var profile: NavItem[] = [];
+  if (!auth.user) {
+    profile.push(
+      { name: "Signup", to: "/signup" },
+      { name: "Login", to: "/login" },
+    );
   } else {
-    if (auth.user) {
-      profile = [
-        { name: "tsets", to: "/" },
-        { name: "Logout", to: "/logout" },
-      ];
-    }
+    profile.push(
+      { name: auth.user.email, to: "/users/" + auth.user.id },
+      { name: "Logout", to: "/logout" },
+    );
   }
+  profile.push({ name: "Settings", to: "/settings" });
 
   return (
     <nav
@@ -41,11 +39,8 @@ function Navbar() {
 
       <Popover title="Playlists" buttons={playlists} />
 
-      {/* Check if authenticated  */}
-
       <Popover title="Profile" buttons={profile} />
 
-      {/* Check if authenticated  */}
       <Popover title="Create" buttons={create} />
     </nav>
   );

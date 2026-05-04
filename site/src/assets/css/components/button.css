@@ -1,13 +1,10 @@
-/* .button:hover {
-  background-color: var(--color-body-medium);
-} */
-/* button {
+
+button {
   border: none;
   cursor: pointer;
-} */
+}
 .button-clear {
-  border: none;
-  cursor: pointer;
+  
   background-color: inherit;
 }
 .button-clear:hover {

@@ -46,7 +46,9 @@
 .color-text-subtler {
   color: var(--color-text-subtler);
 }
-
+.color-text-danger {
+  color: var(--color-danger);
+}
 .color-text-invert {
   color: var(--color-text-invert);
 }

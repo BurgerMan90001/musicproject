@@ -10,6 +10,7 @@ sqlc generate
 
 ## NOTES
 
+The keycloak folder is only for local development
 .env files are only used for local development
 
 ## api
@@ -25,6 +26,5 @@ PUT /user
 
 health route
 /health
-
 
 Email me at paulcasigay@gmail.com for suggestions

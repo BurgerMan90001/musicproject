@@ -17,16 +17,19 @@ RUN --mount=type=cache,target=/gomod-cache \
    GOOS=linux go build -o main cmd/musicproject/main.go
 
 
-FROM scratch
+FROM alpine:latest
 
 WORKDIR /src
 
 COPY --from=build /src/main .
-COPY --from=build /src/config config
+COPY --from=build /src/.env.dev .env.dev
+COPY --from=build /src/config.dev.yml config.dev.yml
 COPY --from=build /src/database database
 
+# RUN apk add --no-cache \
+#     ca-certificates
 #RUN apk add ffmpeg
-#RUN apk add postgresql18 postgresql18-contrib
+
 
 EXPOSE 8081
 

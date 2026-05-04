@@ -6,8 +6,6 @@ export interface User {
   id: string;
   email: string;
   username: string;
-
-  provider: string;
   avatar?: string;
   hero?: string;
 }

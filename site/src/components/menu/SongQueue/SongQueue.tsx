@@ -1,8 +1,8 @@
-import { useSongQueue } from "../../../hooks/player";
+import { usePlayerStore } from "../../../hooks/player";
 import { SongPlaceholderIcon } from "../../svg/Placeholder";
 
 const SongList = () => {
-  const queue = useSongQueue((state) => state.queue);
+  const queue = usePlayerStore((state) => state.queue);
 
   return (
     <ul className="">

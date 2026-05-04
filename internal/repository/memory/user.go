@@ -9,7 +9,6 @@ import (
 	"songsled.com/pkg/model"
 )
 
-
 type User struct {
 	mu     sync.RWMutex
 	data   map[uuid.UUID]*model.User
@@ -57,7 +56,7 @@ func (r *User) Put(ctx context.Context, user *model.User) (uuid.UUID, error) {
 		return uuid.Nil, err
 	}
 	r.data[userId] = user
-	r.emails[user.Email] = userId
+	// r.emails[user.Email] = userId
 	return user.ID, nil
 }
 

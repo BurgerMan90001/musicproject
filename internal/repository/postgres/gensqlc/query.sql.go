@@ -21,15 +21,6 @@ func (q *Queries) DeleteSongByID(ctx context.Context, songID uuid.UUID) error {
 	return err
 }
 
-const deleteUserByID = `-- name: DeleteUserByID :exec
-DELETE FROM users WHERE user_id=$1
-`
-
-func (q *Queries) DeleteUserByID(ctx context.Context, userID uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, deleteUserByID, userID)
-	return err
-}
-
 const getAggregatedRating = `-- name: GetAggregatedRating :one
 SELECT SUM(rating_value) / COUNT(rating_value)
 FROM song_ratings 
@@ -43,56 +34,49 @@ func (q *Queries) GetAggregatedRating(ctx context.Context, songID uuid.UUID) (in
 	return column_1, err
 }
 
-const getPlaylistByID = `-- name: GetPlaylistByID :one
-SELECT playlist_id, user_id, playlist_name FROM playlists
-WHERE playlist_id=$1
+const getPlaylistByID = `-- name: GetPlaylistByID :many
+SELECT 
+    playlists.user_id,
+    playlists.playlist_name,
+    playlist_songs.playlist_id,
+    songs.song_name, 
+    songs.streams,
+	songs.duration, 
+    songs.creation_date,
+    songs.song_image,
+    songs.song_url
+FROM songs
+INNER JOIN playlist_songs ON playlist_songs.song_id = songs.song_id
+INNER JOIN playlists ON playlists.playlist_id = playlist_songs.playlist_id
+INNER JOIN genres ON genres.genre_id = song_genres.genre_id
+WHERE playlist_songs.playlist_id=$1
 `
 
-func (q *Queries) GetPlaylistByID(ctx context.Context, playlistID uuid.UUID) (Playlist, error) {
-	row := q.db.QueryRowContext(ctx, getPlaylistByID, playlistID)
-	var i Playlist
-	err := row.Scan(&i.PlaylistID, &i.UserID, &i.PlaylistName)
-	return i, err
+type GetPlaylistByIDRow struct {
+	UserID       uuid.NullUUID
+	PlaylistName string
+	PlaylistID   uuid.UUID
+	SongName     string
+	Streams      int32
+	Duration     int32
+	CreationDate string
+	SongImage    sql.NullString
+	SongUrl      string
 }
 
-const getSongByID = `-- name: GetSongByID :one
-SELECT song_id, album_id, song_name, streams, duration, creation_date, song_image, song_url FROM songs
-WHERE song_id=$1
-`
-
-func (q *Queries) GetSongByID(ctx context.Context, songID uuid.UUID) (Song, error) {
-	row := q.db.QueryRowContext(ctx, getSongByID, songID)
-	var i Song
-	err := row.Scan(
-		&i.SongID,
-		&i.AlbumID,
-		&i.SongName,
-		&i.Streams,
-		&i.Duration,
-		&i.CreationDate,
-		&i.SongImage,
-		&i.SongUrl,
-	)
-	return i, err
-}
-
-const getSongRandom = `-- name: GetSongRandom :many
-SELECT song_id, album_id, song_name, streams, duration, creation_date, song_image, song_url FROM songs 
-ORDER BY RANDOM() LIMIT $1
-`
-
-func (q *Queries) GetSongRandom(ctx context.Context, limit int32) ([]Song, error) {
-	rows, err := q.db.QueryContext(ctx, getSongRandom, limit)
+func (q *Queries) GetPlaylistByID(ctx context.Context, playlistID uuid.UUID) ([]GetPlaylistByIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPlaylistByID, playlistID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Song
+	var items []GetPlaylistByIDRow
 	for rows.Next() {
-		var i Song
+		var i GetPlaylistByIDRow
 		if err := rows.Scan(
-			&i.SongID,
-			&i.AlbumID,
+			&i.UserID,
+			&i.PlaylistName,
+			&i.PlaylistID,
 			&i.SongName,
 			&i.Streams,
 			&i.Duration,
@@ -113,49 +97,107 @@ func (q *Queries) GetSongRandom(ctx context.Context, limit int32) ([]Song, error
 	return items, nil
 }
 
-const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT user_id, password_hash 
-FROM users 
-WHERE email=$1
+const getPlaylistSongs = `-- name: GetPlaylistSongs :many
+SELECT playlist_id, user_id, playlist_name FROM playlists
+WHERE playlist_id=$1
 `
 
-type GetUserByEmailRow struct {
-	UserID       uuid.UUID
-	PasswordHash sql.NullString
+func (q *Queries) GetPlaylistSongs(ctx context.Context, playlistID uuid.UUID) ([]Playlist, error) {
+	rows, err := q.db.QueryContext(ctx, getPlaylistSongs, playlistID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Playlist
+	for rows.Next() {
+		var i Playlist
+		if err := rows.Scan(&i.PlaylistID, &i.UserID, &i.PlaylistName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
-func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
-	row := q.db.QueryRowContext(ctx, getUserByEmail, email)
-	var i GetUserByEmailRow
-	err := row.Scan(&i.UserID, &i.PasswordHash)
+const getSongByID = `-- name: GetSongByID :one
+SELECT song_id, song_name, streams, duration, creation_date, album_id, song_image, song_url FROM songs
+WHERE song_id=$1
+`
+
+func (q *Queries) GetSongByID(ctx context.Context, songID uuid.UUID) (Song, error) {
+	row := q.db.QueryRowContext(ctx, getSongByID, songID)
+	var i Song
+	err := row.Scan(
+		&i.SongID,
+		&i.SongName,
+		&i.Streams,
+		&i.Duration,
+		&i.CreationDate,
+		&i.AlbumID,
+		&i.SongImage,
+		&i.SongUrl,
+	)
 	return i, err
 }
 
-const getUserByID = `-- name: GetUserByID :one
-SELECT email, password_hash 
-FROM users 
-WHERE user_id=$1
+const getSongRandom = `-- name: GetSongRandom :many
+SELECT song_id, song_name, streams, duration, creation_date, album_id, song_image, song_url FROM songs 
+ORDER BY RANDOM() LIMIT $1
 `
 
-type GetUserByIDRow struct {
-	Email        string
-	PasswordHash sql.NullString
-}
-
-func (q *Queries) GetUserByID(ctx context.Context, userID uuid.UUID) (GetUserByIDRow, error) {
-	row := q.db.QueryRowContext(ctx, getUserByID, userID)
-	var i GetUserByIDRow
-	err := row.Scan(&i.Email, &i.PasswordHash)
-	return i, err
+func (q *Queries) GetSongRandom(ctx context.Context, limit int32) ([]Song, error) {
+	rows, err := q.db.QueryContext(ctx, getSongRandom, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Song
+	for rows.Next() {
+		var i Song
+		if err := rows.Scan(
+			&i.SongID,
+			&i.SongName,
+			&i.Streams,
+			&i.Duration,
+			&i.CreationDate,
+			&i.AlbumID,
+			&i.SongImage,
+			&i.SongUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const putPlaylist = `-- name: PutPlaylist :one
+
+
+
+
+
+
 INSERT INTO playlists
 (user_id)
 VALUES($1) RETURNING playlist_id
 `
 
-func (q *Queries) PutPlaylist(ctx context.Context, userID uuid.UUID) (uuid.UUID, error) {
+// INNER JOIN playlists ON playlists.playlist_id = playlist_songs.playlist_id
+// INNER JOIN genres ON genres.genre_id = song_genres.genre_id
+func (q *Queries) PutPlaylist(ctx context.Context, userID uuid.NullUUID) (uuid.UUID, error) {
 	row := q.db.QueryRowContext(ctx, putPlaylist, userID)
 	var playlist_id uuid.UUID
 	err := row.Scan(&playlist_id)
@@ -163,10 +205,9 @@ func (q *Queries) PutPlaylist(ctx context.Context, userID uuid.UUID) (uuid.UUID,
 }
 
 const putPlaylistSong = `-- name: PutPlaylistSong :exec
-
 INSERT INTO playlist_songs
 (playlist_id, song_id)
-VALUES($1,$2)
+VALUES($1, $2)
 `
 
 type PutPlaylistSongParams struct {
@@ -174,9 +215,6 @@ type PutPlaylistSongParams struct {
 	SongID     uuid.UUID
 }
 
-// asdasd name: GetPlaylistSongs :many
-// SELECT * FROM playlists
-// WHERE
 func (q *Queries) PutPlaylistSong(ctx context.Context, arg PutPlaylistSongParams) error {
 	_, err := q.db.ExecContext(ctx, putPlaylistSong, arg.PlaylistID, arg.SongID)
 	return err
@@ -190,7 +228,7 @@ VALUES($1, $2, $3)
 
 type PutRatingParams struct {
 	SongID      uuid.UUID
-	UserID      uuid.UUID
+	UserID      uuid.NullUUID
 	RatingValue int32
 }
 
@@ -224,22 +262,4 @@ func (q *Queries) PutSong(ctx context.Context, arg PutSongParams) (uuid.UUID, er
 	var song_id uuid.UUID
 	err := row.Scan(&song_id)
 	return song_id, err
-}
-
-const putUser = `-- name: PutUser :one
-INSERT INTO users (email, password_hash) 
-VALUES($1, $2) 
-RETURNING user_id
-`
-
-type PutUserParams struct {
-	Email        string
-	PasswordHash sql.NullString
-}
-
-func (q *Queries) PutUser(ctx context.Context, arg PutUserParams) (uuid.UUID, error) {
-	row := q.db.QueryRowContext(ctx, putUser, arg.Email, arg.PasswordHash)
-	var user_id uuid.UUID
-	err := row.Scan(&user_id)
-	return user_id, err
 }

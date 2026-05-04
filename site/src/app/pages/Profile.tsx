@@ -3,16 +3,16 @@ import api from "../../lib/api";
 import type { User } from "../../types/auth.types";
 
 function Profile() {
-  const res = api<string>("/users", {
+  const res = api("/v1/users", {
     method: "GET",
   });
+
   console.log(res);
 
   const user: User = {
     id: "",
     username: "Paul Casigay",
     email: "paulcasigay@gmail.com",
-    provider: "",
   };
 
   var hero = null;

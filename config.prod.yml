@@ -5,13 +5,14 @@ api:
 
 auth:
   jwt:
-    issuer: spume
+    issuer: songsled
     audience:
       - api
 
   oauth:
     google:
-      redirectUrl: http://localhost:8081/v1/auth/google/redirect
+      userInfoUrl: https://www.googleapis.com/oauth2/v2/userinfo
+      redirectUrl: http://localhost:8080/realms/master/broker/google/endpoint
       scopes:
         - https://www.googleapis.com/auth/userinfo.email
         - https://www.googleapis.com/auth/userinfo.profile

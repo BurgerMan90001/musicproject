@@ -2,9 +2,6 @@ package integration
 
 import (
 	"net/http"
-
-	"songsled.com/internal/jsonutil"
-	"songsled.com/pkg/model"
 )
 
 func (s *testSuite) TestAuth() {
@@ -23,7 +20,7 @@ func (s *testSuite) TestAuth() {
 /* Oauth tests */
 func (s *testSuite) TestHandleOathGoogleLogin() {
 	//t := s.T()
-	url := "/v1/auth/google/login"
+	// url := "/v1/auth/google/login"
 	tests := []handlerTest{
 		{
 			Name: "login google oauth",
@@ -37,13 +34,13 @@ func (s *testSuite) TestHandleOathGoogleLogin() {
 	s.T().Skip()
 	for _, tt := range tests {
 		s.Run(tt.Name, func() {
-			w := s.newRequest(url, tt.Req)
+			// w := s.newRequest(url, tt.Req)
 
-			userInfo, err := jsonutil.ReadJson[model.OauthUserInfo](w.Result().Body)
-			s.Require().NoError(err)
+			// userInfo, err := jsonutil.ReadJson[model.OauthUserInfo](w.Result().Body)
+			// s.Require().NoError(err)
 
-			s.Equal(tt.WantCode, w.Code, tt.Name)
-			s.Empty(userInfo.Email)
+			// s.Equal(tt.WantCode, w.Code, tt.Name)
+			// s.Empty(userInfo.Email)
 		})
 	}
 

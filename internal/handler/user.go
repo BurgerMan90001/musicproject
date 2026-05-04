@@ -37,7 +37,7 @@ func handleGetUsersId(userRepo userRepo) http.HandlerFunc {
 			jsonutil.WriteError(w, err)
 			return
 		}
-		user.PasswordHash = ""
+		// user.PasswordHash = ""
 		jsonutil.WriteJSON(w, user, http.StatusOK)
 
 	}

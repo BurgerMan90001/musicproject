@@ -27,6 +27,6 @@ func (r *Rating) GetAggregatedRating(ctx context.Context, songId uuid.UUID) (flo
 }
 func (r *Rating) PutRating(ctx context.Context, songId uuid.UUID, userId uuid.UUID, value float64) error {
 	return r.q.PutRating(ctx, gensqlc.PutRatingParams{
-		SongID: songId, UserID: userId, RatingValue: int32(value),
+		SongID: songId, RatingValue: int32(value),
 	})
 }

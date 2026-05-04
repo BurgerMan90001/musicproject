@@ -10,15 +10,12 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/suite"
 	"songsled.com/internal/config"
 	"songsled.com/internal/config/secrets"
 	"songsled.com/internal/handler"
 	"songsled.com/internal/repository/postgres"
-	"songsled.com/internal/services/auth"
 	"songsled.com/internal/services/file"
 	"songsled.com/pkg/model"
 )
@@ -49,9 +46,8 @@ type testSuite struct {
 	cfg     *config.Config
 	handler http.Handler
 	repo    *postgres.Repo
-	// sm         secrets.Manager
-	jwtAccess  *auth.JWTService
-	jwtRefresh *auth.JWTService
+	// jwtAccess  *auth.JWTService
+	// jwtRefresh *auth.JWTService
 }
 
 func TestIntegrationSuite(t *testing.T) {
@@ -69,7 +65,7 @@ func (s *testSuite) SetupSuite() {
 	err := secrets.ReadEnvFile(".env")
 	s.Require().NoError(err)
 
-	configFolder := filepath.Join("..", "..", "config")
+	configFolder := filepath.Join("..", "..", "..", "config")
 
 	// Config
 	s.cfg, err = config.LoadConfig(filepath.Join(configFolder, "config.dev.yml"))
@@ -78,22 +74,15 @@ func (s *testSuite) SetupSuite() {
 	err = secrets.ReadEnvFile(filepath.Join(configFolder, ".env.dev"))
 	s.Require().NoError(err)
 
-	// JWT services
-	s.jwtAccess, err = auth.NewJWTService(s.cfg.Auth.Jwt.Issuer, s.cfg.Auth.Jwt.Audience, model.TokenAccess, time.Minute*30, "JWT_ACCESS_KEY")
-	s.Require().NoError(err)
+	// s.jwtAccess, err = auth.NewJWTService(s.cfg.Auth.Jwt.Issuer, s.cfg.Auth.Jwt.Audience, model.TokenAccess, time.Minute*30, "JWT_ACCESS_KEY")
+	// s.Require().NoError(err)
 
-	s.jwtRefresh, err = auth.NewJWTService(s.cfg.Auth.Jwt.Issuer, s.cfg.Auth.Jwt.Audience, model.TokenRefresh, time.Hour, "JWT_REFRESH_KEY")
-	s.Require().NoError(err)
+	// s.jwtRefresh, err = auth.NewJWTService(s.cfg.Auth.Jwt.Issuer, s.cfg.Auth.Jwt.Audience, model.TokenRefresh, time.Hour, "JWT_REFRESH_KEY")
+	// s.Require().NoError(err)
 
 	// Filesystem store
 	store, err := file.New(ctx, &file.GoogleCloud{}, s.cfg.Upload.Region)
 	s.Require().NoError(err)
-
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       0,
-	})
 
 	// Test postgres database container
 	s.repo = postgres.NewTest(t, ctx, s.cfg.Repository.Postgres.Image)
@@ -106,7 +95,7 @@ func (s *testSuite) SetupSuite() {
 		s.Require().NoError(err)
 	}
 
-	s.handler, err = handler.New(ctx, s.cfg, store, s.repo, rdb)
+	s.handler, err = handler.New(ctx, s.cfg, store, s.repo, nil)
 	s.Require().NoError(err)
 }
 

@@ -51,7 +51,7 @@ func (r *blocklist) revoked(ctx context.Context, jti string) error {
 
 type JWTService struct {
 	key       []byte
-	tokenType model.TokenType
+	tokenType string
 	issuer    string
 	audience  []string
 	ttl       time.Duration
@@ -60,7 +60,7 @@ type JWTService struct {
 func NewJWTService(
 	issuer string,
 	audience []string,
-	tokenType model.TokenType,
+	tokenType string,
 	ttl time.Duration,
 	envVar string,
 ) (*JWTService, error) {

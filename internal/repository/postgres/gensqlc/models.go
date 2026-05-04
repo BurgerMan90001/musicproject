@@ -6,32 +6,41 @@ package gensqlc
 
 import (
 	"database/sql"
-	"time"
 
 	"github.com/google/uuid"
 )
 
 type Album struct {
 	AlbumID      uuid.UUID
-	ArtistID     uuid.NullUUID
 	AlbumName    sql.NullString
-	GenreID      uuid.NullUUID
 	CreationDate sql.NullString
+	ArtistID     uuid.NullUUID
+	GenreID      uuid.NullUUID
+}
+
+type AlbumArtist struct {
+	AlbumID  uuid.UUID
+	ArtistID uuid.UUID
 }
 
 type Artist struct {
 	ArtistID   uuid.UUID
-	ArtistName sql.NullString
+	ArtistName string
+}
+
+type ArtistSong struct {
+	ArtistID uuid.NullUUID
+	SongID   uuid.NullUUID
 }
 
 type Genre struct {
 	GenreID uuid.UUID
-	Genre   sql.NullString
+	Genre   string
 }
 
 type Playlist struct {
 	PlaylistID   uuid.UUID
-	UserID       uuid.UUID
+	UserID       uuid.NullUUID
 	PlaylistName string
 }
 
@@ -42,30 +51,22 @@ type PlaylistSong struct {
 
 type Song struct {
 	SongID       uuid.UUID
-	AlbumID      uuid.NullUUID
 	SongName     string
 	Streams      int32
 	Duration     int32
 	CreationDate string
+	AlbumID      uuid.NullUUID
 	SongImage    sql.NullString
 	SongUrl      string
 }
 
+type SongGenre struct {
+	GenreID uuid.UUID
+	SongID  uuid.UUID
+}
+
 type SongRating struct {
-	UserID      uuid.UUID
+	UserID      uuid.NullUUID
 	SongID      uuid.UUID
 	RatingValue int32
-}
-
-type User struct {
-	UserID       uuid.UUID
-	Email        string
-	PasswordHash sql.NullString
-	CreatedAt    time.Time
-	AvatarUrl    sql.NullString
-}
-
-type UserRole struct {
-	UserID   uuid.NullUUID
-	RoleName sql.NullString
 }

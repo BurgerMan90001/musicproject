@@ -2,8 +2,8 @@ export interface FormInput {
   name: string;
   type: string;
 
-  className?: string;
+  // className?: string;
   placeholder?: string;
-  label?: string;
+  label: string;
   required?: boolean;
 }

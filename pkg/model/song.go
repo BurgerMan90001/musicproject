@@ -56,6 +56,7 @@ type UploadSongRequest struct {
 
 type Playlist struct {
 	ID    uuid.UUID `json:"id"`
+	Name  string    `json:"name"`
 	Songs []Song    `json:"songs"`
 }
 

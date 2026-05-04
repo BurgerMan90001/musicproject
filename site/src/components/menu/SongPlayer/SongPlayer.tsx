@@ -1,31 +1,68 @@
-import { Button } from "../Button";
-import { PlayIcon, VolumeIcon } from "../Icons";
+import { PlayButton, VolumeButton } from "../Button";
+import ProgressBar from "./ProgressBar";
 import SongImage from "./SongImage";
 import SongMetadata from "./SongMetadata";
 import VolumeControl from "./VolumeControl";
+import { usePlayerStore } from "../../../hooks/player";
 
 const SongPlayer = () => {
-  return (
-    <div className="display-flex">
-      <button popoverTarget="my-popover" className="button-clear">
-        <div className="image image-128 bg-color-body-darker color-text-invert">
-          <SongImage />
-        </div>
-      </button>
+  const player = usePlayerStore();
 
-      <div className="display-grid bg-color-body-darker grid-template-rows-1fr-auto">
-        <SongMetadata />
+  var image;
+  var content;
+  if (player.collapsed) {
+    image = (
+      <div className="image image-64 bg-color-body-darker color-text-invert">
+        <SongImage />
+      </div>
+    );
+    content = (
+      <div className="display-flex align-items-center bg-color-body-darker grid-template-rows-1fr-auto">
+        <span></span>
         <nav className="display-flex">
-          <Button>
-            <PlayIcon />
-          </Button>
-          <Button>
-            <VolumeIcon />
-          </Button>
+          {/* <ProgressBar /> */}
+
+          <PlayButton />
+          <VolumeButton />
+
+          <VolumeControl />
+          <ProgressBar />
+        </nav>
+        {/* <div className="margin-auto">
+          <ProgressBar />
+        </div> */}
+      </div>
+    );
+  } else {
+    image = (
+      <div className="image image-128 bg-color-body-darker color-text-invert">
+        <SongImage />
+      </div>
+    );
+    content = (
+      <div className="display-flex flex-column bg-color-body-darker ">
+        <SongMetadata />
+        <ProgressBar />
+        <nav className="display-flex">
+          <PlayButton />
+          <VolumeButton />
+
           <VolumeControl />
         </nav>
-        {/* <ProgressBar /> */}
       </div>
+    );
+  }
+  return (
+    <div className="display-flex">
+      <button
+        onClick={() => player.toggleCollapsed()}
+        popoverTarget="my-popover"
+        className="button-clear"
+      >
+        {image}
+      </button>
+
+      {content}
     </div>
   );
 };

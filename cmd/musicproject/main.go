@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/redis/go-redis/v9"
 	"songsled.com/internal/config"
 	"songsled.com/internal/config/secrets"
 	"songsled.com/internal/handler"
@@ -27,8 +26,8 @@ func main() {
 		schemaFile string
 	)
 
-	flag.StringVar(&envFile, "envFile", filepath.Join("config", ".env.dev"), "specifies the location of the env file")
-	flag.StringVar(&configFile, "config", filepath.Join("config", "config.dev.yml"), "specifies the location of the config file")
+	flag.StringVar(&envFile, "envFile", filepath.Join(".env.dev"), "specifies the location of the env file")
+	flag.StringVar(&configFile, "config", filepath.Join("config.dev.yml"), "specifies the location of the config file")
 	flag.StringVar(&schemaFile, "schema", filepath.Join("database", "schema.sql"), "specifies the location of the schema file")
 	flag.Parse()
 
@@ -75,21 +74,21 @@ func run(ctx context.Context, configFile, envFile, schemaFile string) error {
 		return fmt.Errorf("New server: %v", err)
 	}
 
-	store, err := file.New(ctx, &file.AWSS3{}, cfg.Upload.Region)
+	store, err := file.New(ctx, &file.GoogleCloud{}, cfg.Upload.Region)
 	if err != nil {
 		return err
 	}
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       0,
-	})
+	// rdb := redis.NewClient(&redis.Options{
+	// 	Addr:     "localhost:6379",
+	// 	Password: "",
+	// 	DB:       0,
+	// })
 
-	defer rdb.Close()
+	// defer rdb.Close()
 
 	// create handler
-	handler, err := handler.New(ctx, cfg, store, repo, rdb)
+	handler, err := handler.New(ctx, cfg, store, repo, nil)
 	if err != nil {
 		return fmt.Errorf("New mux handler: %w", err)
 	}

@@ -30,8 +30,8 @@ func TestWriteJSON(t *testing.T) {
 		{
 			name: "invalid status code",
 			data: model.User{
-				ID:    uuid.New(),
-				Email: "paulcasigay@gmail.com",
+				ID: uuid.New(),
+				// Email: "paulcasigay@gmail.com",
 			},
 			code:     1000,
 			wantCode: http.StatusInternalServerError,
@@ -69,8 +69,8 @@ func TestWriteJSON(t *testing.T) {
 		w := httptest.NewRecorder()
 
 		WriteJSON(w, model.User{
-			ID:    uuid.New(),
-			Email: "paulcasigay@gmail.com",
+			ID: uuid.New(),
+			// Email: "paulcasigay@gmail.com",
 		}, http.StatusOK, "asd", "asd", "asd", "asd",
 			"asd", "asd", "asd", "asd", "asd", "asd")
 
@@ -80,8 +80,8 @@ func TestWriteJSON(t *testing.T) {
 		w := httptest.NewRecorder()
 
 		user := model.User{
-			ID:    uuid.New(),
-			Email: "paulcasigay@gmail.com",
+			ID: uuid.New(),
+			// Email: "paulcasigay@gmail.com",
 		}
 		WriteJSON(w, user, http.StatusOK)
 

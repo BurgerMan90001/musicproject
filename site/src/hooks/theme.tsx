@@ -1,4 +1,3 @@
-
 import { create } from "zustand";
 
 interface ThemeState {
@@ -13,9 +12,10 @@ export const useTheme = create<ThemeState>()((set, get) => ({
   theme: ThemeDark,
   toggle: () => {
     if (get().theme === ThemeDark) {
-      set({ theme: ThemeDark });
+      set({ theme: ThemeLight });
+
       return;
     }
-    set({ theme: ThemeLight });
+    set({ theme: ThemeDark });
   },
 }));
