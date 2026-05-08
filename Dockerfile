@@ -2,19 +2,19 @@ FROM golang:alpine AS build
 
 WORKDIR /src
 
-ENV GOCACHE=/go-cache
-ENV GOMODCACHE=/gomod-cache
+# ENV GOCACHE=/go-cache
+# ENV GOMODCACHE=/gomod-cache
 
 COPY ./go.* ./
 
-RUN --mount=type=cache,target=/gomod-cache \
-      go mod download
+# RUN --mount=type=cache,target=/gomod-cache \
+#       go mod download
 
 COPY ./ ./
 
-RUN --mount=type=cache,target=/gomod-cache \
-   --mount=type=cache,target=/go-cache \
-   GOOS=linux go build -o main cmd/musicproject/main.go
+# RUN --mount=type=cache,target=/gomod-cache \
+#    --mount=type=cache,target=/go-cache \
+RUN   GOOS=linux go build -o main cmd/musicproject/main.go
 
 
 FROM alpine:latest
