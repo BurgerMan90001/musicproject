@@ -72,15 +72,13 @@ func (s *testSuite) SetupSuite() {
 	err = secrets.ReadEnvFile(filepath.Join("..", "..", ".env.dev"))
 	s.Require().NoError(err)
 
-	store, err := file.New(ctx, &file.AWSS3{}, s.cfg.File.Region, s.cfg.File.Endpoint, s.cfg.File.Public)
+	store, err := file.New(ctx, &file.AWSS3{}, s.cfg.File)
 	s.Require().NoError(err)
 
 	// Test postgres database container
 	s.repo = postgres.NewTest(t, ctx, s.cfg.Repository.Postgres.Image)
 
-	err = s.repo.ExecFile(ctx, filepath.Join("..", "..", "database", "schema.sql"))
-	s.Require().NoError(err)
-
+	
 	if os.Getenv("LOAD_TESTDATA") == "true" {
 		err = s.repo.ExecFile(ctx, filepath.Join("..", "..", "database", "test.sql"))
 		s.Require().NoError(err)

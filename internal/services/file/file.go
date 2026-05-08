@@ -3,6 +3,8 @@ package file
 import (
 	"context"
 	"time"
+
+	"songsled.com/internal/config"
 )
 
 const (
@@ -11,13 +13,13 @@ const (
 )
 
 // public: The public endpoint where content is served from
-func New(ctx context.Context, T Blobstore, region, endpoint, public string) (Blobstore, error) {
+func New(ctx context.Context, T Blobstore, cfg config.File) (Blobstore, error) {
 
 	switch T.(type) {
 	case *AWSS3:
-		return NewS3(ctx, endpoint, region, public, "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY")
+		return NewS3(ctx, cfg.Endpoint, cfg.Region, cfg.Public, "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY")
 	case *GoogleCloud:
-		return NewGoogleCloud(ctx, endpoint, "GOOGLE_ACCESS_ID")
+		return NewGoogleCloud(ctx, cfg.Endpoint, "GOOGLE_ACCESS_ID")
 	default:
 		return NewFileSystem(), nil
 	}
@@ -31,7 +33,7 @@ type Blobstore interface {
 	// Returns a presigned url to upload files at
 	// and the url where the object can be download from
 	CreateObjectUrl(ctx context.Context, bucket, key string,
-		cacheble bool, ttl time.Duration) (string, string, error)
+		cacheble bool, ttl time.Duration, contentType string) (string, string, error)
 
 	GetObject(ctx context.Context, bucket, key string) ([]byte, error)
 	// Returns an authenticated url location to download files from

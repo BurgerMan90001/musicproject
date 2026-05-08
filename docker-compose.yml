@@ -39,16 +39,16 @@ services:
   db:
     image: postgres:alpine
     container_name: musicproject-db
+
     ports:
       - 5432:5432
-    restart: always
+
     environment:
       POSTGRES_USER: musicproject
       POSTGRES_PASSWORD: admin
 
     volumes:
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
-      - ./database/test.sql:/docker-entrypoint-initdb.d/test.sql:ro
+      - ./database/schema:/docker-entrypoint-initdb.d
 
     healthcheck:
       test: ["CMD", "pg_isready", "--username=musicproject"]

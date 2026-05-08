@@ -71,7 +71,7 @@ func New(
 		api.Route("/albums", handleAlbums())
 
 		api.Route("/images", handleImages(uploadService))
-
+		api.Route("/audio", handleAudio(uploadService))
 		// api.Route("/admin", func(r chi.Router) {
 		// 	// r.Use(authMw.RequireAuth(auth.RoleAdmin))
 		// 	// r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

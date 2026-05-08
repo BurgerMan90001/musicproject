@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
-	"os"
 	"os/signal"
 	"path/filepath"
 	"syscall"
@@ -23,12 +22,10 @@ func main() {
 	var (
 		envFile    string
 		configFile string
-		schemaFile string
 	)
 
 	flag.StringVar(&envFile, "envFile", filepath.Join(".env.dev"), "specifies the location of the env file")
 	flag.StringVar(&configFile, "config", filepath.Join("config.dev.yml"), "specifies the location of the config file")
-	flag.StringVar(&schemaFile, "schema", filepath.Join("database", "schema.sql"), "specifies the location of the schema file")
 	flag.Parse()
 
 	ctx, done := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -39,14 +36,14 @@ func main() {
 		}
 	}()
 
-	if err := run(ctx, configFile, envFile, schemaFile); err != nil {
+	if err := run(ctx, configFile, envFile); err != nil {
 		log.Fatal(err)
 	}
 
 	slog.Info("Server shutdown")
 }
 
-func run(ctx context.Context, configFile, envFile, schemaFile string) error {
+func run(ctx context.Context, configFile, envFile string) error {
 	if err := secrets.ReadEnvFile(envFile); err != nil {
 		return fmt.Errorf("Load env file: %v", err)
 	}
@@ -62,19 +59,14 @@ func run(ctx context.Context, configFile, envFile, schemaFile string) error {
 		return fmt.Errorf("New postgres connection: %v", err)
 	}
 	defer repo.DB.Close()
-	if err := repo.ExecFile(ctx, schemaFile); err != nil {
-		return err
-	}
-	if os.Getenv("LOAD_TESTDATA") == "true" {
-		err = repo.ExecFile(ctx, filepath.Join("test", "integration", "testdata", "testdata.sql"))
-	}
+
 	// create server
 	server, err := server.NewServer(cfg.API.Port)
 	if err != nil {
 		return fmt.Errorf("New server: %v", err)
 	}
 
-	store, err := file.New(ctx, &file.AWSS3{}, cfg.File.Region, cfg.File.Endpoint, cfg.File.Endpoint)
+	store, err := file.New(ctx, &file.AWSS3{}, cfg.File)
 	if err != nil {
 		return err
 	}

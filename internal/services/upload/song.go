@@ -3,10 +3,12 @@ package upload
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"time"
 
+	"github.com/google/uuid"
 	"songsled.com/internal/config"
 	"songsled.com/internal/repository/postgres"
 	"songsled.com/internal/services/encode"
@@ -60,16 +62,16 @@ func New(bucket string,
 // Uploads the song's metadata to the repository.
 // Returns the url to upload the song file to.
 func (s *Service) UploadSongMetadata(ctx context.Context,
-	req *model.SongUploadRequest) error {
+	req *model.SongUploadRequest) (uuid.UUID, error) {
 
 	if err := validateUploadRequest(req); err != nil {
-		return err
+		return uuid.Nil, err
 	}
 
 	//https://storage.googleapis.com/spume-musicproject/audio/24e692e5-mysong.mp3
 
 	if req.Audio == "" {
-		return &model.Error{
+		return uuid.Nil, &model.Error{
 			Code:    http.StatusBadRequest,
 			Message: "Missing link to audio file",
 		}
@@ -90,39 +92,44 @@ func (s *Service) UploadSongMetadata(ctx context.Context,
 	// Put song metadata in repository
 	songId, err := s.songRepo.NewSong(ctx, song)
 	if err != nil {
-		return err
+		return uuid.Nil, err
 	}
 	// TODO OPTIMIZE DO WITHIN SINGLE QUERY
 	// Add songs and genres
 	for _, artistId := range req.Artists {
 		err := s.songRepo.PutArtistSong(ctx, songId, artistId)
 		if err != nil {
-			return err
+			return uuid.Nil, err
 		}
 	}
 	for _, genreId := range req.Genres {
 		err := s.songRepo.PutSongGenre(ctx, songId, genreId)
 		if err != nil {
-			return err
+			return uuid.Nil, err
 		}
 	}
 
-	return nil
+	return songId, nil
 }
 
 // Returns the image upload url for the audio directory
-func (s *Service) UploadAudioUrl(ctx context.Context, folder string) (string, string, error) {
-	// Add additional random characters to avoid collisions
-	audio := filepath.Join("audio", crand.NewShort())
-	return s.store.CreateObjectUrl(ctx, s.bucket, audio, s.caching, s.urlTtl)
+func (s *Service) UploadUrl(ctx context.Context, folder, filename, contentType string) (string, string, error) {
 
+	// TODO 
+	if filename == "" {
+		filename = crand.NewShort()
+	}
+	
+	// Add additional random characters to avoid collisions
+	key := filepath.Join(folder, fmt.Sprintf("%s-%s", crand.NewShort(), filename))
+	return s.store.CreateObjectUrl(ctx, s.bucket, key, s.caching, s.urlTtl, contentType)
 }
 
 // Returns the image upload url for the images directory
-func (s *Service) UploadImageUrl(ctx context.Context, folder string) (string, string, error) {
-	image := filepath.Join("images", folder, crand.NewShort())
-	return s.store.CreateObjectUrl(ctx, s.bucket, image, s.caching, s.urlTtl)
-}
+// func (s *Service) UploadImageUrl(ctx context.Context, folder, filename string) (string, string, error) {
+// 	image := filepath.Join("images", folder, fmt.Sprintf("%s-%s", crand.NewShort(), filename))
+// 	return s.store.CreateObjectUrl(ctx, s.bucket, image, s.caching, s.urlTtl, "images/*")
+// }
 
 // Local uploads of audio files
 // Handles multipart file uploads if the service uses local uploads

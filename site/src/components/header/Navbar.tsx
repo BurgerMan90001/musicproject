@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { useAuthStore } from "../../hooks/auth";
+// import { useAuthStore } from "../../hooks/auth";
 import { Popover, type NavItem } from "./Popover";
 const create: NavItem[] = [
   { name: "Dashboard", to: "/create" },
@@ -12,21 +12,21 @@ const playlists: NavItem[] = [
   { name: "New", to: "/playlists/new" },
 ];
 function Navbar() {
-  const auth = useAuthStore();
+  // const auth = useAuthStore();
 
-  var profile: NavItem[] = [];
-  if (!auth.user) {
-    profile.push(
-      { name: "Signup", to: "/signup" },
-      { name: "Login", to: "/login" },
-    );
-  } else {
-    profile.push(
-      { name: auth.user.email, to: "/users/" + auth.user.id },
-      { name: "Logout", to: "/logout" },
-    );
-  }
-  profile.push({ name: "Settings", to: "/settings" });
+  // var profile: NavItem[] = [];
+  // if (!auth.user) {
+  //   profile.push(
+  //     { name: "Signup", to: "/signup", disabled: true },
+  //     { name: "Login", to: "/login", disabled: true },
+  //   );
+  // } else {
+  //   profile.push(
+  //     { name: auth.user.email, to: "/users/" + auth.user.id },
+  //     { name: "Logout", to: "/logout" },
+  //   );
+  // }
+  // profile.push({ name: "Settings", to: "/settings" });
 
   return (
     <nav
@@ -39,7 +39,7 @@ function Navbar() {
 
       <Popover title="Playlists" buttons={playlists} />
 
-      <Popover title="Profile" buttons={profile} />
+      {/* <Popover title="Profile" buttons={profile} /> */}
 
       <Popover title="Create" buttons={create} />
     </nav>

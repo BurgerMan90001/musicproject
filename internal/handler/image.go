@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"songsled.com/internal/jsonutil"
 	"songsled.com/internal/services/upload"
+	"songsled.com/pkg/model"
 )
 
 // images
@@ -16,30 +17,28 @@ func handleImages(uploadService *upload.Service) func(r chi.Router) {
 			jsonutil.NotImplemented(w)
 		})
 
-		// r.Get("/covers", func(w http.ResponseWriter, r *http.Request) {
-		// 	jsonutil.NotImplemented(w)
-		// })
+		r.Get("/covers", func(w http.ResponseWriter, r *http.Request) {
+			jsonutil.NotImplemented(w)
+		})
 		// Image upload
-		r.HandleFunc("/covers", func(w http.ResponseWriter, r *http.Request) {
+		r.Put("/covers", func(w http.ResponseWriter, r *http.Request) {
 
 			ctx := r.Context()
+			filename := r.URL.Query().Get("filename")
 
-			// type body struct {
-			// 	songId uuid.UUID `json:"songId"`
-			// }
-			// b, err := jsonutil.ReadJson[body](r.Body)
-			// if err != nil {
-			// 	jsonutil.WriteError(w, err)
-			// 	return
-			// }
-			location, _, err := uploadService.UploadImageUrl(ctx, "covers")
-
+			uploadLocation, objectLocation, err := uploadService.UploadUrl(ctx, "images/covers", filename, "image/*")
 			if err != nil {
 				jsonutil.WriteError(w, err)
 				return
 			}
-			w.Header().Set("Location", location)
-			w.WriteHeader(http.StatusTemporaryRedirect)
+
+			jsonutil.WriteJSON(w, &model.FileUploadResponse{
+				Href: objectLocation,
+				Links: []model.Link{
+					{Rel: "upload", Href: uploadLocation},
+				},
+			}, http.StatusContinue)
+
 		})
 
 	}

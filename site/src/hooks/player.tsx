@@ -27,7 +27,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       streams: 123,
       duration: 123,
       creationDate: "2007-03-24",
-      url: "https://storage.songsled.com/audio/89e9eb5b",
+      audio: "https://storage.songsled.com/audio/89e9eb5b",
     },
   ],
   empty: (): boolean => {

@@ -70,7 +70,7 @@ func (s *GoogleCloud) CreateObject(ctx context.Context, bucket, key string,
 }
 
 func (s *GoogleCloud) CreateObjectUrl(ctx context.Context, bucket, key string,
-	cacheble bool, ttl time.Duration) (string, string, error) {
+	cacheble bool, ttl time.Duration, contentType string) (string, string, error) {
 	opts := &storage.SignedURLOptions{
 		GoogleAccessID: s.accessId,
 		Method:         "PUT",

@@ -3,9 +3,11 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"strings"
 
 	"github.com/google/uuid"
+	"songsled.com/internal/repository"
 	"songsled.com/internal/repository/postgres/gensqlc"
 	"songsled.com/pkg/model"
 )
@@ -35,8 +37,12 @@ func (r *Song) NewSong(ctx context.Context, s *model.Song) (uuid.UUID, error) {
 func (r *Song) GetSongByID(ctx context.Context, songId uuid.UUID) (*model.Song, error) {
 	s, err := r.q.GetSongByID(ctx, songId)
 	if err != nil {
+		if errors.Is(sql.ErrNoRows, err) {
+			return nil, repository.ErrNotFound
+		}
 		return nil, err
 	}
+	
 
 	return &model.Song{
 		SongID:       s.SongID,
@@ -62,8 +68,8 @@ func (r *Song) GetSongs(ctx context.Context, n int) ([]*model.Song, error) {
 			SongID:       s.SongID,
 			AlbumID:      s.AlbumID.UUID,
 			Name:         s.SongName,
-			Genres:       strings.Split(string(s.Genres), ","),
-			Artists:      strings.Split(string(s.Artists), ","),
+			Genres:       strings.Split(string(s.GenreList), ","),
+			Artists:      strings.Split(string(s.ArtistList), ","),
 			Duration:     int(s.Duration),
 			CreationDate: s.SongCreationDate,
 			Streams:      int(s.Streams),
@@ -81,16 +87,16 @@ func (r *Song) GetSongsByGenre(ctx context.Context, genre string) ([]*model.Song
 	return nil, nil
 }
 func (r *Song) GetSongRandom(ctx context.Context, n int) ([]*model.Song, error) {
-	res, err := r.q.GetRandomSongs(ctx, int32(n))
-	if err != nil {
-		return nil, err
-	}
+	// res, err := r.q.GetRandomSongs(ctx, int32(n))
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	var songs []*model.Song
-	for _, s := range res {
-		songs = append(songs, toModelSong(s))
-	}
-	return songs, nil
+	// var songs []*model.Song
+	// for _, s := range res {
+	// 	songs = append(songs, toModelSong(s))
+	// }
+	return nil, nil
 }
 func (r *Song) PutArtistSong(ctx context.Context, songId, artistId uuid.UUID) error {
 	return r.q.PutArtistSong(ctx, gensqlc.PutArtistSongParams{

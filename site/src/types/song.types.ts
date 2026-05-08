@@ -8,7 +8,7 @@ export interface Song {
   duration: number;
   creationDate: string;
   image?: string;
-  url: string;
+  audio: string;
 }
 // SongID  uuid.UUID `json:"id"`
 // 	AlbumID uuid.UUID `json:"albumId"`

@@ -5,10 +5,11 @@ import Footer from "../../components/footer/Footer";
 import fetchApi from "../../lib/api";
 // import test from "../../assets/images/cool-pic-128.jpg";
 import { Link } from "react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { Song } from "../../types/song.types";
-import { usePlayerStore } from "../../hooks/player";
+// import { usePlayerStore } from "../../hooks/player";
 import { SongPlaceholderSvg } from "../../components/menu/Svg";
+import { NetworkError } from "../../lib/error";
 // function Card({ title }: { title: string }) {
 // fetch("", {
 //   method: "GET",
@@ -20,7 +21,7 @@ import { SongPlaceholderSvg } from "../../components/menu/Svg";
 // );
 // }
 const Media = ({ song, size }: { song: Song; size: number }) => {
-  const player = usePlayerStore();
+  // const player = usePlayerStore();
 
   var image = <SongPlaceholderSvg />;
   if (song.image) {
@@ -38,48 +39,66 @@ const Media = ({ song, size }: { song: Song; size: number }) => {
     </div>
   );
 };
-const test = async () => {
-  const res = await fetchApi(
-    "/v1/songs",
-    {
-      method: "GET",
-    },
-    {
-      n: String(10),
-    },
-  );
-  if (res) {
-    const json = await res.json();
-  }
-};
+// const test = async () => {
+//   const res = await fetchApi(
+//     "/v1/songs",
+//     {
+//       method: "GET",
+//     },
+//     {
+//       n: String(10),
+//     },
+//   );
+//   if (res) {
+//     const json = await res.json();
+//   }
+// };
+const n = "10";
 const Home = () => {
-  const n = 10;
-  var result: Song[] = [];
+  const [songs, _] = useState<Song[]>([]);
+  const [error, setError] = useState<string>("");
+
+  var topContent;
+
   useEffect(() => {
-    test();
-  });
+    fetchApi(
+      "/v1/songs",
+      {
+        method: "GET",
+      },
+      {
+        n: n,
+      },
+    )
+      .then((res) => {
+        if (!res) {
+          setError(NetworkError);
+          return;
+        }
+        return res?.json();
+      })
+      .catch((e) => setError(e));
+  }, [songs]);
+
+  if (songs) {
+    topContent = songs.map((song: Song) => {
+      return <Media song={song} size={192} />;
+    });
+  }
+  if (songs.length == 0) {
+    topContent = <h1 className="color-text-invert"> Nothing to show...</h1>;
+  }
+  if (error) {
+    topContent = <h1 className="color-text-danger">{error}</h1>;
+  }
 
   return (
     <div className="layout-holy-grail height-full" id="home">
       <Header />
       <main className="display-flex flex-column layout-main padding-lg scroll-vertical gap-lg">
         <section className="display-grid bg-color-body-darker padding-xs gap-xs">
-          <summary className="display-flex font-size-lg flex-column width-200">
-            {/* <span className="font-weight-bold">
-              Top of the class asd asd asd asd
-            </span> */}
-            {/* <span className="color-text-subtle">Goop</span> */}
-          </summary>
-          {result.map((song) => {
-            return <Media song={song} size={192} />;
-          })}
-
-          {/* <Media size={192} />
-          <Media size={192} />
-          <Media size={192} />
-          <Media size={192} />
-          <Media size={192} />
-          <Media size={192} /> */}
+          {/* <summary className="display-flex font-size-lg flex-column width-200">Title</summary> */}
+          {topContent}
         </section>
         {/* <div className="margin-xs display-flex flex-column gap-md">
           <section className="margin-inline-xxxl ">

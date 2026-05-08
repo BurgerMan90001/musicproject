@@ -24,7 +24,7 @@ WORKDIR /src
 COPY --from=build /src/main .
 COPY --from=build /src/.env.dev .env.dev
 COPY --from=build /src/config.dev.yml config.dev.yml
-COPY --from=build /src/database database
+
 
 # RUN apk add --no-cache \
 #     ca-certificates

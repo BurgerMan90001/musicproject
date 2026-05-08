@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState, type JSX } from "react";
+import { useState, type JSX } from "react";
 import { usePlayerStore } from "../../../hooks/player";
-import { MutedSvg, PauseSvg, PlaySvg, VolumeMediumSvg } from "../Svg";
+import { PauseSvg, PlaySvg } from "../Svg";
 
 const PlayButton = () => {
   const player = usePlayerStore();

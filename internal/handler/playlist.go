@@ -23,7 +23,11 @@ func handlePlaylists(playlistRepo *postgres.Playlist) func(r chi.Router) {
 			ctx := r.Context()
 			res, err := jsonutil.ReadJson[*model.NewPlaylistRequest](r.Body)
 			if err != nil {
-				jsonutil.WriteError(w, err)
+				jsonutil.WriteError(w, &model.Error{
+					Code:    http.StatusBadRequest,
+					Message: "Playlist not found",
+					Details: err.Error(),
+				})
 				return
 			}
 			if _, err := playlistRepo.NewPlaylist(ctx, res.Name, res.SongsIDs); err != nil {
@@ -36,7 +40,11 @@ func handlePlaylists(playlistRepo *postgres.Playlist) func(r chi.Router) {
 		r.Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
 			playlistId, err := uuid.Parse(r.PathValue("id"))
 			if err != nil {
-				jsonutil.WriteError(w, err)
+				jsonutil.WriteError(w, &model.Error{
+					Code:    http.StatusBadRequest,
+					Message: "Playlist not found",
+					Details: err.Error(),
+				})
 				return
 			}
 			ctx := r.Context()

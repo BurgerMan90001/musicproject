@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type JSX } from "react";
+import { useEffect, useState, type JSX } from "react";
 import { usePlayerStore } from "../../../hooks/player";
 import { MutedSvg, VolumeMediumSvg } from "../Svg";
 

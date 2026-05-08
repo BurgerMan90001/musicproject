@@ -21,12 +21,12 @@ var _ Blobstore = (*AWSS3)(nil)
 type AWSS3 struct {
 	client        *s3.Client
 	presignClient *s3.PresignClient
-	endpoint      string
-	public        string
+	// Public bucket url to serve content from
+	public string
 }
 
-func NewS3(ctx context.Context,
-	endpoint, region, public, accessKeyIdVar, accessKeySecretVar string) (*AWSS3, error) {
+func NewS3(ctx context.Context, endpoint, region string,
+	public, accessKeyIdVar, accessKeySecretVar string) (*AWSS3, error) {
 
 	s, err := secrets.GetenvMap(accessKeyIdVar, accessKeySecretVar)
 	if err != nil {
@@ -35,14 +35,12 @@ func NewS3(ctx context.Context,
 	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(s[accessKeyIdVar], s[accessKeySecretVar], "")),
 		config.WithRegion(region),
-		config.WithRequestChecksumCalculation(aws.RequestChecksumCalculationWhenRequired),
-		// config.WithChec
 	)
 	if err != nil {
 		return nil, err
 	}
 	if public == "" {
-
+		public = endpoint
 	}
 
 	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
@@ -56,7 +54,7 @@ func NewS3(ctx context.Context,
 	}); err != nil {
 		return nil, fmt.Errorf("S3 list objects: %w", err)
 	}
-	return &AWSS3{client: client, presignClient: presignClient}, nil
+	return &AWSS3{client: client, presignClient: presignClient, public: public}, nil
 }
 
 func (s *AWSS3) CreateObject(ctx context.Context, bucket string, key string,
@@ -72,19 +70,18 @@ func (s *AWSS3) CreateObject(ctx context.Context, bucket string, key string,
 
 // Returns a presigned url to upload files to
 func (s *AWSS3) CreateObjectUrl(ctx context.Context,
-	bucket, key string, cacheble bool, ttl time.Duration) (string, string, error) {
+	bucket, key string, cacheble bool, ttl time.Duration, contentType string) (string, string, error) {
 	putInput := s.newPutInput(bucket, key,
-		nil, cacheble, "")
+		nil, cacheble, contentType)
 
 	presignUrl, err := s.presignClient.PresignPutObject(ctx, putInput, func(po *s3.PresignOptions) {
 		s3.WithPresignExpires(ttl)
-
 	})
 	if err != nil {
 		return "", "", err
 	}
 
-	objectUrl, err := url.JoinPath(s.endpoint, bucket, key)
+	objectUrl, err := url.JoinPath("https://", s.public, key)
 	if err != nil {
 		return "", "", err
 	}
@@ -99,16 +96,16 @@ func (s *AWSS3) newPutInput(bucket string, key string,
 	putInput := &s3.PutObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
-		
-		// CacheControl:      aws.String(cacheControl),
+
+		// CacheControl: aws.String(cacheControl),
 		// ChecksumAlgorithm: types.ChecksumAlgorithmCrc32,
 	}
 	if contents != nil {
 		putInput.Body = bytes.NewReader(contents)
 	}
-	// if contentType != "" {
-	// 	putInput.ContentType = aws.String(contentType)
-	// }
+	if contentType != "" {
+		putInput.ContentType = aws.String(contentType)
+	}
 	return putInput
 }
 func (s *AWSS3) GetObject(ctx context.Context, bucket string, key string) ([]byte, error) {

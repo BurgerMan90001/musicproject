@@ -45,10 +45,10 @@ func NewTest(t *testing.T, ctx context.Context, image string) *Repo {
 
 func newDBFromUri(ctx context.Context, uri string) (*sql.DB, error) {
 	// Verify that credentials are not empty
-	_, err := secrets.GetenvMap("PG_USERNAME", "PG_PASSWORD")
-	if err != nil {
-		return nil, err
-	}
+	// _, err := secrets.GetenvMap("PG_USERNAME", "PG_PASSWORD")
+	// if err != nil {
+	// 	return nil, err
+	// }
 	if uri == "" {
 		return nil, fmt.Errorf("postgres uri empty")
 	}

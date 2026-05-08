@@ -54,21 +54,11 @@ func handleSongs(repo *postgres.Song, uploadService *upload.Service) func(r chi.
 				return
 			}
 			ctx := r.Context()
-
-			if songRequest.Audio == "" {
-
-				// http.Redirect(w, r, "")
-				return
-			}
-
-			if err := uploadService.UploadSongMetadata(ctx, songRequest); err != nil {
+			if _, err := uploadService.UploadSongMetadata(ctx, songRequest); err != nil {
 				jsonutil.WriteError(w, err)
 				return
 			}
 
-			// Set the location(s) where the file is going to be uploaded
-			// w.Header().Set("Location", location)
-			// jsonutil.WriteJSON(w, nil, http.StatusSeeOther)
 		})
 		r.Get("/{songId}", func(w http.ResponseWriter, r *http.Request) {
 			id, err := uuid.Parse(r.PathValue("songId"))

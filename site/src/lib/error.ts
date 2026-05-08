@@ -8,5 +8,5 @@ interface ApiError {
 const HTTPError = (r: Response) => {
   throw new Error(`HTTP error: Status ${r.status} ${JSON.stringify(r.body)}`);
 };
-
-export { HTTPError, type ApiError };
+const NetworkError = "A network error was encountered";
+export { HTTPError, type ApiError, NetworkError };

@@ -6,39 +6,6 @@ INSERT INTO songs
 VALUES($1, $2, $3, $4, $5) RETURNING song_id;
 
 
--- name: PutSongCover :exec
-UPDATE songs
-SET song_cover_url=$1
-WHERE song_id=$2;
-
-
--- INSERT INTO song_genres
--- (genre_id, song_id)
--- VALUES($1, $2);
-
--- INSERT INTO artist_songs
--- (artist_id, song_id)
--- VALUES($1, $2);
-
--- COMMIT;
-
--- type NewSongRequest struct {
--- 	// Required
--- 	Name     string   `json:"name"`
--- 	Artists  []string `json:"artists"`
--- 	Duration int      `json:"duration"`
--- 	// Optional
--- 	Genres []string `json:"genres"`
--- 	// YYYY-MM-DD format
--- 	CreationDate string `json:"creationDate"`
-
--- 	// Optional
--- 	AlbumID uuid.UUID `json:"albumId"`
-
--- 	// Optional
--- 	Image string `json:"image,omitempty"`
--- }
-
 -- name: NewGenre :one 
 INSERT INTO genres
 (genre_name)
@@ -64,8 +31,8 @@ VALUES($1) RETURNING artist_id;
 SELECT
 songs.song_id,
 song_name,
-artists,
-genres,
+artist_list,
+genre_list,
 streams,
 duration,
 songs.creation_date AS song_creation_date,  
@@ -77,12 +44,12 @@ song_audio_url,
 playlists.playlist_name,
 playlists.playlist_id,
 playlists.user_id
-FROM (SELECT string_agg(artists.artist_name, ',') AS artists, song_id 
+FROM (SELECT string_agg(artists.artist_name, ',') AS artist_list, song_id 
     FROM artists
     INNER JOIN artist_songs ON artist_songs.artist_id = artists.artist_id
     GROUP BY song_id) a1
 INNER JOIN
-   (SELECT string_agg(genres.genre_name, ',') AS genres, song_id
+   (SELECT string_agg(genres.genre_name, ',') AS genre_list, song_id
     FROM genres
     INNER JOIN song_genres ON genres.genre_id = song_genres.genre_id
   	GROUP BY song_id) a2
@@ -94,14 +61,15 @@ LEFT JOIN playlists ON playlists.playlist_id = playlist_songs.playlist_id
 WHERE playlist_songs.playlist_id = $1
 LIMIT $2;
 
--- TODO name: GetSongsByGenre :many
+-- name: GetSongsByGenre :many
+SELECT * FROM songs;
 
 -- name: GetSongs :many
 SELECT
 songs.song_id,
 song_name,
-artists,
-genres,
+artist_list,
+genre_list,
 streams,
 duration,
 songs.creation_date AS song_creation_date,  
@@ -110,12 +78,12 @@ albums.album_id,
 albums.album_name,
 song_cover_url, 	
 song_audio_url
-FROM (SELECT string_agg(artists.artist_name, ',') AS artists, song_id 
+FROM (SELECT string_agg(artists.artist_name, ',') AS artist_list, song_id 
     FROM artists
     INNER JOIN artist_songs ON artist_songs.artist_id = artists.artist_id
     GROUP BY song_id) a1
 INNER JOIN
-   (SELECT string_agg(genres.genre_name, ',') AS genres, song_id
+   (SELECT string_agg(genres.genre_name, ',') AS genre_list, song_id
     FROM genres
     INNER JOIN song_genres ON genres.genre_id = song_genres.genre_id
   	GROUP BY song_id) a2
@@ -172,20 +140,11 @@ INNER JOIN artist_songs ON artist_songs.artist_id = artists.artist_id
 INNER JOIN songs ON songs.song_id = artist_songs.song_id
 WHERE artists.artist_id=$1;
 
--- TODO name: GetAlubumSongs :many
-SELECT *
 
-FROM songs
-INNER JOIN albums ON albums.album_id = songs.album_id
-WHERE albums.album_id=$1;
-
-
--- name: GetRandomSongs :many
-SELECT * FROM songs 
-
-
-
-ORDER BY RANDOM() LIMIT $1;
+-- name: PutSongCover :exec
+UPDATE songs
+SET song_cover_url=$1
+WHERE song_id=$2;
 
 
 -- name: PutSongGenre :exec
@@ -207,10 +166,6 @@ VALUES($1, $2, $3);
 INSERT INTO artist_songs
 (artist_id, song_id)
 VALUES($1, $2);
-
-
-
--- TODO name: Search :many
 
 
 -- name: DeleteSongByID :exec

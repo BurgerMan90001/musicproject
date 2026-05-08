@@ -15,21 +15,14 @@ export const Popover = (popover: Popover) => {
       <summary>{popover.title}</summary>
       <div className="popover-content bg-color-body-dark display-flex flex-column box-shadow font-weight-normal">
         {popover.buttons.map((n) => {
-          if (n.to) {
-            return (
-              <Link
-                to={n.to}
-                className="button-clear padding-xxs font-size-sm width-150"
-              >
-                {n.name}
-              </Link>
-            );
-          }
-
           return (
-            <button className="button-clear padding-xxs font-size-sm width-150">
+            <Link
+            
+              to={n.to}
+              className="button-clear padding-xxs font-size-sm width-150"
+            >
               {n.name}
-            </button>
+            </Link>
           );
         })}
       </div>

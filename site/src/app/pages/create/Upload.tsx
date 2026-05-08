@@ -1,5 +1,7 @@
-import { useState, type JSX } from "react";
+import { useCallback, useState, type JSX } from "react";
 import fetchApi from "../../../lib/api";
+import type { Song } from "../../../types/song.types";
+import { useNavigate } from "react-router";
 
 const Input = ({
   label,
@@ -18,89 +20,115 @@ const Input = ({
   );
 };
 function Upload() {
+  const [uploading, setUploading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
   const [audioFile, setAudioFile] = useState<File>();
-  const [_, setImageFile] = useState<File>();
+  const [imageFile, setImageFile] = useState<File>();
+  const [imagePreview, setImagePreview] = useState<string>("");
 
-  // Location for song upload endpoint
-  // const [location, setLocation] = useState<string>();
-  // const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-  //   if (event.target.files && event.target.files[0]) {
-  //     const file = event.target.files[0];
-  //     setSelectedFile(file);
-  //   }
-  // };
-  // const onAudioFileChange = () => {
-  //   if (audioFile) {
-  //     uploadFile(audioFile, "/v1/songs");
-  //   }
-  // };
-  const uploadFile = async (file: File, location: string) => {
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
+  const navigate = useNavigate();
+  const metadata: Song = {
+    id: "",
+    name: "",
+    genres: "",
+    artists: "",
+    creationDate: "",
+    streams: 0,
+    duration: 0,
+    image: "",
+    audio: "",
+  };
 
-      const res = await fetchApi(location, {
-        method: "PUT",
-        body: formData,
-        headers: {
-          "Content-Type": file.type,
-        },
-      });
-      console.log(res?.body);
-
-      // setSelectedFile(undefined);
+  const uploadImage = useCallback(() => {
+    if (!imageFile) {
       return;
-    } catch (e) {
-      console.log(e);
     }
-  };
-
-  const onSubmit = async () => {
-    // const song: Song = {
-    //   id: "",
-    //   name: "",
-    //   genres: "",
-    //   artists: "",
-    //   creationDate: "",
-    //   streams: 0,
-    //   duration: 0,
-    //   image: "",
-    //   url: "",
-    // };
-
-    // setLocation("");
     const formData = new FormData();
-    if (audioFile) {
-      formData.append("file", audioFile);
+    formData.append("file", imageFile);
+
+    fetchApi("/v1/images/covers", {
+      method: "PUT",
+      body: formData,
+      headers: {
+        "Content-Type": imageFile.type,
+        "Content-Length": String(imageFile.size),
+      },
+    })
+      .then((res) => {
+        if (!res) {
+          setError("A network error was encountered");
+          return;
+        }
+        return res.json();
+      })
+      .then((json) => {
+        metadata.image = json.href;
+      })
+      .catch((e) => setError(e));
+  }, [audioFile]);
+
+  const uploadAudio = useCallback(() => {
+    if (!audioFile) {
+      setError("No audio file selected");
+      return;
     }
 
-    // alert(String(audioFile?.size));
-
-    const res = await fetchApi("/v1/images/covers", {
-      method: "PUT",
-      // body: formData,
-      headers: {
-        // mode: "cors",
-        // "Content-Length": "0",
-        // "Orgin": "http://localhost:5173",
-        // headers.append('Access-Control-Allow-Credentials' 'true');
-        // Orgin: "https://songsled.com",
+    fetchApi(
+      "/v1/audio",
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": audioFile.type,
+        },
       },
-    });
+      { filename: audioFile.name },
+    )
+      .then((res) => {
+        if (!res || !res.ok) {
+          setError("A network error was encountered");
+          return;
+        }
+        return res.json();
+      })
+      .then((json) => {
+        const formData = new FormData();
+        formData.append("file", audioFile);
 
-    console.log(res);
-  };
-  // interface input {
-  //   type: string;
-  //   id?: string;
-  //   label?: string;
-  //   required?: boolean;
-  // }
+        fetch(json.links[0].href, {
+          method: "PUT",
+          body: formData,
+          headers: {
+            "Content-Type": audioFile.type,
+            "Content-Length": String(audioFile.size),
+          },
+        }).then((res) => {
+          if (!res.ok) {
+            setError("A network error was encountered");
+            return;
+          }
+          metadata.audio = json.href;
+        });
+      })
+      .catch((e) => setError(e))
+      .finally(() => {
+        setUploading(false);
+      });
+  }, [audioFile]);
+
+  if (uploading) {
+    return <main>Loading</main>;
+  }
 
   return (
     <main className="layout-main display-flex scroll-vertical">
       <form
-        // onSubmit={onSubmit}
+        onSubmit={() => {
+          uploadImage();
+          uploadAudio();
+          if (!error) {
+            navigate("/create");
+          }
+        }}
         className="display-flex flex-column bg-color-body-medium font-size-md padding-xl margin-0-auto gap-xs"
       >
         <h1 className="font-weight-bold border-bottom">Upload Song</h1>
@@ -135,16 +163,6 @@ function Upload() {
               className="flex-1 font-size-sm padding-xs "
             />
           </Input>
-          {/* <Input label="Filename">
-            <input
-              type="text"
-              id="filename"
-              aria-label="Filename"
-              placeholder="my_song.mp3"
-              required={true}
-              className="flex-1 font-size-sm padding-xs"
-            />
-          </Input> */}
         </div>
 
         {/* <Input label="In Album">
@@ -155,44 +173,53 @@ function Upload() {
             className="bg-color-body-dark"
           />
         </Input> */}
+        {/* <div className="display "> */}
         <div className="display-flex gap-xxs margin-0-auto">
-          <Input label="Cover File">
-            <input
-              type="file"
-              id="cover"
-              onChange={(event) => {
-                if (event.target.files) {
-                  const file = event.target.files[0];
-                  setImageFile(file);
-                }
-              }}
-              className="bg-color-body-dark padding-xxs color-text-subtle"
-            />
-          </Input>
+          <div className="">
+            <Input label="Cover File">
+              <input
+                type="file"
+                id="cover"
+                accept="image/*"
+                onChange={(event) => {
+                  if (event.target.files) {
+                    const file = event.target.files[0];
+                    setImagePreview(URL.createObjectURL(file));
+                    setImageFile(file);
+                  }
+                }}
+                className="bg-color-body-dark padding-xxs color-text-subtle"
+              />
+            </Input>
+            {imagePreview && (
+              <>
+                <span>Preview</span>
+                <img src={imagePreview}></img>
+              </>
+            )}
+          </div>
 
-          <Input label="Audio">
-            <input
-              type="file"
-              id="audio"
-              onChange={(event) => {
-                if (event.target.files) {
-                  const file = event.target.files[0];
-                  setAudioFile(file);
-                }
-              }}
-              // required
-              className="bg-color-body-dark padding-xxs color-text-subtle"
-            />
-          </Input>
+          <div>
+            <Input label="Audio">
+              <input
+                type="file"
+                id="audio"
+                accept="audio/*"
+                onChange={(event) => {
+                  if (event.target.files) {
+                    const file = event.target.files[0];
+                    // setImagePreview(URL.createObjectURL(file));
+                    setAudioFile(file);
+                  }
+                }}
+                // required
+                className="bg-color-body-dark padding-xxs color-text-subtle"
+              />
+            </Input>
+          </div>
         </div>
-
-        <button
-          type={"button"}
-          onClick={onSubmit}
-          className="button-primary padding-xxs"
-        >
-          Submit
-        </button>
+        <span className="color-text-danger">{error}</span>
+        <button className="button-primary padding-xxs">Submit</button>
       </form>
     </main>
   );

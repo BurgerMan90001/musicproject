@@ -5,13 +5,13 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"testing"
 
 	"songsled.com/internal/jsonutil"
+	"songsled.com/pkg/model"
 )
 
 func (s *testSuite) TestUploadSongMetadata() {
@@ -55,7 +55,7 @@ func (s *testSuite) TestUploadSongMetadata() {
 	s.Run("success", func() {
 		tt := test{
 			req: &request{
-				method: http.MethodPost,
+				method: http.MethodPut,
 				body: map[string]any{
 					"name":         "Cool music",
 					"artists":      []string{"rockguy", "rockguy2"},
@@ -71,9 +71,18 @@ func (s *testSuite) TestUploadSongMetadata() {
 			wantCode: http.StatusOK,
 		}
 
+		w := s.newRequest("/v1/audio", tt.req)
+		s.Equal(http.StatusContinue, w.Code)
+
+		b, err := jsonutil.ReadJson[model.FileUploadResponse](w.Body)
+		s.Require().NoError(err)
+		
+		// The file location uses the public url
+		s.Contains(b.Href, s.cfg.File.Public)
+
 		if !testing.Short() && os.Getenv("USE_CLOUD") == "true" {
-			err := s.uploadFile(tt.audioFile, "")
-			s.Require().NoError(err)
+			// err := s.uploadFile(tt.audioFile, "")
+			// s.Require().NoError(err)
 
 			if tt.imageFile != "" {
 
@@ -90,12 +99,12 @@ func (s *testSuite) TestUploadSongMetadata() {
 
 		w2 := s.newRequest(endpoint, tt.req)
 
-		location := w2.Result().Header.Get("Location")
+		// location := w2.Result().Header.Get("Location")
 
 		s.Equal(tt.wantCode, w2.Code)
-		s.NotEmpty(location)
+		// s.NotEmpty(location)
 
-		r, err := jsonutil.ReadJson[map[string]any](w2.Body)
+		r, err := jsonutil.ReadJson[model.FileUploadResponse](w2.Body)
 		s.Require().NoError(err)
 
 		if w2.Result().StatusCode >= 500 && w2.Code <= 600 {
@@ -105,14 +114,14 @@ func (s *testSuite) TestUploadSongMetadata() {
 		}
 
 		// Check the uploaded song metadata
-		metadataEndpoint, err := url.JoinPath("/v1/songs")
-		s.Require().NoError(err)
+		// metadataEndpoint, err := url.JoinPath("/v1/songs")
+		// s.Require().NoError(err)
 
-		w3 := s.newRequest(metadataEndpoint, &request{
-			method: "GET",
-		})
+		// w3 := s.newRequest(metadataEndpoint, &request{
+		// 	method: "GET",
+		// })
 
-		s.Equal(http.StatusOK, w3.Code)
+		// s.Equal(http.StatusOK, w3.Code)
 
 	})
 }

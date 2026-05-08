@@ -13,12 +13,9 @@ import (
 )
 
 const deleteSongByID = `-- name: DeleteSongByID :exec
-
-
 DELETE FROM songs WHERE song_id=$1
 `
 
-// TODO name: Search :many
 func (q *Queries) DeleteSongByID(ctx context.Context, songID uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, deleteSongByID, songID)
 	return err
@@ -79,8 +76,8 @@ const getPlaylistSongsByID = `-- name: GetPlaylistSongsByID :many
 SELECT
 songs.song_id,
 song_name,
-artists,
-genres,
+artist_list,
+genre_list,
 streams,
 duration,
 songs.creation_date AS song_creation_date,  
@@ -92,12 +89,12 @@ song_audio_url,
 playlists.playlist_name,
 playlists.playlist_id,
 playlists.user_id
-FROM (SELECT string_agg(artists.artist_name, ',') AS artists, song_id 
+FROM (SELECT string_agg(artists.artist_name, ',') AS artist_list, song_id 
     FROM artists
     INNER JOIN artist_songs ON artist_songs.artist_id = artists.artist_id
     GROUP BY song_id) a1
 INNER JOIN
-   (SELECT string_agg(genres.genre_name, ',') AS genres, song_id
+   (SELECT string_agg(genres.genre_name, ',') AS genre_list, song_id
     FROM genres
     INNER JOIN song_genres ON genres.genre_id = song_genres.genre_id
   	GROUP BY song_id) a2
@@ -118,8 +115,8 @@ type GetPlaylistSongsByIDParams struct {
 type GetPlaylistSongsByIDRow struct {
 	SongID            uuid.UUID
 	SongName          string
-	Artists           []byte
-	Genres            []byte
+	ArtistList        []byte
+	GenreList         []byte
 	Streams           int32
 	Duration          int32
 	SongCreationDate  string
@@ -145,8 +142,8 @@ func (q *Queries) GetPlaylistSongsByID(ctx context.Context, arg GetPlaylistSongs
 		if err := rows.Scan(
 			&i.SongID,
 			&i.SongName,
-			&i.Artists,
-			&i.Genres,
+			&i.ArtistList,
+			&i.GenreList,
 			&i.Streams,
 			&i.Duration,
 			&i.SongCreationDate,
@@ -158,46 +155,6 @@ func (q *Queries) GetPlaylistSongsByID(ctx context.Context, arg GetPlaylistSongs
 			&i.PlaylistName,
 			&i.PlaylistID,
 			&i.UserID,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getRandomSongs = `-- name: GetRandomSongs :many
-SELECT song_id, song_name, streams, duration, creation_date, album_id, song_cover_url, song_audio_url FROM songs 
-
-
-
-ORDER BY RANDOM() LIMIT $1
-`
-
-func (q *Queries) GetRandomSongs(ctx context.Context, limit int32) ([]Song, error) {
-	rows, err := q.db.QueryContext(ctx, getRandomSongs, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Song
-	for rows.Next() {
-		var i Song
-		if err := rows.Scan(
-			&i.SongID,
-			&i.SongName,
-			&i.Streams,
-			&i.Duration,
-			&i.CreationDate,
-			&i.AlbumID,
-			&i.SongCoverUrl,
-			&i.SongAudioUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -322,12 +279,11 @@ func (q *Queries) GetSongGenres(ctx context.Context, arg GetSongGenresParams) ([
 }
 
 const getSongs = `-- name: GetSongs :many
-
 SELECT
 songs.song_id,
 song_name,
-artists,
-genres,
+artist_list,
+genre_list,
 streams,
 duration,
 songs.creation_date AS song_creation_date,  
@@ -336,12 +292,12 @@ albums.album_id,
 albums.album_name,
 song_cover_url, 	
 song_audio_url
-FROM (SELECT string_agg(artists.artist_name, ',') AS artists, song_id 
+FROM (SELECT string_agg(artists.artist_name, ',') AS artist_list, song_id 
     FROM artists
     INNER JOIN artist_songs ON artist_songs.artist_id = artists.artist_id
     GROUP BY song_id) a1
 INNER JOIN
-   (SELECT string_agg(genres.genre_name, ',') AS genres, song_id
+   (SELECT string_agg(genres.genre_name, ',') AS genre_list, song_id
     FROM genres
     INNER JOIN song_genres ON genres.genre_id = song_genres.genre_id
   	GROUP BY song_id) a2
@@ -354,8 +310,8 @@ LIMIT $1
 type GetSongsRow struct {
 	SongID            uuid.UUID
 	SongName          string
-	Artists           []byte
-	Genres            []byte
+	ArtistList        []byte
+	GenreList         []byte
 	Streams           int32
 	Duration          int32
 	SongCreationDate  string
@@ -366,7 +322,6 @@ type GetSongsRow struct {
 	SongAudioUrl      string
 }
 
-// TODO name: GetSongsByGenre :many
 func (q *Queries) GetSongs(ctx context.Context, limit int32) ([]GetSongsRow, error) {
 	rows, err := q.db.QueryContext(ctx, getSongs, limit)
 	if err != nil {
@@ -379,14 +334,50 @@ func (q *Queries) GetSongs(ctx context.Context, limit int32) ([]GetSongsRow, err
 		if err := rows.Scan(
 			&i.SongID,
 			&i.SongName,
-			&i.Artists,
-			&i.Genres,
+			&i.ArtistList,
+			&i.GenreList,
 			&i.Streams,
 			&i.Duration,
 			&i.SongCreationDate,
 			&i.AlbumCreationDate,
 			&i.AlbumID,
 			&i.AlbumName,
+			&i.SongCoverUrl,
+			&i.SongAudioUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getSongsByGenre = `-- name: GetSongsByGenre :many
+SELECT song_id, song_name, streams, duration, creation_date, album_id, song_cover_url, song_audio_url FROM songs
+`
+
+func (q *Queries) GetSongsByGenre(ctx context.Context) ([]Song, error) {
+	rows, err := q.db.QueryContext(ctx, getSongsByGenre)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Song
+	for rows.Next() {
+		var i Song
+		if err := rows.Scan(
+			&i.SongID,
+			&i.SongName,
+			&i.Streams,
+			&i.Duration,
+			&i.CreationDate,
+			&i.AlbumID,
 			&i.SongCoverUrl,
 			&i.SongAudioUrl,
 		); err != nil {
@@ -435,39 +426,11 @@ func (q *Queries) NewArtist(ctx context.Context, artistName string) (uuid.UUID, 
 }
 
 const newGenre = `-- name: NewGenre :one
-
-
-
-
-
-
 INSERT INTO genres
 (genre_name)
 VALUES($1) RETURNING genre_id
 `
 
-// INSERT INTO song_genres
-// (genre_id, song_id)
-// VALUES($1, $2);
-// INSERT INTO artist_songs
-// (artist_id, song_id)
-// VALUES($1, $2);
-// COMMIT;
-//
-//	type NewSongRequest struct {
-//		// Required
-//		Name     string   `json:"name"`
-//		Artists  []string `json:"artists"`
-//		Duration int      `json:"duration"`
-//		// Optional
-//		Genres []string `json:"genres"`
-//		// YYYY-MM-DD format
-//		CreationDate string `json:"creationDate"`
-//		// Optional
-//		AlbumID uuid.UUID `json:"albumId"`
-//		// Optional
-//		Image string `json:"image,omitempty"`
-//	}
 func (q *Queries) NewGenre(ctx context.Context, genreName string) (uuid.UUID, error) {
 	row := q.db.QueryRowContext(ctx, newGenre, genreName)
 	var genre_id uuid.UUID

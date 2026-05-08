@@ -30,7 +30,7 @@ func (s *FileSystem) CreateObject(ctx context.Context, folder, filename string,
 	return nil
 }
 func (s *FileSystem) CreateObjectUrl(ctx context.Context, folder, filename string,
-	cacheble bool, ttl time.Duration) (string, string, error) {
+	cacheble bool, ttl time.Duration, contentType string) (string, string, error) {
 	if filename == "" {
 		return "", "", errors.New("Create object: filename is empty")
 	}

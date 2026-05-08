@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS songs (
     song_id UUID PRIMARY KEY DEFAULT uuidv7() NOT NULL,
     song_name VARCHAR(100) NOT NULL, 
     streams INT NOT NULL DEFAULT 0,
-	duration INT NOT NULL, 
+    duration INT NOT NULL, 
     creation_date VARCHAR(100) NOT NULL DEFAULT 'Unknown',
     
     album_id UUID REFERENCES albums(album_id),

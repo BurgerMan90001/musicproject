@@ -29,7 +29,7 @@ func WriteJSON(w http.ResponseWriter, body any, code int, details ...string) {
 			Details: fmt.Sprintf("%v; WriteJSON: data is nil", details),
 		})
 	// Not an error code
-	case code >= 200 && code < 300:
+	case code >= 100 && code < 400:
 		// Check if data is properly encoded
 		_, err := json.Marshal(body)
 		if err != nil {
