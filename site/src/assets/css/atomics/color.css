@@ -59,3 +59,25 @@
 .color-text-invert-dark {
   color: var(--color-text-invert-dark);
 }
+.color-text-primary-light {
+  color: var(--color-primary-light);
+}
+.color-text-primary {
+  color: var(--color-primary);
+}
+
+.box-shadow-medium {
+  box-shadow:
+    0 3.2px 7.2px 0 black,
+    0 0.6px 1.8px 0 black;
+}
+.box-shadow-heavy {
+  box-shadow:
+    var(--box-shadow-heavy) 0 6.4px 14.4px 0 rgba(0, 0, 0, 0.534),
+    0 1.2px 3.6px 0 rgba(0, 0, 0, 0.486);
+}
+.box-shadow-extra-heavy {
+  box-shadow:
+    0 25.6px 57.6px 0 var(--theme-box-shadow-extra-heavy),
+    0 4.8px 14.4px 0 var(--theme-box-shadow-heavy);
+}

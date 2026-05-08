@@ -24,7 +24,7 @@ type GoogleCloud struct {
 
 // Requires env: GOOGLE_ACCESS_ID
 // Set endpoint to empty to use default google cloud storage endpoint
-func NewGoogleCloud(ctx context.Context, endpoint string) (*GoogleCloud, error) {
+func NewGoogleCloud(ctx context.Context, endpoint, accessIdVar string) (*GoogleCloud, error) {
 	if endpoint == "" {
 		// Public object storage endpoint
 		endpoint = "https://storage.googleapis.com"
@@ -34,7 +34,7 @@ func NewGoogleCloud(ctx context.Context, endpoint string) (*GoogleCloud, error) 
 		return nil, fmt.Errorf("New google cloud store: %w", err)
 	}
 
-	accessId, err := secrets.Getenv("GOOGLE_ACCESS_ID")
+	accessId, err := secrets.Getenv(accessIdVar)
 	if err != nil {
 		return nil, err
 	}

@@ -30,6 +30,7 @@
 }
 
 .popover-top {
+  bottom: 0;
 }
 
 .player-popover {
@@ -45,4 +46,3 @@
 }
 .player-popover:hover .player-popover-content {
   visibility: visible; */
-

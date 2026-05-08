@@ -12,10 +12,8 @@ import (
 
 type Album struct {
 	AlbumID      uuid.UUID
-	AlbumName    sql.NullString
-	CreationDate sql.NullString
-	ArtistID     uuid.NullUUID
-	GenreID      uuid.NullUUID
+	AlbumName    string
+	CreationDate string
 }
 
 type AlbumArtist struct {
@@ -29,13 +27,13 @@ type Artist struct {
 }
 
 type ArtistSong struct {
-	ArtistID uuid.NullUUID
-	SongID   uuid.NullUUID
+	ArtistID uuid.UUID
+	SongID   uuid.UUID
 }
 
 type Genre struct {
-	GenreID uuid.UUID
-	Genre   string
+	GenreID   uuid.UUID
+	GenreName string
 }
 
 type Playlist struct {
@@ -56,8 +54,8 @@ type Song struct {
 	Duration     int32
 	CreationDate string
 	AlbumID      uuid.NullUUID
-	SongImage    sql.NullString
-	SongUrl      string
+	SongCoverUrl sql.NullString
+	SongAudioUrl string
 }
 
 type SongGenre struct {

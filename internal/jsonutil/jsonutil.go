@@ -17,12 +17,12 @@ import (
 // const Json ContentType = "application/json"
 
 // Sets header status code
-func WriteJSON(w http.ResponseWriter, data any, code int, details ...string) {
+func WriteJSON(w http.ResponseWriter, body any, code int, details ...string) {
 	w.Header().Set("Content-Type", "application/json")
 	jsonEncoder := json.NewEncoder(w)
 
 	switch {
-	case data == nil:
+	case body == nil:
 		WriteError(w, &model.Error{
 			Code:    code,
 			Message: "Internal server error",
@@ -31,7 +31,7 @@ func WriteJSON(w http.ResponseWriter, data any, code int, details ...string) {
 	// Not an error code
 	case code >= 200 && code < 300:
 		// Check if data is properly encoded
-		_, err := json.Marshal(data)
+		_, err := json.Marshal(body)
 		if err != nil {
 			code = http.StatusInternalServerError
 
@@ -43,7 +43,7 @@ func WriteJSON(w http.ResponseWriter, data any, code int, details ...string) {
 			return
 		}
 		w.WriteHeader(code)
-		jsonEncoder.Encode(data)
+		jsonEncoder.Encode(body)
 
 	// Invalid status codes
 	case code < 100 || code >= 600:
@@ -54,7 +54,7 @@ func WriteJSON(w http.ResponseWriter, data any, code int, details ...string) {
 		})
 
 	default:
-		err := data.(error)
+		err := body.(error)
 		WriteError(w, err)
 	}
 }
@@ -72,7 +72,6 @@ func WriteError(w http.ResponseWriter, reason error) {
 	// Service error / internal error
 	if jerr.Code >= 500 && jerr.Code < 600 {
 		w.WriteHeader(jerr.Code)
-		
 
 		json.NewEncoder(w).Encode(jerr)
 

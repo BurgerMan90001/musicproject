@@ -3,28 +3,22 @@ package upload
 import (
 	"context"
 	"errors"
-	"fmt"
-	"io"
-	"mime/multipart"
 	"net/http"
 	"path/filepath"
-	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"songsled.com/internal/config"
+	"songsled.com/internal/repository/postgres"
 	"songsled.com/internal/services/encode"
 	"songsled.com/internal/services/file"
 	"songsled.com/pkg/crand"
 	"songsled.com/pkg/model"
 )
 
-type Song struct {
+type Service struct {
 	// Required
 	bucket string
-	// Prefix for files
-	prefix string
-
+	// Optional
 	caching bool
 	// Should be 1 hour or less
 	urlTtl time.Duration
@@ -34,19 +28,20 @@ type Song struct {
 	// Optional
 	// Encodes files before storing
 	encoder encode.HLSEncoder
-	// Required
-	// Repository to store song metadata
-	repo songRepo
+
+	songRepo *postgres.Song
 }
 
-type songRepo interface {
-	PutSong(ctx context.Context, s *model.Song) (uuid.UUID, error)
-}
+// type songRepo interface {
+// 	NewSong(ctx context.Context, s *model.Song) (uuid.UUID, error)
+// }
 
-func NewSong(bucket, prefix string,
+func New(bucket string,
 	encoding, caching bool,
 	urlTtl time.Duration,
-	store file.Blobstore, repo songRepo) (*Song, error) {
+	store file.Blobstore,
+	songRepo *postgres.Song,
+) (*Service, error) {
 	var encoder encode.HLSEncoder
 	if encoding {
 		encoder = encode.NewFFmpeg(config.Encoder{})
@@ -54,61 +49,94 @@ func NewSong(bucket, prefix string,
 	if bucket == "" {
 		return nil, errors.New("Upload.NewSong: bucket is empty")
 	}
-	if prefix == "" {
-		return nil, errors.New("Upload.NewSong: prefix is empty")
-	}
+	// if audioFolder == "" {
+	// 	return nil, errors.New("Upload.NewSong:  audioFolder is empty")
+	// }
 
-	return &Song{bucket,
-		prefix, caching, urlTtl,
-		store, encoder,
-		repo}, nil
+	return &Service{bucket, caching, urlTtl,
+		store, encoder, songRepo}, nil
 }
 
 // Uploads the song's metadata to the repository.
 // Returns the url to upload the song file to.
-func (s *Song) UploadMetadata(ctx context.Context,
-	songRequest *model.UploadSongRequest) (string, error) {
+func (s *Service) UploadSongMetadata(ctx context.Context,
+	req *model.SongUploadRequest) error {
 
-	if err := validateUploadRequest(songRequest); err != nil {
-		return "", err
+	if err := validateUploadRequest(req); err != nil {
+		return err
 	}
+
 	//https://storage.googleapis.com/spume-musicproject/audio/24e692e5-mysong.mp3
 
-	// Add additional random characters to avoid collisions
-	filename := fmt.Sprintf("%s-%s", crand.NewShort(), songRequest.Filename)
-	key := filepath.Join(s.prefix, filename)
-	presignUrl, objectUrl, err := s.store.CreateObjectUrl(ctx, s.bucket, key, s.caching, s.urlTtl)
-	if err != nil {
-		return "", err
+	if req.Audio == "" {
+		return &model.Error{
+			Code:    http.StatusBadRequest,
+			Message: "Missing link to audio file",
+		}
+	}
+	song := &model.Song{
+		Name: req.Name,
+		// Artists:      req.Artists,
+		Duration: req.Duration,
+		// Genres:       req.Genres,
+		CreationDate: req.CreationDate,
+
+		Audio: req.Audio,
+	}
+	if req.Cover != "" {
+		song.Cover = req.Cover
 	}
 
 	// Put song metadata in repository
-	if _, err := s.repo.PutSong(ctx, &model.Song{
-		Name:  songRequest.Name,
-		Genre: songRequest.Genre,
-		Image: songRequest.Image,
-
-		URL: objectUrl,
-	}); err != nil {
-		return "", err
+	songId, err := s.songRepo.NewSong(ctx, song)
+	if err != nil {
+		return err
+	}
+	// TODO OPTIMIZE DO WITHIN SINGLE QUERY
+	// Add songs and genres
+	for _, artistId := range req.Artists {
+		err := s.songRepo.PutArtistSong(ctx, songId, artistId)
+		if err != nil {
+			return err
+		}
+	}
+	for _, genreId := range req.Genres {
+		err := s.songRepo.PutSongGenre(ctx, songId, genreId)
+		if err != nil {
+			return err
+		}
 	}
 
-	return presignUrl, nil
+	return nil
+}
+
+// Returns the image upload url for the audio directory
+func (s *Service) UploadAudioUrl(ctx context.Context, folder string) (string, string, error) {
+	// Add additional random characters to avoid collisions
+	audio := filepath.Join("audio", crand.NewShort())
+	return s.store.CreateObjectUrl(ctx, s.bucket, audio, s.caching, s.urlTtl)
+
+}
+
+// Returns the image upload url for the images directory
+func (s *Service) UploadImageUrl(ctx context.Context, folder string) (string, string, error) {
+	image := filepath.Join("images", folder, crand.NewShort())
+	return s.store.CreateObjectUrl(ctx, s.bucket, image, s.caching, s.urlTtl)
 }
 
 // Local uploads of audio files
 // Handles multipart file uploads if the service uses local uploads
-func (s *Song) UploadFile(ctx context.Context, file multipart.File,
-	header *multipart.FileHeader) error {
+// func (s *Song) UploadFile(ctx context.Context, file multipart.File,
+// 	header *multipart.FileHeader) error {
 
-	contents, err := io.ReadAll(file)
-	if err != nil {
-		return err
-	}
-	// Check if file is an audio file
-	contentType := http.DetectContentType(contents)
-	if !strings.HasPrefix(contentType, "audio/") {
-		return fmt.Errorf("Incorrect mime type: %v", contentType)
-	}
-	return nil
-}
+// 	contents, err := io.ReadAll(file)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	// Check if file is an audio file
+// 	contentType := http.DetectContentType(contents)
+// 	if !strings.HasPrefix(contentType, "audio/") {
+// 		return fmt.Errorf("Incorrect mime type: %v", contentType)
+// 	}
+// 	return nil
+// }

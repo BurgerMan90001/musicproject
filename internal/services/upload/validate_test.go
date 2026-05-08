@@ -3,6 +3,7 @@ package upload
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"songsled.com/pkg/model"
 )
@@ -12,17 +13,18 @@ func TestUploadRequestValidate(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		req     *model.UploadSongRequest
+		req     *model.SongUploadRequest
 		wantErr bool
 	}{
 		{
 			name: "valid upload request",
-			req: &model.UploadSongRequest{
-				Name:     "asdasd",
-				Genre:    "asdasd",
-				Image:    "asdasd",
-				Filename: "awwww",
+			req: &model.SongUploadRequest{
+				Name:         "asdasd",
+				Artists:      []uuid.UUID{},
+				Genres:       []uuid.UUID{},
+				CreationDate: "2006-25-25",
 			},
+			wantErr: false,
 		},
 		{
 			name:    "nil request",
@@ -31,19 +33,17 @@ func TestUploadRequestValidate(t *testing.T) {
 		{
 			name:    "empty name",
 			wantErr: true,
-			req: &model.UploadSongRequest{
-				Genre:    "asdasd",
-				Image:    "asdasd",
-				Filename: "awwww",
+			req: &model.SongUploadRequest{
+				Artists:      []uuid.UUID{},
+				Genres:       []uuid.UUID{},
+				CreationDate: "2006-25-25",
 			},
 		},
 		{
 			name:    "empty genre",
 			wantErr: true,
-			req: &model.UploadSongRequest{
-				Name:     "asdasd",
-				Image:    "asdasd",
-				Filename: "awwww",
+			req: &model.SongUploadRequest{
+				Name: "asdasd",
 			},
 		},
 	}

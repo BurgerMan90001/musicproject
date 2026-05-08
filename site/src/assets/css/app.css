@@ -36,7 +36,8 @@
   --orange-60: hsl(24, 80%, 60%);
   --orange-50: hsl(24, 80%, 50%);
 
-  --blue-50: hsl(221, 80%, 50%);
+  --blue-70: hsl(221, 80%, 70%);
+  --blue-50: hsl(221, 83%, 50%);
   --blue-40: hsl(221, 80%, 40%);
   --blue-30: hsl(221, 80%, 30%);
 
@@ -47,9 +48,6 @@
   --black-5: hsl(0, 0%, 5%);
 }
 :root {
-  --box-shadow: rgba(0, 0, 0, 0.11) 3px 8px 8px;
-
-  --navbar-height: 40px;
 
   /* Dark theme */
   --color-text: hsl(0, 0%, 95%);
@@ -71,6 +69,7 @@
 
   --theme-border: rgb(83, 83, 83);
 
+  --color-primary-light: var(--blue-70);
   --color-primary: var(--blue-50);
   --color-primary-medium: var(--blue-40);
   --color-primary-dark: var(--blue-30);
@@ -106,17 +105,19 @@
   display: flex;
 } */
 
-#test {
-  /* grid-template-rows: auto auto;
-  grid-template-columns: auto auto; */
-}
 .test {
+}
+.test:hover {
+  box-shadow:
+    0 6.4px 14.4px 0 rgba(0, 0, 0, 0.534),
+    0 1.2px 3.6px 0 rgba(0, 0, 0, 0.486);
 }
 .hero {
   min-height: var(--hero-height);
 }
 .toggle {
 }
+
 .scroll-horizontal {
   overflow: auto hidden;
 }
@@ -130,6 +131,9 @@
 }
 /* Media */
 .media {
+}
+.media:hover {
+  
 }
 .media-content {
 }

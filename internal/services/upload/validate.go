@@ -6,7 +6,7 @@ import (
 	"songsled.com/pkg/model"
 )
 
-func validateUploadRequest(req *model.UploadSongRequest) error {
+func validateUploadRequest(req *model.SongUploadRequest) error {
 	var err = &model.Error{
 		Code:    http.StatusBadRequest,
 		Message: "Invalid upload song request body",
@@ -19,12 +19,6 @@ func validateUploadRequest(req *model.UploadSongRequest) error {
 	}
 	if req.Name == "" {
 		err.Details = "Name is empty"
-	}
-	if req.Filename == "" {
-		err.Details = "Filename is empty"
-	}
-	if req.Genre == "" {
-		err.Details = "Genre is empty"
 	}
 
 	// Any errors apear

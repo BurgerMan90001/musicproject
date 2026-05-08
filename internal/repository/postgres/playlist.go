@@ -2,11 +2,9 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
-	"errors"
+	"strings"
 
 	"github.com/google/uuid"
-	"songsled.com/internal/repository"
 	"songsled.com/internal/repository/postgres/gensqlc"
 	"songsled.com/pkg/model"
 )
@@ -15,36 +13,64 @@ type Playlist struct {
 	q *gensqlc.Queries
 }
 
-func NewPlaylist(q *gensqlc.Queries) *Playlist {
+func NewPlaylistRepo(q *gensqlc.Queries) *Playlist {
+
 	return &Playlist{q}
 }
+func (r *Playlist) NewPlaylist(ctx context.Context, name string, songIds []uuid.UUID) (uuid.UUID, error) {
 
-func (r *Playlist) GetPlaylistByID(ctx context.Context, playlistId uuid.UUID) (*model.Playlist, error) {
-
-	_, err := r.q.GetPlaylistByID(ctx, playlistId)
+	playlistId, err := r.q.NewPlaylist(ctx, gensqlc.NewPlaylistParams{
+		UserID:       uuid.NullUUID{},
+		PlaylistName: name,
+	})
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, repository.ErrNotFound
+		return uuid.Nil, err
+	}
+	for _, id := range songIds {
+		err := r.q.PutPlaylistSong(ctx, gensqlc.PutPlaylistSongParams{
+			PlaylistID: playlistId,
+			SongID:     id,
+		})
+		if err != nil {
+			return uuid.Nil, err
 		}
 	}
-	// l, err := r.q.GetPlaylistSongs(ctx, playlistId)
-	// if err != nil {
-	// 	if !errors.Is(err, sql.ErrNoRows) {
-	// 		return nil, err
-	// 	}
-	// }
-	// for _, s := range l {
-	// 	// s.
-	// }
 
-	// r.q.GetPlaylistByID()
-	return &model.Playlist{
-		ID: playlistId,
-		// Name: p.PlaylistName,
-	}, nil
+	return playlistId, nil
 }
 
-func (r *Playlist) PutPlaylist(ctx context.Context, p *model.Playlist) (uuid.UUID, error) {
-	return uuid.Nil, nil
-	// return r.q.PutPlaylist(ctx, p)
+func (r *Playlist) GetPlaylistSongsByID(ctx context.Context, playlistId uuid.UUID) ([]model.Song, error) {
+	playlistSongs, err := r.q.GetPlaylistSongsByID(ctx, gensqlc.GetPlaylistSongsByIDParams{
+		PlaylistID: playlistId,
+		Limit:      10,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var songs []model.Song
+	for _, s := range playlistSongs {
+		songs = append(songs, model.Song{
+			SongID:       s.SongID,
+			AlbumID:      s.AlbumID.UUID,
+			Name:         s.SongName,
+			Genres:       strings.Split(string(s.Genres), ","),
+			Artists:      strings.Split(string(s.Artists), ","),
+			Duration:     int(s.Duration),
+			CreationDate: s.SongCreationDate,
+			Streams:      int(s.Streams),
+			Cover:        s.SongCoverUrl.String,
+			Audio:        s.SongAudioUrl,
+		})
+	}
+
+	return songs, nil
+}
+
+func (r *Playlist) PutPlaylistSong(ctx context.Context, playlistId uuid.UUID,
+	songId uuid.UUID) error {
+	return r.q.PutPlaylistSong(ctx, gensqlc.PutPlaylistSongParams{
+		PlaylistID: playlistId,
+		SongID:     songId,
+	})
 }

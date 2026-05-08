@@ -14,7 +14,6 @@ import (
 	"songsled.com/internal/middleware"
 	"songsled.com/internal/repository/postgres"
 	"songsled.com/internal/services/file"
-	"songsled.com/internal/services/search"
 	"songsled.com/internal/services/upload"
 	"songsled.com/pkg/model"
 )
@@ -28,21 +27,24 @@ func New(
 ) (http.Handler, error) {
 	root := chi.NewRouter()
 
-	songRepo := postgres.NewSong(repo.Queries)
-	playlistRepo := postgres.NewPlaylist(repo.Queries)
-
-	searchService := search.NewPostgres()
+	songRepo := postgres.NewSongRepo(repo.Queries)
+	playlistRepo := postgres.NewPlaylistRepo(repo.Queries)
+	// searchService := search.NewPostgres()
 	// authService, err := auth.New(ctx, cfg.Auth, rdb, userRepo)
 	// if err != nil {
 	// 	return nil, err
 	// }
 
-	uploadService, err := upload.NewSong(cfg.Upload.Bucket, "audio",
+	uploadService, err := upload.New(cfg.File.Bucket,
 		false, true, 30*time.Minute, store, songRepo)
 	if err != nil {
 		return nil, err
 	}
-
+	// imageUpload, err := upload.NewImage(cfg.File.Bucket, "audio",
+	// 	false, true, 30*time.Minute, store, songRepo)
+	// if err != nil {
+	// 	return nil, err
+	// }
 	// authMw := middleware.NewAuth(nil)
 	// rl := ratelimit.NewTokenBucket(15, 30)
 
@@ -63,16 +65,30 @@ func New(
 	root.Use(middleware.Cors())
 
 	root.Route("/v1", func(api chi.Router) {
-		// api.Route("/auth", func(r chi.Router) {
-		// r.HandleFunc("/signup", handleSignup(authService))
-		// r.HandleFunc("/login", handleLogin(authService))
-		// r.HandleFunc("/refresh", handleRefresh(authService))
-		// r.HandleFunc("/logout", handleLogout(authService))
-		//mux.HandleFunc("/auth/reset", authHandler.handleEmailReset(emailService))
 
-		// 	r.HandleFunc("/songsled/login", handleOidcLogin(oidc))
-		// 	r.HandleFunc("/songsled/callback", handleOidcRedirect(oidc))
+		api.Route("/songs", handleSongs(songRepo, uploadService))
+		api.Route("/playlists", handlePlaylists(playlistRepo))
+		api.Route("/albums", handleAlbums())
+
+		api.Route("/images", handleImages(uploadService))
+
+		// api.Route("/admin", func(r chi.Router) {
+		// 	// r.Use(authMw.RequireAuth(auth.RoleAdmin))
+		// 	// r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// 	// 	jsonutil.WriteJSON(w, nil, http.StatusOK)
+		// 	// })
+
 		// })
+		api.Route("/auth", func(r chi.Router) {
+			// r.HandleFunc("/signup", handleSignup(authService))
+			// r.HandleFunc("/login", handleLogin(authService))
+			// r.HandleFunc("/refresh", handleRefresh(authService))
+			// r.HandleFunc("/logout", handleLogout(authService))
+			// // mux.HandleFunc("/auth/reset", authHandler.handleEmailReset(emailService))
+
+			// r.HandleFunc("/songsled/login", handleOidcLogin(oidc))
+			// r.HandleFunc("/songsled/callback", handleOidcRedirect(oidc))
+		})
 
 		api.Route("/users", func(r chi.Router) {
 			// r.Get("/", handleUsers(userRepo))
@@ -82,33 +98,6 @@ func New(
 
 			r.Get("/{id}/history", handleUserHistory())
 		})
-
-		api.Route("/songs", func(r chi.Router) {
-			r.HandleFunc("/", handleSongs(searchService, songRepo))
-			r.HandleFunc("/{id}", handleGetSong(songRepo))
-
-			r.HandleFunc("/upload", handleSongUpload(uploadService))
-		})
-		api.Route("/playlists", func(r chi.Router) {
-			r.HandleFunc("/", handlePlaylists(playlistRepo))
-			r.HandleFunc("/{id}", handlePlaylistsId(playlistRepo))
-		})
-		api.Route("/albums", func(r chi.Router) {
-			r.HandleFunc("/", handleAlbums())
-			r.HandleFunc("/{id}", handleAlbumsId())
-		})
-		// ?to=
-		api.Route("/download", func(r chi.Router) {
-			r.HandleFunc("/{id}", nil)
-		})
-
-		// api.Route("/admin", func(r chi.Router) {
-		// 	// r.Use(authMw.RequireAuth(auth.RoleAdmin))
-		// 	// r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// 	// 	jsonutil.WriteJSON(w, nil, http.StatusOK)
-		// 	// })
-
-		// })
 	})
 
 	root.Get("/health", handleHealth)

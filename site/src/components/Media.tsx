@@ -1,12 +1,10 @@
-
-
 const Placeholder = () => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="64"
-      height="64"
-      viewBox="0 0 64 64"
+      width="128"
+      height="128"
+      viewBox="0 0 128 128"
     >
       <rect width="100%" height="100%" fill="#DDDDDD" />
       <path
@@ -16,12 +14,14 @@ const Placeholder = () => {
     </svg>
   );
 };
-const Media = () => {
-  
-  return (
-    <article className="media">
-      <Placeholder />
-    </article>
-  );
-};
-export default Media;
+
+// const Media = () => {
+//   return (
+//     <article className="media">
+//       <Placeholder />
+//     </article>
+//   );
+// };
+
+// export { Placeholder };
+// export default Media;

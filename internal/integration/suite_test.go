@@ -65,23 +65,14 @@ func (s *testSuite) SetupSuite() {
 	err := secrets.ReadEnvFile(".env")
 	s.Require().NoError(err)
 
-	configFolder := filepath.Join("..", "..", "..", "config")
-
 	// Config
-	s.cfg, err = config.LoadConfig(filepath.Join(configFolder, "config.dev.yml"))
+	s.cfg, err = config.LoadConfig(filepath.Join("..", "..", "config.dev.yml"))
 	s.Require().NoError(err)
 
-	err = secrets.ReadEnvFile(filepath.Join(configFolder, ".env.dev"))
+	err = secrets.ReadEnvFile(filepath.Join("..", "..", ".env.dev"))
 	s.Require().NoError(err)
 
-	// s.jwtAccess, err = auth.NewJWTService(s.cfg.Auth.Jwt.Issuer, s.cfg.Auth.Jwt.Audience, model.TokenAccess, time.Minute*30, "JWT_ACCESS_KEY")
-	// s.Require().NoError(err)
-
-	// s.jwtRefresh, err = auth.NewJWTService(s.cfg.Auth.Jwt.Issuer, s.cfg.Auth.Jwt.Audience, model.TokenRefresh, time.Hour, "JWT_REFRESH_KEY")
-	// s.Require().NoError(err)
-
-	// Filesystem store
-	store, err := file.New(ctx, &file.GoogleCloud{}, s.cfg.Upload.Region)
+	store, err := file.New(ctx, &file.AWSS3{}, s.cfg.File.Region, s.cfg.File.Endpoint, s.cfg.File.Public)
 	s.Require().NoError(err)
 
 	// Test postgres database container
@@ -91,7 +82,7 @@ func (s *testSuite) SetupSuite() {
 	s.Require().NoError(err)
 
 	if os.Getenv("LOAD_TESTDATA") == "true" {
-		err = s.repo.ExecFile(ctx, filepath.Join("testdata", "testdata.sql"))
+		err = s.repo.ExecFile(ctx, filepath.Join("..", "..", "database", "test.sql"))
 		s.Require().NoError(err)
 	}
 

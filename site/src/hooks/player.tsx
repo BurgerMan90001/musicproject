@@ -2,32 +2,50 @@ import type { Song } from "../types/song.types";
 import { create } from "zustand";
 
 interface PlayerState {
-  volume: string;
-  paused: boolean;
+  // volume: string;
+  // paused: boolean;
   collapsed: boolean;
+  audio: HTMLAudioElement;
   queue: Song[];
   empty(): boolean;
 
-  change: (by: string) => void;
-  mute: () => void;
+  changeVolume: (by: number) => void;
 
   togglePause: () => void;
   toggleCollapsed: () => void;
 }
 export const usePlayerStore = create<PlayerState>()((set, get) => ({
-  volume: "0",
-  paused: true,
   collapsed: false,
-  queue: [],
+  audio: new Audio("https://storage.songsled.com/song18.mp3"),
+  queue: [
+    {
+      id: "1",
+      albumId: "1",
+      name: "Test",
+      genres: "Pop, Rock",
+      artists: "Pop Smoke",
+      streams: 123,
+      duration: 123,
+      creationDate: "2007-03-24",
+      url: "https://storage.songsled.com/audio/89e9eb5b",
+    },
+  ],
   empty: (): boolean => {
     return get().queue[0] === undefined;
   },
-  change: (by) => set({ volume: by }),
-  mute: () => set({ volume: "0" }),
-  togglePause: () =>
-    set((state) => ({
-      paused: !state.paused,
-    })),
+  changeVolume: (by) => {
+    get().audio.volume = by;
+  },
+  // toggleMute: () => set({})
+  togglePause: () => {
+    if (get().audio.paused) {
+      get().audio.play();
+
+      // set({ paused: false });
+      return;
+    }
+    get().audio.pause();
+  },
   toggleCollapsed: () =>
     set((state) => ({
       collapsed: !state.collapsed,

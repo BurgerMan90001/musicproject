@@ -1,9 +1,12 @@
 import { usePlayerStore } from "../../../hooks/player";
-import { SongPlaceholderIcon } from "../../svg/Placeholder";
+import { SongPlaceholderSvg } from "../Svg";
 
 const SongList = () => {
   const queue = usePlayerStore((state) => state.queue);
 
+  if (queue.length === 0) {
+    return <div className="bg-color-body-dark">asddasd</div>;
+  }
   return (
     <ul className="">
       {queue.map((song) => {
@@ -11,15 +14,14 @@ const SongList = () => {
         if (song.image) {
           songImage = <img src={song.image} />;
         } else {
-          songImage = (
-            <div className="image image-64 bg-color-body-darker color-text-invert">
-              <SongPlaceholderIcon />
-            </div>
-          );
+          songImage = <SongPlaceholderSvg />;
         }
         return (
           <li className="display-flex padding-xxs gap-xxs">
-            {songImage}
+            <div className="image image-64 bg-color-body-darker color-text-invert">
+              {songImage}
+            </div>
+
             {song.name && <summary>{song.name}</summary>}
           </li>
         );

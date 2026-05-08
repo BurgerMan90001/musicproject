@@ -3,9 +3,9 @@ package config
 type Config struct {
 	API        API        `yaml:"api"`
 	Auth       Auth       `yaml:"auth"`
-	Upload     Upload     `yaml:"upload"`
-	Middleware Middleware `yaml:"middleware"`
+	File       File       `yaml:"file"`
 	Repository Repository `yaml:"repository"`
+	Test       Test       `yaml:"test"`
 }
 type API struct {
 	Port    int    `yaml:"port"`
@@ -16,30 +16,22 @@ type Jwt struct {
 	Issuer   string   `yaml:"issuer"`
 	Audience []string `yaml:"audience"`
 }
-type Google struct {
-	UserInfoURL string   `yaml:"userInfoUrl"`
-	RedirectURL string   `yaml:"redirectUrl"`
-	Scopes      []string `yaml:"scopes"`
-}
-type Oauth struct {
-	Google Google `yaml:"google"`
-}
 type Auth struct {
-	Jwt   Jwt   `yaml:"jwt"`
-	Oauth Oauth `yaml:"oauth"`
+	Jwt Jwt `yaml:"jwt"`
 }
 type Encoder struct {
 	Logging bool `yaml:"logging"`
 	Enabled bool `yaml:"enabled"`
 }
 type Upload struct {
-	Region  string  `yaml:"region"`
-	Bucket  string  `yaml:"bucket"`
 	Encoder Encoder `yaml:"encoder"`
 }
-type Middleware struct {
-	Logger    bool `yaml:"logger"`
-	Ratelimit bool `yaml:"ratelimit"`
+type File struct {
+	Region   string `yaml:"region"`
+	Bucket   string `yaml:"bucket"`
+	Endpoint string `yaml:"endpoint"`
+	Public   string `yaml:"public"`
+	Upload   Upload `yaml:"upload"`
 }
 type Postgres struct {
 	Schema string `yaml:"schema"`
@@ -47,4 +39,8 @@ type Postgres struct {
 }
 type Repository struct {
 	Postgres Postgres `yaml:"postgres"`
+}
+type Test struct {
+	ShowErrorDetails bool `yaml:"showErrorDetails"`
+	LoadTestdata     bool `yaml:"loadTestdata"`
 }

@@ -10,13 +10,14 @@ const (
 	ContentTypeZip       = "application/zip"
 )
 
-func New(ctx context.Context, T Blobstore, region string) (Blobstore, error) {
+// public: The public endpoint where content is served from
+func New(ctx context.Context, T Blobstore, region, endpoint, public string) (Blobstore, error) {
 
 	switch T.(type) {
 	case *AWSS3:
-		return NewS3(ctx, region)
+		return NewS3(ctx, endpoint, region, public, "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY")
 	case *GoogleCloud:
-		return NewGoogleCloud(ctx, "")
+		return NewGoogleCloud(ctx, endpoint, "GOOGLE_ACCESS_ID")
 	default:
 		return NewFileSystem(), nil
 	}

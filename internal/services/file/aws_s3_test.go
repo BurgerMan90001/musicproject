@@ -12,7 +12,7 @@ func TestAWSS3(t *testing.T) {
 	t.Skip("Skipping s3 test")
 	ctx := t.Context()
 
-	s3, err := NewS3(ctx, "us-east-1")
+	s3, err := NewS3(ctx, "us-east-1", "", "", "", "")
 	require.NoError(t, err)
 
 	t.Run("", func(t *testing.T) {

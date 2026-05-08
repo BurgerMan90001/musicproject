@@ -1,88 +1,196 @@
-import React, { useState } from "react";
-import type { Song } from "../../../types/song.types";
-import api from "../../../lib/api";
+import { useState, type JSX } from "react";
+import fetchApi from "../../../lib/api";
+
+const Input = ({
+  label,
+  children,
+}: {
+  label?: string;
+  children: JSX.Element;
+}) => {
+  return (
+    <>
+      <div className="">
+        {label && <label htmlFor="">{label}</label>}
+        <div className="display-flex bg-color-body-dark border">{children}</div>
+      </div>
+    </>
+  );
+};
 function Upload() {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [audioFile, setAudioFile] = useState<File>();
+  const [_, setImageFile] = useState<File>();
+
   // Location for song upload endpoint
-  const [location, setLocation] = useState<string>();
-  const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      const file = event.target.files[0];
-
-      setSelectedFile(file);
-    }
-  };
-
-  const uploadFile = () => {
-    if (selectedFile && location) {
+  // const [location, setLocation] = useState<string>();
+  // const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  //   if (event.target.files && event.target.files[0]) {
+  //     const file = event.target.files[0];
+  //     setSelectedFile(file);
+  //   }
+  // };
+  // const onAudioFileChange = () => {
+  //   if (audioFile) {
+  //     uploadFile(audioFile, "/v1/songs");
+  //   }
+  // };
+  const uploadFile = async (file: File, location: string) => {
+    try {
       const formData = new FormData();
-      formData.append("file", selectedFile);
+      formData.append("file", file);
 
-      fetch(location, {
+      const res = await fetchApi(location, {
         method: "PUT",
         body: formData,
         headers: {
-          "Content-Type": selectedFile.type,
+          "Content-Type": file.type,
         },
-      })
-        .then((response) => response.json())
-        .then((json) => console.log(json));
+      });
+      console.log(res?.body);
 
-      setSelectedFile(null);
+      // setSelectedFile(undefined);
+      return;
+    } catch (e) {
+      console.log(e);
     }
   };
-  const uploadMetadata = async (song: Song) => {
-    // interface response {
 
-    // }
-    const res = await api("/v1/upload/songs", {
-      method: "POST",
-      body: JSON.stringify(song),
+  const onSubmit = async () => {
+    // const song: Song = {
+    //   id: "",
+    //   name: "",
+    //   genres: "",
+    //   artists: "",
+    //   creationDate: "",
+    //   streams: 0,
+    //   duration: 0,
+    //   image: "",
+    //   url: "",
+    // };
+
+    // setLocation("");
+    const formData = new FormData();
+    if (audioFile) {
+      formData.append("file", audioFile);
+    }
+
+    // alert(String(audioFile?.size));
+
+    const res = await fetchApi("/v1/images/covers", {
+      method: "PUT",
+      // body: formData,
       headers: {
-        "Content-Type": "application/json",
+        // mode: "cors",
+        // "Content-Length": "0",
+        // "Orgin": "http://localhost:5173",
+        // headers.append('Access-Control-Allow-Credentials' 'true');
+        // Orgin: "https://songsled.com",
       },
     });
-    setLocation("");
-    console.log(res);
-    //   .then((response) => {
-    //     // Save the location header url
-    //     const url = response.headers.get("Location");
-    //     if (url) {
-    //       setLocation(url);
-    //     }
-    //     console.log(url);
-    //     console.log(response.headers);
-    //   })
-    //   .then((json) => console.log(json));
-  };
-  const onSubmit = () => {
-    const song: Song = {
-      name: "",
-      genre: "",
-      artist: "",
-      streams: 0,
-      duration: 0,
-      image: "",
-      url: "",
-    };
-    uploadMetadata(song);
 
-    uploadFile();
+    console.log(res);
   };
+  // interface input {
+  //   type: string;
+  //   id?: string;
+  //   label?: string;
+  //   required?: boolean;
+  // }
 
   return (
-    <main className="layout-main display-flex">
-      <form className="display-flex flex-column bg-color-body-darker font-size-md padding-xxl margin-auto">
-        <h1 className="font-weight-bold">Upload Song</h1>
+    <main className="layout-main display-flex scroll-vertical">
+      <form
+        // onSubmit={onSubmit}
+        className="display-flex flex-column bg-color-body-medium font-size-md padding-xl margin-0-auto gap-xs"
+      >
+        <h1 className="font-weight-bold border-bottom">Upload Song</h1>
 
-        <input type="text" id="genre" aria-label="Genre" required={true} />
-        <label htmlFor="name">Song Name</label>
-        <input type="text" id="name" aria-label="Song name" required={true} />
+        <Input label="Song Name">
+          <input
+            type="text"
+            id="songName"
+            aria-label="Song name"
+            // required={true}
+            placeholder="My song"
+            className="flex-1 font-size-sm padding-xs "
+          />
+        </Input>
+        <div className="display-flex gap-xxs">
+          <Input label="Genres">
+            <input
+              type="search"
+              id="genres"
+              aria-label="Genres"
+              placeholder="Pop"
+              // required={true}
+              className="flex-1 font-size-sm padding-xs"
+            />
+          </Input>
+          <Input label="Creation Date">
+            <input
+              type="text"
+              id="creationDate"
+              aria-label="Creation Date"
+              placeholder="YYYY-MM-DD"
+              className="flex-1 font-size-sm padding-xs "
+            />
+          </Input>
+          {/* <Input label="Filename">
+            <input
+              type="text"
+              id="filename"
+              aria-label="Filename"
+              placeholder="my_song.mp3"
+              required={true}
+              className="flex-1 font-size-sm padding-xs"
+            />
+          </Input> */}
+        </div>
 
-        <label htmlFor="file">Song File</label>
-        <input type="file" id="file" onChange={onFileChange}></input>
+        {/* <Input label="In Album">
+          <input
+            type="radio"
+            id="file"
+            // onChange={onFileChange}
+            className="bg-color-body-dark"
+          />
+        </Input> */}
+        <div className="display-flex gap-xxs margin-0-auto">
+          <Input label="Cover File">
+            <input
+              type="file"
+              id="cover"
+              onChange={(event) => {
+                if (event.target.files) {
+                  const file = event.target.files[0];
+                  setImageFile(file);
+                }
+              }}
+              className="bg-color-body-dark padding-xxs color-text-subtle"
+            />
+          </Input>
 
-        <button type="submit" onClick={onSubmit} className="bg-black-25">
+          <Input label="Audio">
+            <input
+              type="file"
+              id="audio"
+              onChange={(event) => {
+                if (event.target.files) {
+                  const file = event.target.files[0];
+                  setAudioFile(file);
+                }
+              }}
+              // required
+              className="bg-color-body-dark padding-xxs color-text-subtle"
+            />
+          </Input>
+        </div>
+
+        <button
+          type={"button"}
+          onClick={onSubmit}
+          className="button-primary padding-xxs"
+        >
           Submit
         </button>
       </form>

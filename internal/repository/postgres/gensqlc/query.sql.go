@@ -13,9 +13,12 @@ import (
 )
 
 const deleteSongByID = `-- name: DeleteSongByID :exec
+
+
 DELETE FROM songs WHERE song_id=$1
 `
 
+// TODO name: Search :many
 func (q *Queries) DeleteSongByID(ctx context.Context, songID uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, deleteSongByID, songID)
 	return err
@@ -34,55 +37,127 @@ func (q *Queries) GetAggregatedRating(ctx context.Context, songID uuid.UUID) (in
 	return column_1, err
 }
 
-const getPlaylistByID = `-- name: GetPlaylistByID :many
+const getArtistSongs = `-- name: GetArtistSongs :many
 SELECT 
-    playlists.user_id,
-    playlists.playlist_name,
-    playlist_songs.playlist_id,
-    songs.song_name, 
-    songs.streams,
-	songs.duration, 
-    songs.creation_date,
-    songs.song_image,
-    songs.song_url
-FROM songs
-INNER JOIN playlist_songs ON playlist_songs.song_id = songs.song_id
-INNER JOIN playlists ON playlists.playlist_id = playlist_songs.playlist_id
-INNER JOIN genres ON genres.genre_id = song_genres.genre_id
-WHERE playlist_songs.playlist_id=$1
+    artists.artist_name,
+    songs.song_name
+FROM artists
+INNER JOIN artist_songs ON artist_songs.artist_id = artists.artist_id
+INNER JOIN songs ON songs.song_id = artist_songs.song_id
+WHERE artists.artist_id=$1
 `
 
-type GetPlaylistByIDRow struct {
-	UserID       uuid.NullUUID
-	PlaylistName string
-	PlaylistID   uuid.UUID
-	SongName     string
-	Streams      int32
-	Duration     int32
-	CreationDate string
-	SongImage    sql.NullString
-	SongUrl      string
+type GetArtistSongsRow struct {
+	ArtistName string
+	SongName   string
 }
 
-func (q *Queries) GetPlaylistByID(ctx context.Context, playlistID uuid.UUID) ([]GetPlaylistByIDRow, error) {
-	rows, err := q.db.QueryContext(ctx, getPlaylistByID, playlistID)
+func (q *Queries) GetArtistSongs(ctx context.Context, artistID uuid.UUID) ([]GetArtistSongsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getArtistSongs, artistID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetPlaylistByIDRow
+	var items []GetArtistSongsRow
 	for rows.Next() {
-		var i GetPlaylistByIDRow
+		var i GetArtistSongsRow
+		if err := rows.Scan(&i.ArtistName, &i.SongName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPlaylistSongsByID = `-- name: GetPlaylistSongsByID :many
+SELECT
+songs.song_id,
+song_name,
+artists,
+genres,
+streams,
+duration,
+songs.creation_date AS song_creation_date,  
+albums.creation_date AS album_creation_date ,
+albums.album_id,
+albums.album_name,
+song_cover_url, 	
+song_audio_url,
+playlists.playlist_name,
+playlists.playlist_id,
+playlists.user_id
+FROM (SELECT string_agg(artists.artist_name, ',') AS artists, song_id 
+    FROM artists
+    INNER JOIN artist_songs ON artist_songs.artist_id = artists.artist_id
+    GROUP BY song_id) a1
+INNER JOIN
+   (SELECT string_agg(genres.genre_name, ',') AS genres, song_id
+    FROM genres
+    INNER JOIN song_genres ON genres.genre_id = song_genres.genre_id
+  	GROUP BY song_id) a2
+ON (a1.song_id = a2.song_id)
+INNER JOIN songs ON (songs.song_id = a1.song_id)
+LEFT JOIN albums ON albums.album_id = a1.song_id
+INNER JOIN playlist_songs ON playlist_songs.song_id = songs.song_id
+LEFT JOIN playlists ON playlists.playlist_id = playlist_songs.playlist_id
+WHERE playlist_songs.playlist_id = $1
+LIMIT $2
+`
+
+type GetPlaylistSongsByIDParams struct {
+	PlaylistID uuid.UUID
+	Limit      int32
+}
+
+type GetPlaylistSongsByIDRow struct {
+	SongID            uuid.UUID
+	SongName          string
+	Artists           []byte
+	Genres            []byte
+	Streams           int32
+	Duration          int32
+	SongCreationDate  string
+	AlbumCreationDate sql.NullString
+	AlbumID           uuid.NullUUID
+	AlbumName         sql.NullString
+	SongCoverUrl      sql.NullString
+	SongAudioUrl      string
+	PlaylistName      sql.NullString
+	PlaylistID        uuid.NullUUID
+	UserID            uuid.NullUUID
+}
+
+func (q *Queries) GetPlaylistSongsByID(ctx context.Context, arg GetPlaylistSongsByIDParams) ([]GetPlaylistSongsByIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPlaylistSongsByID, arg.PlaylistID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPlaylistSongsByIDRow
+	for rows.Next() {
+		var i GetPlaylistSongsByIDRow
 		if err := rows.Scan(
-			&i.UserID,
-			&i.PlaylistName,
-			&i.PlaylistID,
+			&i.SongID,
 			&i.SongName,
+			&i.Artists,
+			&i.Genres,
 			&i.Streams,
 			&i.Duration,
-			&i.CreationDate,
-			&i.SongImage,
-			&i.SongUrl,
+			&i.SongCreationDate,
+			&i.AlbumCreationDate,
+			&i.AlbumID,
+			&i.AlbumName,
+			&i.SongCoverUrl,
+			&i.SongAudioUrl,
+			&i.PlaylistName,
+			&i.PlaylistID,
+			&i.UserID,
 		); err != nil {
 			return nil, err
 		}
@@ -97,62 +172,16 @@ func (q *Queries) GetPlaylistByID(ctx context.Context, playlistID uuid.UUID) ([]
 	return items, nil
 }
 
-const getPlaylistSongs = `-- name: GetPlaylistSongs :many
-SELECT playlist_id, user_id, playlist_name FROM playlists
-WHERE playlist_id=$1
-`
+const getRandomSongs = `-- name: GetRandomSongs :many
+SELECT song_id, song_name, streams, duration, creation_date, album_id, song_cover_url, song_audio_url FROM songs 
 
-func (q *Queries) GetPlaylistSongs(ctx context.Context, playlistID uuid.UUID) ([]Playlist, error) {
-	rows, err := q.db.QueryContext(ctx, getPlaylistSongs, playlistID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Playlist
-	for rows.Next() {
-		var i Playlist
-		if err := rows.Scan(&i.PlaylistID, &i.UserID, &i.PlaylistName); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
 
-const getSongByID = `-- name: GetSongByID :one
-SELECT song_id, song_name, streams, duration, creation_date, album_id, song_image, song_url FROM songs
-WHERE song_id=$1
-`
 
-func (q *Queries) GetSongByID(ctx context.Context, songID uuid.UUID) (Song, error) {
-	row := q.db.QueryRowContext(ctx, getSongByID, songID)
-	var i Song
-	err := row.Scan(
-		&i.SongID,
-		&i.SongName,
-		&i.Streams,
-		&i.Duration,
-		&i.CreationDate,
-		&i.AlbumID,
-		&i.SongImage,
-		&i.SongUrl,
-	)
-	return i, err
-}
-
-const getSongRandom = `-- name: GetSongRandom :many
-SELECT song_id, song_name, streams, duration, creation_date, album_id, song_image, song_url FROM songs 
 ORDER BY RANDOM() LIMIT $1
 `
 
-func (q *Queries) GetSongRandom(ctx context.Context, limit int32) ([]Song, error) {
-	rows, err := q.db.QueryContext(ctx, getSongRandom, limit)
+func (q *Queries) GetRandomSongs(ctx context.Context, limit int32) ([]Song, error) {
+	rows, err := q.db.QueryContext(ctx, getRandomSongs, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -167,8 +196,8 @@ func (q *Queries) GetSongRandom(ctx context.Context, limit int32) ([]Song, error
 			&i.Duration,
 			&i.CreationDate,
 			&i.AlbumID,
-			&i.SongImage,
-			&i.SongUrl,
+			&i.SongCoverUrl,
+			&i.SongAudioUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -183,25 +212,328 @@ func (q *Queries) GetSongRandom(ctx context.Context, limit int32) ([]Song, error
 	return items, nil
 }
 
-const putPlaylist = `-- name: PutPlaylist :one
-
-
-
-
-
-
-INSERT INTO playlists
-(user_id)
-VALUES($1) RETURNING playlist_id
+const getSongByID = `-- name: GetSongByID :one
+SELECT
+songs.song_id,
+song_name,
+artists,
+genres,
+streams,
+duration,
+songs.creation_date AS song_creation_date,  
+albums.creation_date AS album_creation_date,
+albums.album_id,
+albums.album_name,
+song_cover_url, 	
+song_audio_url
+FROM (SELECT string_agg(artists.artist_name, ',') AS artists, song_id 
+    FROM artists
+    INNER JOIN artist_songs ON artist_songs.artist_id = artists.artist_id
+    WHERE artist_songs.song_id=$1
+    GROUP BY song_id) a1
+INNER JOIN
+   (SELECT string_agg(genres.genre_name, ',') AS genres, song_id
+    FROM genres
+    INNER JOIN song_genres ON genres.genre_id = song_genres.genre_id
+	WHERE song_genres.song_id=$1
+  	GROUP BY song_id) a2
+ON (a1.song_id = a2.song_id)
+INNER JOIN songs ON (songs.song_id = a1.song_id)
+LEFT JOIN albums ON albums.album_id = a1.song_id
 `
 
-// INNER JOIN playlists ON playlists.playlist_id = playlist_songs.playlist_id
-// INNER JOIN genres ON genres.genre_id = song_genres.genre_id
-func (q *Queries) PutPlaylist(ctx context.Context, userID uuid.NullUUID) (uuid.UUID, error) {
-	row := q.db.QueryRowContext(ctx, putPlaylist, userID)
+type GetSongByIDRow struct {
+	SongID            uuid.UUID
+	SongName          string
+	Artists           []byte
+	Genres            []byte
+	Streams           int32
+	Duration          int32
+	SongCreationDate  string
+	AlbumCreationDate sql.NullString
+	AlbumID           uuid.NullUUID
+	AlbumName         sql.NullString
+	SongCoverUrl      sql.NullString
+	SongAudioUrl      string
+}
+
+func (q *Queries) GetSongByID(ctx context.Context, songID uuid.UUID) (GetSongByIDRow, error) {
+	row := q.db.QueryRowContext(ctx, getSongByID, songID)
+	var i GetSongByIDRow
+	err := row.Scan(
+		&i.SongID,
+		&i.SongName,
+		&i.Artists,
+		&i.Genres,
+		&i.Streams,
+		&i.Duration,
+		&i.SongCreationDate,
+		&i.AlbumCreationDate,
+		&i.AlbumID,
+		&i.AlbumName,
+		&i.SongCoverUrl,
+		&i.SongAudioUrl,
+	)
+	return i, err
+}
+
+const getSongGenres = `-- name: GetSongGenres :many
+SELECT 
+string_agg(genres.genre_name, ',') AS genres,
+songs.song_id
+FROM songs
+INNER JOIN song_genres ON song_genres.song_id = songs.song_id
+INNER JOIN genres ON song_genres.genre_id = genres.genre_id
+WHERE songs.song_id=$1
+GROUP BY songs.song_id LIMIT $2
+`
+
+type GetSongGenresParams struct {
+	SongID uuid.UUID
+	Limit  int32
+}
+
+type GetSongGenresRow struct {
+	Genres []byte
+	SongID uuid.UUID
+}
+
+func (q *Queries) GetSongGenres(ctx context.Context, arg GetSongGenresParams) ([]GetSongGenresRow, error) {
+	rows, err := q.db.QueryContext(ctx, getSongGenres, arg.SongID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetSongGenresRow
+	for rows.Next() {
+		var i GetSongGenresRow
+		if err := rows.Scan(&i.Genres, &i.SongID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getSongs = `-- name: GetSongs :many
+
+SELECT
+songs.song_id,
+song_name,
+artists,
+genres,
+streams,
+duration,
+songs.creation_date AS song_creation_date,  
+albums.creation_date AS album_creation_date ,
+albums.album_id,
+albums.album_name,
+song_cover_url, 	
+song_audio_url
+FROM (SELECT string_agg(artists.artist_name, ',') AS artists, song_id 
+    FROM artists
+    INNER JOIN artist_songs ON artist_songs.artist_id = artists.artist_id
+    GROUP BY song_id) a1
+INNER JOIN
+   (SELECT string_agg(genres.genre_name, ',') AS genres, song_id
+    FROM genres
+    INNER JOIN song_genres ON genres.genre_id = song_genres.genre_id
+  	GROUP BY song_id) a2
+ON (a1.song_id = a2.song_id)
+INNER JOIN songs ON (songs.song_id = a1.song_id)
+LEFT JOIN albums ON albums.album_id = a1.song_id
+LIMIT $1
+`
+
+type GetSongsRow struct {
+	SongID            uuid.UUID
+	SongName          string
+	Artists           []byte
+	Genres            []byte
+	Streams           int32
+	Duration          int32
+	SongCreationDate  string
+	AlbumCreationDate sql.NullString
+	AlbumID           uuid.NullUUID
+	AlbumName         sql.NullString
+	SongCoverUrl      sql.NullString
+	SongAudioUrl      string
+}
+
+// TODO name: GetSongsByGenre :many
+func (q *Queries) GetSongs(ctx context.Context, limit int32) ([]GetSongsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getSongs, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetSongsRow
+	for rows.Next() {
+		var i GetSongsRow
+		if err := rows.Scan(
+			&i.SongID,
+			&i.SongName,
+			&i.Artists,
+			&i.Genres,
+			&i.Streams,
+			&i.Duration,
+			&i.SongCreationDate,
+			&i.AlbumCreationDate,
+			&i.AlbumID,
+			&i.AlbumName,
+			&i.SongCoverUrl,
+			&i.SongAudioUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const newAlbum = `-- name: NewAlbum :one
+INSERT INTO albums
+(album_name, creation_date)
+VALUES($1, $2) RETURNING album_id
+`
+
+type NewAlbumParams struct {
+	AlbumName    string
+	CreationDate string
+}
+
+func (q *Queries) NewAlbum(ctx context.Context, arg NewAlbumParams) (uuid.UUID, error) {
+	row := q.db.QueryRowContext(ctx, newAlbum, arg.AlbumName, arg.CreationDate)
+	var album_id uuid.UUID
+	err := row.Scan(&album_id)
+	return album_id, err
+}
+
+const newArtist = `-- name: NewArtist :one
+INSERT INTO artists
+(artist_name)
+VALUES($1) RETURNING artist_id
+`
+
+func (q *Queries) NewArtist(ctx context.Context, artistName string) (uuid.UUID, error) {
+	row := q.db.QueryRowContext(ctx, newArtist, artistName)
+	var artist_id uuid.UUID
+	err := row.Scan(&artist_id)
+	return artist_id, err
+}
+
+const newGenre = `-- name: NewGenre :one
+
+
+
+
+
+
+INSERT INTO genres
+(genre_name)
+VALUES($1) RETURNING genre_id
+`
+
+// INSERT INTO song_genres
+// (genre_id, song_id)
+// VALUES($1, $2);
+// INSERT INTO artist_songs
+// (artist_id, song_id)
+// VALUES($1, $2);
+// COMMIT;
+//
+//	type NewSongRequest struct {
+//		// Required
+//		Name     string   `json:"name"`
+//		Artists  []string `json:"artists"`
+//		Duration int      `json:"duration"`
+//		// Optional
+//		Genres []string `json:"genres"`
+//		// YYYY-MM-DD format
+//		CreationDate string `json:"creationDate"`
+//		// Optional
+//		AlbumID uuid.UUID `json:"albumId"`
+//		// Optional
+//		Image string `json:"image,omitempty"`
+//	}
+func (q *Queries) NewGenre(ctx context.Context, genreName string) (uuid.UUID, error) {
+	row := q.db.QueryRowContext(ctx, newGenre, genreName)
+	var genre_id uuid.UUID
+	err := row.Scan(&genre_id)
+	return genre_id, err
+}
+
+const newPlaylist = `-- name: NewPlaylist :one
+INSERT INTO playlists
+(user_id, playlist_name)
+VALUES($1, $2) RETURNING playlist_id
+`
+
+type NewPlaylistParams struct {
+	UserID       uuid.NullUUID
+	PlaylistName string
+}
+
+func (q *Queries) NewPlaylist(ctx context.Context, arg NewPlaylistParams) (uuid.UUID, error) {
+	row := q.db.QueryRowContext(ctx, newPlaylist, arg.UserID, arg.PlaylistName)
 	var playlist_id uuid.UUID
 	err := row.Scan(&playlist_id)
 	return playlist_id, err
+}
+
+const newSong = `-- name: NewSong :one
+INSERT INTO songs
+(song_name, duration, album_id, creation_date,song_audio_url)
+VALUES($1, $2, $3, $4, $5) RETURNING song_id
+`
+
+type NewSongParams struct {
+	SongName     string
+	Duration     int32
+	AlbumID      uuid.NullUUID
+	CreationDate string
+	SongAudioUrl string
+}
+
+func (q *Queries) NewSong(ctx context.Context, arg NewSongParams) (uuid.UUID, error) {
+	row := q.db.QueryRowContext(ctx, newSong,
+		arg.SongName,
+		arg.Duration,
+		arg.AlbumID,
+		arg.CreationDate,
+		arg.SongAudioUrl,
+	)
+	var song_id uuid.UUID
+	err := row.Scan(&song_id)
+	return song_id, err
+}
+
+const putArtistSong = `-- name: PutArtistSong :exec
+INSERT INTO artist_songs
+(artist_id, song_id)
+VALUES($1, $2)
+`
+
+type PutArtistSongParams struct {
+	ArtistID uuid.UUID
+	SongID   uuid.UUID
+}
+
+func (q *Queries) PutArtistSong(ctx context.Context, arg PutArtistSongParams) error {
+	_, err := q.db.ExecContext(ctx, putArtistSong, arg.ArtistID, arg.SongID)
+	return err
 }
 
 const putPlaylistSong = `-- name: PutPlaylistSong :exec
@@ -237,29 +569,34 @@ func (q *Queries) PutRating(ctx context.Context, arg PutRatingParams) error {
 	return err
 }
 
-const putSong = `-- name: PutSong :one
-INSERT INTO songs
-(album_id, song_name, streams, duration, creation_date)
-VALUES($1, $2, $3, $4, $5) RETURNING song_id
+const putSongCover = `-- name: PutSongCover :exec
+UPDATE songs
+SET song_cover_url=$1
+WHERE song_id=$2
 `
 
-type PutSongParams struct {
-	AlbumID      uuid.NullUUID
-	SongName     string
-	Streams      int32
-	Duration     int32
-	CreationDate string
+type PutSongCoverParams struct {
+	SongCoverUrl sql.NullString
+	SongID       uuid.UUID
 }
 
-func (q *Queries) PutSong(ctx context.Context, arg PutSongParams) (uuid.UUID, error) {
-	row := q.db.QueryRowContext(ctx, putSong,
-		arg.AlbumID,
-		arg.SongName,
-		arg.Streams,
-		arg.Duration,
-		arg.CreationDate,
-	)
-	var song_id uuid.UUID
-	err := row.Scan(&song_id)
-	return song_id, err
+func (q *Queries) PutSongCover(ctx context.Context, arg PutSongCoverParams) error {
+	_, err := q.db.ExecContext(ctx, putSongCover, arg.SongCoverUrl, arg.SongID)
+	return err
+}
+
+const putSongGenre = `-- name: PutSongGenre :exec
+INSERT INTO song_genres
+(genre_id, song_id)
+VALUES($1, $2)
+`
+
+type PutSongGenreParams struct {
+	GenreID uuid.UUID
+	SongID  uuid.UUID
+}
+
+func (q *Queries) PutSongGenre(ctx context.Context, arg PutSongGenreParams) error {
+	_, err := q.db.ExecContext(ctx, putSongGenre, arg.GenreID, arg.SongID)
+	return err
 }

@@ -12,6 +12,9 @@ function App() {
   useEffect(() => {
     document.title = `${COMPANY_NAME}`;
   });
+  // const a = new Audio("https://storage.songsled.com/song18.mp3");
+  // a.volume = 10;
+  // a.play();
 
   return (
     <StrictMode>

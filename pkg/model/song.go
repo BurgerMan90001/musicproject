@@ -20,21 +20,23 @@ type Song struct {
 	// Required
 	SongID  uuid.UUID `json:"id"`
 	AlbumID uuid.UUID `json:"albumId"`
-	UserID  uuid.UUID `json:"userId"`
 	Name    string    `json:"name"`
-	Genre   string    `json:"genre"`
 
-	Duration    int    `json:"duration"`
-	ReleaseDate string `json:"releaseDate"`
+	// Genres and artists are strings
+	Genres       []string `json:"genres"`
+	Artists      []string `json:"artists"`
+	Duration     int      `json:"duration"`
+	CreationDate string   `json:"creationDate"`
+
 	// Defaults to 0
 	Streams int `json:"streams"`
 
 	// Optional
-	// Image url
-	Image string `json:"image,omitempty"`
+	// Cover url
+	Cover string `json:"covere,omitempty"`
 	// Required
 	// Song file location
-	URL string `json:"url"`
+	Audio string `json:"audio"`
 }
 
 // YYYYMMDD = "2006-01-02"
@@ -45,21 +47,68 @@ type Song struct {
 // }
 
 // Upload song metadata
-type UploadSongRequest struct {
+type SongUploadRequest struct {
 	// Required
-	Name     string `json:"name"`
-	Genre    string `json:"genre"`
-	Filename string `json:"filename"`
+	Name    string      `json:"name"`
+	Artists []uuid.UUID `json:"artistIds"`
+
 	// Optional
-	Image string `json:"image,omitempty"`
+	Genres []uuid.UUID `json:"genreIds"`
+
+	Duration int `json:"duration"`
+
+	// YYYY-MM-DD format
+	CreationDate string `json:"creationDate"`
+
+	// Optional
+	AlbumID uuid.UUID `json:"albumId"`
+
+	// Image and audio locations
+	Cover string `json:"cover,omitempty"`
+	Audio string `json:"audio"`
 }
+
+// type Link struct {
+// 	Rel  string `json:"rel"`
+// 	Href string `json:"href"`
+// }
+
+// type NewSong struct {
+// 	Name     string      `json:"name"`
+// 	Artists  []uuid.UUID `json:"artists"`
+// 	Duration int         `json:"duration"`
+// 	// Optional
+// 	Genres []uuid.UUID `json:"genres"`
+// 	// YYYY-MM-DD format
+// 	CreationDate string `json:"creationDate"`
+
+// 	// Optional
+// 	AlbumID uuid.UUID `json:"albumId"`
+
+// 	// Optional
+// 	// Image string `json:"image,omitempty"`
+// 	// Url   string `json:"url,omitempty"`
+// }
+
+// type newSong struct {
+// 	name         string
+// 	albumId      uuid.UUID
+// 	duration     int
+// 	creationDate string
+// 	image        string
+// 	url          string
+// }
 
 type Playlist struct {
-	ID    uuid.UUID `json:"id"`
-	Name  string    `json:"name"`
-	Songs []Song    `json:"songs"`
+	PlaylistID uuid.UUID `json:"id"`
+	UserID     uuid.UUID `json:"userId"`
+	Name       string    `json:"name"`
+	Songs      []Song    `json:"songs"`
 }
-
+type NewPlaylistRequest struct {
+	Name     string      `json:"name"`
+	SongsIDs []uuid.UUID `json:"songIds"`
+}
 type Rating struct {
 	SongID uuid.UUID `json:"songId"`
 	UserID uuid.UUID `json:"userId"`

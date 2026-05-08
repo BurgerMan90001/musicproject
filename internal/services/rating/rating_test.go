@@ -6,7 +6,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"songsled.com/internal/repository/memory"
 	"songsled.com/pkg/model"
 )
 
@@ -20,8 +19,8 @@ func TestPutRating(t *testing.T) {
 	// repo, err := postgres.New(ctx)
 	// require.NoError(t, err)
 
-	ratingRepo := memory.NewRating()
-	ratingService := New(0, 5, ratingRepo)
+	// ratingRepo := memory.NewRating()
+	ratingService := New(0, 5, nil)
 
 	songId := uuid.New()
 	tests := []struct {
@@ -103,8 +102,8 @@ func TestAggregatedRating(t *testing.T) {
 
 	ctx := t.Context()
 
-	ratingRepo := memory.NewRating()
-	ratingService := New(0, 5, ratingRepo)
+	// ratingRepo := memory.NewRating()
+	ratingService := New(0, 5, nil)
 
 	songId := uuid.New()
 

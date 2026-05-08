@@ -1,9 +1,33 @@
-import { PlayButton, VolumeButton } from "../Button";
-import ProgressBar from "./ProgressBar";
-import SongImage from "./SongImage";
-import SongMetadata from "./SongMetadata";
+import { PlayButton } from "./Button";
+
+import SongMetadata from "./Metadata";
 import VolumeControl from "./VolumeControl";
 import { usePlayerStore } from "../../../hooks/player";
+import { SongPlaceholderSvg } from "../Svg";
+
+const SongImage = () => {
+  const queue = usePlayerStore((state) => state.queue);
+
+  if (queue[0] && queue[0].image) {
+    return <img src={queue[0].image} />;
+  }
+  return <SongPlaceholderSvg />;
+};
+const ProgressBar = () => {
+  return (
+    <div className="gap-xxs width-300">
+      <span>0:00 / 0:00</span>
+      <div>
+        <input
+          id="progressBar"
+          aria-label="Progress Bar"
+          className="slider bg-color-body"
+          type="range"
+        />
+      </div>
+    </div>
+  );
+};
 
 const SongPlayer = () => {
   const player = usePlayerStore();
@@ -17,20 +41,12 @@ const SongPlayer = () => {
       </div>
     );
     content = (
-      <div className="display-flex align-items-center bg-color-body-darker grid-template-rows-1fr-auto">
-        <span></span>
-        <nav className="display-flex">
-          {/* <ProgressBar /> */}
-
+      <div className="display-flex align-items-center grid-template-rows-1fr-auto">
+        <nav className="display-flex bg-color-body-dark">
           <PlayButton />
-          <VolumeButton />
 
           <VolumeControl />
-          <ProgressBar />
         </nav>
-        {/* <div className="margin-auto">
-          <ProgressBar />
-        </div> */}
       </div>
     );
   } else {
@@ -40,13 +56,10 @@ const SongPlayer = () => {
       </div>
     );
     content = (
-      <div className="display-flex flex-column bg-color-body-darker ">
+      <div className="display-grid">
         <SongMetadata />
-        <ProgressBar />
         <nav className="display-flex">
           <PlayButton />
-          <VolumeButton />
-
           <VolumeControl />
         </nav>
       </div>
@@ -56,13 +69,15 @@ const SongPlayer = () => {
     <div className="display-flex">
       <button
         onClick={() => player.toggleCollapsed()}
-        popoverTarget="my-popover"
-        className="button-clear"
+        // popoverTarget="my-"
+        className="button-clear popover popover-top"
       >
         {image}
+        {/* <div className="popover-content">asd</div> */}
       </button>
-
       {content}
+
+      <ProgressBar />
     </div>
   );
 };

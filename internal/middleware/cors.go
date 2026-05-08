@@ -2,18 +2,17 @@ package middleware
 
 import (
 	"net/http"
-	"os"
 
 	"github.com/go-chi/cors"
 )
 
 func Cors() func(http.Handler) http.Handler {
-	var orgins = []string{"http://localhost:5173"}
-	if os.Getenv("ENV") == "prod" {
-		orgins = []string{"https://songsled.com"}
-	}
+	// var orgins = []string{"http://localhost:5173"}
+	// if os.Getenv("ENV") == "prod" {
+	// 	orgins = []string{"https://songsled.com"}
+	// }
 	return cors.Handler(cors.Options{
-		AllowedOrigins:   orgins,
+		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},

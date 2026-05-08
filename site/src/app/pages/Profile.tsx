@@ -3,11 +3,11 @@ import api from "../../lib/api";
 import type { User } from "../../types/auth.types";
 
 function Profile() {
-  const res = api("/v1/users", {
-    method: "GET",
-  });
+  // const res = api("/v1/users", {
+  //   method: "GET",
+  // });
 
-  console.log(res);
+  // console.log(res);
 
   const user: User = {
     id: "",
@@ -24,7 +24,7 @@ function Profile() {
 
   if (!user.avatar)
     return (
-      <div className="height-full display-block">
+      <div className="height-full display-block"> 
         <Header />
         <main className="margin-inline-xxxl display-block ">
           {hero}

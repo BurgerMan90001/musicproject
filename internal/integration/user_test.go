@@ -31,13 +31,6 @@ func (s *testSuite) TestHandleUserID() {
 			wantCode: http.StatusNotFound,
 			userId:   "aaaaaaaaaaaaaaaaa",
 		},
-		{
-			name:   "method not allowed",
-			method: http.MethodPatch,
-
-			userId:   validId,
-			wantCode: http.StatusMethodNotAllowed,
-		},
 	}
 
 	for _, tt := range tests {

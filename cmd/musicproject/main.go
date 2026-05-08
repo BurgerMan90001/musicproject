@@ -74,7 +74,7 @@ func run(ctx context.Context, configFile, envFile, schemaFile string) error {
 		return fmt.Errorf("New server: %v", err)
 	}
 
-	store, err := file.New(ctx, &file.GoogleCloud{}, cfg.Upload.Region)
+	store, err := file.New(ctx, &file.AWSS3{}, cfg.File.Region, cfg.File.Endpoint, cfg.File.Endpoint)
 	if err != nil {
 		return err
 	}
