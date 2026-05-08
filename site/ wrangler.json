@@ -1,0 +1,6 @@
+{
+  "name": "songsled-site",
+  "observability": {
+    "enabled": true
+  }
+}
