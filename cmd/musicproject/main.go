@@ -11,7 +11,6 @@ import (
 	"syscall"
 
 	"songsled.com/internal/config"
-	"songsled.com/internal/config/secrets"
 	"songsled.com/internal/handler"
 	"songsled.com/internal/repository/postgres"
 	"songsled.com/internal/server"
@@ -20,12 +19,12 @@ import (
 
 func main() {
 	var (
-		envFile    string
+		env        string
 		configFile string
 	)
 
-	flag.StringVar(&envFile, "envFile", filepath.Join(".env.dev"), "specifies the location of the env file")
-	flag.StringVar(&configFile, "config", filepath.Join("config.dev.yml"), "specifies the location of the config file")
+	flag.StringVar(&env, "env", "dev", "environment")
+	flag.StringVar(&configFile, "config", filepath.Join("config.yml"), "specifies the location of the config file")
 	flag.Parse()
 
 	ctx, done := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -36,17 +35,19 @@ func main() {
 		}
 	}()
 
-	if err := run(ctx, configFile, envFile); err != nil {
+	if err := run(ctx, configFile, env); err != nil {
 		log.Fatal(err)
 	}
 
 	slog.Info("Server shutdown")
 }
 
-func run(ctx context.Context, configFile, envFile string) error {
-	if err := secrets.ReadEnvFile(envFile); err != nil {
-		return fmt.Errorf("Load env file: %v", err)
-	}
+func run(ctx context.Context, configFile, env string) error {
+	// if env == "dev" {
+	// 	if err := secrets.ReadEnvFile(filepath.Join(".env.dev")); err != nil {
+	// 		return fmt.Errorf("Load env file: %v", err)
+	// 	}
+	// }
 
 	cfg, err := config.LoadConfig(configFile)
 	if err != nil {
@@ -54,7 +55,7 @@ func run(ctx context.Context, configFile, envFile string) error {
 	}
 
 	//create database connection
-	repo, err := postgres.New(ctx)
+	repo, err := postgres.New(ctx, "PG_URI")
 	if err != nil {
 		return fmt.Errorf("New postgres connection: %v", err)
 	}

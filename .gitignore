@@ -6,7 +6,7 @@ main
 .env
 .env.dev
 .env.prod
-
+.env.staging
 
 config.dev.yml
 config.dev.yaml

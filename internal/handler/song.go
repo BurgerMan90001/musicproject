@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -20,14 +19,20 @@ func handleSongs(repo *postgres.Song, uploadService *upload.Service) func(r chi.
 	return func(r chi.Router) {
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
-			n, err := strconv.Atoi(r.URL.Query().Get("n"))
-			if err != nil {
-				jsonutil.WriteError(w, &model.Error{
-					Code:    http.StatusBadRequest,
-					Message: "Missing query param n",
-				})
-				return
-			}
+
+			// var n int32 = 10
+			// sn := r.URL.Query().Get("n")
+			// if sn != "" {
+			// 	n, err : = strconv.ParseInt(sn, 10, 32)
+			// 	if err != nil {
+			// 		jsonutil.WriteError(w, &model.Error{
+			// 			Code:    http.StatusBadRequest,
+			// 			Message: "Missing query param n",
+			// 		})
+			// 		return
+			// 	}
+			// }
+
 			genre := r.URL.Query().Get("genre")
 			if genre != "" {
 				songs, err := repo.GetSongsByGenre(ctx, genre)
@@ -39,7 +44,7 @@ func handleSongs(repo *postgres.Song, uploadService *upload.Service) func(r chi.
 				return
 			}
 
-			songs, err := repo.GetSongs(ctx, n)
+			songs, err := repo.GetSongs(ctx, 10)
 			if err != nil {
 				jsonutil.WriteError(w, err)
 				return

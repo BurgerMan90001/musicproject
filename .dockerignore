@@ -1,4 +1,4 @@
-# .dockerignore
+.dockerignore
 
 #main
 #test
@@ -8,6 +8,7 @@
 .git
 .gitignore
 
+site
 
 node_modules
 .wrangler

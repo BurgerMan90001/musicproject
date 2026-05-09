@@ -1,0 +1,10 @@
+.git
+dist
+node_modules
+site
+keycloak
+scripts
+nginx
+
+*.ts
+*.tsx

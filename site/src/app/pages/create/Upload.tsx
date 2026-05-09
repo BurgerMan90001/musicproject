@@ -2,6 +2,7 @@ import { useCallback, useState, type JSX } from "react";
 import fetchApi from "../../../lib/api";
 import type { Song } from "../../../types/song.types";
 import { useNavigate } from "react-router";
+import { escapeHTML } from "../../../lib/html";
 
 const Input = ({
   label,
@@ -194,7 +195,7 @@ function Upload() {
             {imagePreview && (
               <>
                 <span>Preview</span>
-                <img src={imagePreview}></img>
+                <img src={escapeHTML(imagePreview)}></img>
               </>
             )}
           </div>

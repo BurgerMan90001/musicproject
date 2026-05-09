@@ -42,7 +42,6 @@ func (r *Song) GetSongByID(ctx context.Context, songId uuid.UUID) (*model.Song, 
 		}
 		return nil, err
 	}
-	
 
 	return &model.Song{
 		SongID:       s.SongID,
@@ -57,7 +56,7 @@ func (r *Song) GetSongByID(ctx context.Context, songId uuid.UUID) (*model.Song, 
 		Audio:        s.SongAudioUrl,
 	}, nil
 }
-func (r *Song) GetSongs(ctx context.Context, n int) ([]*model.Song, error) {
+func (r *Song) GetSongs(ctx context.Context, n int32) ([]*model.Song, error) {
 	d, err := r.q.GetSongs(ctx, int32(n))
 	if err != nil {
 		return nil, err

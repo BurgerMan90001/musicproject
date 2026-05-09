@@ -14,3 +14,6 @@ func NewFileSystem() *FileSystem {
 func (m *FileSystem) Get(ctx context.Context, name string) (string, error) {
 	return "", nil
 }
+func (m *FileSystem) SetEnv(ctx context.Context, name string) error {
+	return nil
+}

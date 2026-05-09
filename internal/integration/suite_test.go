@@ -75,10 +75,8 @@ func (s *testSuite) SetupSuite() {
 	store, err := file.New(ctx, &file.AWSS3{}, s.cfg.File)
 	s.Require().NoError(err)
 
-	// Test postgres database container
-	s.repo = postgres.NewTest(t, ctx, s.cfg.Repository.Postgres.Image)
+	s.repo, err = postgres.New(ctx, "PG_URI")
 
-	
 	if os.Getenv("LOAD_TESTDATA") == "true" {
 		err = s.repo.ExecFile(ctx, filepath.Join("..", "..", "database", "test.sql"))
 		s.Require().NoError(err)

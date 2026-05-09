@@ -23,7 +23,7 @@ func NewAWS(ctx context.Context, region string) (*AWSSecretManager, error) {
 		return nil, err
 	}
 	client := secretsmanager.NewFromConfig(cfg)
-	
+
 	return &AWSSecretManager{client: client}, nil
 }
 
@@ -41,4 +41,7 @@ func (m *AWSSecretManager) Get(ctx context.Context, name string) (string, error)
 	}
 	// For secrets in binary
 	return string(out.SecretBinary), nil
+}
+func (m *AWSSecretManager) SetEnv(ctx context.Context, name string) error {
+	return nil
 }

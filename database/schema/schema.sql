@@ -29,9 +29,6 @@ CREATE TABLE IF NOT EXISTS songs (
     song_audio_url VARCHAR(100) NOT NULL
 );
 
-
-
-
 CREATE TABLE IF NOT EXISTS song_ratings (
     user_id UUID,
     song_id UUID REFERENCES albums(album_id) NOT NULL,

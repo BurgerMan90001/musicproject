@@ -14,15 +14,6 @@ const (
 	ProdConfig = "config.prod.yml"
 )
 
-// func LoadEnvironment(env Env) {
-// 	switch env {
-// 	case Dev:
-
-// 	case Prod:
-// 	default:
-
-// 	}
-// }
 
 func LoadConfig(filename string) (*Config, error) {
 

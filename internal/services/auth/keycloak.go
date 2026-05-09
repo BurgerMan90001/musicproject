@@ -91,15 +91,13 @@ func (s *Client) Login(ctx context.Context, w http.ResponseWriter, r *http.Reque
 		return nil, fmt.Errorf("Failed to verify id_token: %w", err)
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:  s.stateName,
-		Value: "",
-
-		MaxAge: -1,
+		Name:     s.stateName,
+		Value:    "",
+		MaxAge:   -1,
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
 	})
-
-	// http.SetCookie(w,&http.Cookie{
-
-	// })
 
 	http.Redirect(w, r, "", http.StatusFound)
 

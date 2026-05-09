@@ -5,7 +5,7 @@ WORKDIR /src
 # ENV GOCACHE=/go-cache
 # ENV GOMODCACHE=/gomod-cache
 
-COPY ./go.* ./
+# COPY ./go.* ./
 
 # RUN --mount=type=cache,target=/gomod-cache \
 #       go mod download
@@ -14,22 +14,22 @@ COPY ./ ./
 
 # RUN --mount=type=cache,target=/gomod-cache \
 #    --mount=type=cache,target=/go-cache \
-RUN   GOOS=linux go build -o main cmd/musicproject/main.go
+RUN GOOS=linux go build -o main cmd/musicproject/main.go
 
 
-FROM alpine:latest
+FROM scratch
 
 WORKDIR /src
 
 COPY --from=build /src/main .
-COPY --from=build /src/.env.dev .env.dev
-COPY --from=build /src/config.dev.yml config.dev.yml
+COPY --from=build /src/config.yml config.yml
 
+# COPY --from=build /src/.env.dev .env.dev
 
-# RUN apk add --no-cache \
-#     ca-certificates
-#RUN apk add ffmpeg
+# us-central1
 
+# RUN apk add --no-cache \ ffmpeg
+# ENV PORT 8081
 
 EXPOSE 8081
 

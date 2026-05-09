@@ -1,0 +1,24 @@
+api:
+  port: 8081
+  host: localhost
+  version: "1"
+
+auth:
+  jwt:
+    issuer: songsled
+    audience:
+      - api
+
+file:
+  region: auto
+  bucket: songsled
+  endpoint: https://3acae5ed5c8ad3a0a838d9fe3a277a62.r2.cloudflarestorage.com
+  public: storage.songsled.com
+  upload:
+    encoder:
+      logging: false
+      enabled: false
+
+test:
+  showErrorDetails: false
+  loadTestdata: false
