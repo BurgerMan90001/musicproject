@@ -16,21 +16,17 @@ COPY ./ ./
 #    --mount=type=cache,target=/go-cache \
 RUN GOOS=linux go build -o main cmd/musicproject/main.go
 
-
-FROM scratch
+FROM alpine
 
 WORKDIR /src
 
 COPY --from=build /src/main .
 COPY --from=build /src/config.yml config.yml
 
-# COPY --from=build /src/.env.dev .env.dev
-
-# us-central1
-
+RUN apk add --no-cache ca-certificates
 # RUN apk add --no-cache \ ffmpeg
 # ENV PORT 8081
 
 EXPOSE 8081
 
-CMD [ "./main" ]
+CMD [ "./main" , "--env=prod"]

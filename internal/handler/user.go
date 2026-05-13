@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"songsled.com/internal/jsonutil"
 	"songsled.com/pkg/model"
@@ -14,10 +15,10 @@ type userRepo interface {
 	DeleteUserByID(ctx context.Context, id uuid.UUID) error
 }
 
-func handleUsers(userRepo userRepo) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func handleUsers(userRepo userRepo) func(r chi.Router) {
+	return func(r chi.Router) {
 
-		jsonutil.NotImplemented(w)
+		// jsonutil.NotImplemented(w)
 	}
 }
 func handleGetUsersId(userRepo userRepo) http.HandlerFunc {

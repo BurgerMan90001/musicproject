@@ -24,34 +24,30 @@ services:
   #     - ./keycloak:/opt/keycloak/data/
   api:
     container_name: musicproject-api
-    env_file:
-      - .env.dev
+    # env_file:
+    #   - .env.dev
     build: .
     ports:
       - 8081:8081
 
-    depends_on:
-      db:
-        condition: service_healthy
+  # db:
+  #   image: postgres:alpine
+  #   container_name: musicproject-db
 
-  db:
-    image: postgres:alpine
-    container_name: musicproject-db
+  #   ports:
+  #     - 5432:5432
 
-    ports:
-      - 5432:5432
+  #   environment:
+  #     POSTGRES_USER: musicproject
+  #     POSTGRES_PASSWORD: admin
 
-    environment:
-      POSTGRES_USER: musicproject
-      POSTGRES_PASSWORD: admin
+  #   volumes:
+  #     - ./database/schema:/docker-entrypoint-initdb.d
 
-    volumes:
-      - ./database/schema:/docker-entrypoint-initdb.d
-
-    healthcheck:
-      test: ["CMD", "pg_isready", "--username=musicproject"]
-      interval: 1s
-      timeout: 3s
-      retries: 15
+  #   healthcheck:
+  #     test: ["CMD", "pg_isready", "--username=musicproject"]
+  #     interval: 1s
+  #     timeout: 3s
+  #     retries: 15
   # redis:
   #   image: redis:alpine

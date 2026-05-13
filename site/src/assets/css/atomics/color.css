@@ -26,6 +26,9 @@
   background-color: var(--color-alt-dark);
 }
 
+.bg-color-primary-light {
+  background-color: var(--color-primary-light);
+}
 .bg-color-primary {
   background-color: var(--color-primary);
 }

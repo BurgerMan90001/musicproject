@@ -1,6 +1,5 @@
 import { usePlayerStore } from "../../../hooks/player";
 import { SongPlaceholderSvg } from "../Svg";
-
 const SongList = () => {
   const queue = usePlayerStore((state) => state.queue);
 

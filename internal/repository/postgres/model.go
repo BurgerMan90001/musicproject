@@ -1,18 +1,39 @@
 package postgres
 
 import (
-	"songsled.com/internal/repository/postgres/gensqlc"
+	"database/sql"
+	"strings"
+
+	"github.com/google/uuid"
 	"songsled.com/pkg/model"
 )
 
-func toModelSong(s gensqlc.Song) *model.Song {
+func toModelSong(
+	songId uuid.UUID,
+	albumId uuid.NullUUID,
+	songName string,
+	genreList []byte,
+	artistList []byte,
+	duration int32,
+	songCreationDate string,
+	streams int32,
+	songCoverUrl sql.NullString,
+	songAudioUrl string,
+) *model.Song {
 	return &model.Song{
-		SongID: s.SongID,
-		AlbumID: s.AlbumID.UUID,
-		
+		SongId:       songId,
+		Name:         songName,
+		AlbumId:      albumId.UUID,
+		Genres:       strings.Split(string(genreList), ","),
+		Artists:      strings.Split(string(artistList), ","),
+		Duration:     int(duration),
+		CreationDate: songCreationDate,
+		Streams:      int(streams),
+		Cover:        songCoverUrl.String,
+		Audio:        songAudioUrl,
 	}
 }
 
-func toModelAlbum(a gensqlc.Album) *model.Album {
+func toModelAlbum() *model.Album {
 	return &model.Album{}
 }

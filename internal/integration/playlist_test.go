@@ -1,10 +1,6 @@
 package integration
 
+func (s *testSuite) TestGetPlaylists() {
 
-
-
-
-
-func (s *testSuite) TestXxx() {
-	
+	// s.newRequest("/v1/")
 }

@@ -3,18 +3,32 @@ package handler
 import (
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"songsled.com/internal/jsonutil"
 	"songsled.com/internal/services/auth"
 )
 
-// type authService interface {
-// 	Signup(ctx context.Context, email, password string) (*model.User, *model.TokenPair, error)
-// 	Login(ctx context.Context, email, password string) (*model.User, *model.TokenPair, error)
-// 	Refresh(ctx context.Context, refreshToken string) (*model.TokenPair, error)
-// 	Logout(ctx context.Context, refreshToken string) error
-// }
+//	type authService interface {
+//		Signup(ctx context.Context, email, password string) (*model.User, *model.TokenPair, error)
+//		Login(ctx context.Context, email, password string) (*model.User, *model.TokenPair, error)
+//		Refresh(ctx context.Context, refreshToken string) (*model.TokenPair, error)
+//		Logout(ctx context.Context, refreshToken string) error
+//	}
+//
 // type emailService interface {
 // }
+func handleAuth() func(r chi.Router) {
+	return func(r chi.Router) {
+		// r.HandleFunc("/signup", handleSignup(authService))
+		// r.HandleFunc("/login", handleLogin(authService))
+		// r.HandleFunc("/refresh", handleRefresh(authService))
+		// r.HandleFunc("/logout", handleLogout(authService))
+		// // mux.HandleFunc("/auth/reset", authHandler.handleEmailReset(emailService))
+
+		// r.HandleFunc("/songsled/login", handleOidcLogin(oidc))
+		// r.HandleFunc("/songsled/callback", handleOidcRedirect(oidc))
+	}
+}
 
 // func handleSignup(authService authService) http.HandlerFunc {
 // 	return func(w http.ResponseWriter, r *http.Request) {

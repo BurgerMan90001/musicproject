@@ -34,8 +34,8 @@ steps:
         us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/songsled-api:latest,
         --region,
         us-central1,
-        --port,
-        "8081",
+        --service-account,
+        vm-musicproject@high-cistern-488613-c2.iam.gserviceaccount.com
         # --update-secrets=AWS_ACCESS_KEY_ID=AWS_ACCESS_KEY_ID:latest,
         # --update-secrets=AWS_SECRET_ACCESS_KEY=AWS_SECRET_ACCESS_KEY:latest,
         # --update-secrets=PG_URI=PG_URI:latest,

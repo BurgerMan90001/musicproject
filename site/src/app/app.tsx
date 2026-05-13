@@ -12,7 +12,6 @@ function App() {
   useEffect(() => {
     document.title = `${COMPANY_NAME}`;
   });
-  
 
   return (
     <StrictMode>

@@ -27,24 +27,19 @@ func New(
 ) (http.Handler, error) {
 	root := chi.NewRouter()
 
+	artistRepo := postgres.NewArtistRepo(repo.Queries)
 	songRepo := postgres.NewSongRepo(repo.Queries)
+	albumRepo := postgres.NewAlbumRepo(repo.Queries)
 	playlistRepo := postgres.NewPlaylistRepo(repo.Queries)
-	// searchService := search.NewPostgres()
-	// authService, err := auth.New(ctx, cfg.Auth, rdb, userRepo)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	genreRepo := postgres.NewGenreRepo(repo.Queries)
 
 	uploadService, err := upload.New(cfg.File.Bucket,
-		false, true, 30*time.Minute, store, songRepo)
+		true, 30*time.Minute,
+		store, songRepo, genreRepo, artistRepo)
 	if err != nil {
 		return nil, err
 	}
-	// imageUpload, err := upload.NewImage(cfg.File.Bucket, "audio",
-	// 	false, true, 30*time.Minute, store, songRepo)
-	// if err != nil {
-	// 	return nil, err
-	// }
+
 	// authMw := middleware.NewAuth(nil)
 	// rl := ratelimit.NewTokenBucket(15, 30)
 
@@ -61,34 +56,25 @@ func New(
 	// if err != nil {
 	// 	return nil, err
 	// }
-
 	root.Use(middleware.Cors())
 
 	root.Route("/v1", func(api chi.Router) {
-
-		api.Route("/songs", handleSongs(songRepo, uploadService))
+		api.Route("/songs", handleSongs(songRepo, nil, uploadService))
 		api.Route("/playlists", handlePlaylists(playlistRepo))
-		api.Route("/albums", handleAlbums())
+		api.Route("/albums", handleAlbums(albumRepo))
 
 		api.Route("/images", handleImages(uploadService))
 		api.Route("/audio", handleAudio(uploadService))
+		api.Route("/artists", handleArtists(artistRepo))
+		api.Route("/genres", handleGenres(genreRepo))
+
 		// api.Route("/admin", func(r chi.Router) {
 		// 	// r.Use(authMw.RequireAuth(auth.RoleAdmin))
 		// 	// r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// 	// 	jsonutil.WriteJSON(w, nil, http.StatusOK)
 		// 	// })
-
 		// })
-		api.Route("/auth", func(r chi.Router) {
-			// r.HandleFunc("/signup", handleSignup(authService))
-			// r.HandleFunc("/login", handleLogin(authService))
-			// r.HandleFunc("/refresh", handleRefresh(authService))
-			// r.HandleFunc("/logout", handleLogout(authService))
-			// // mux.HandleFunc("/auth/reset", authHandler.handleEmailReset(emailService))
-
-			// r.HandleFunc("/songsled/login", handleOidcLogin(oidc))
-			// r.HandleFunc("/songsled/callback", handleOidcRedirect(oidc))
-		})
+		api.Route("/auth", handleAuth())
 
 		api.Route("/users", func(r chi.Router) {
 			// r.Get("/", handleUsers(userRepo))

@@ -1,88 +1,32 @@
-import { useCallback, useState, type JSX } from "react";
+import { useState } from "react";
 import fetchApi from "../../../lib/api";
-import type { Song } from "../../../types/song.types";
 import { useNavigate } from "react-router";
 import { escapeHTML } from "../../../lib/html";
+import { Input, InputList } from "./Input";
+import { useArtists, useGenres } from "../../../hooks/upload";
+import { SubmitButton } from "./Button";
 
-const Input = ({
-  label,
-  children,
-}: {
-  label?: string;
-  children: JSX.Element;
-}) => {
-  return (
-    <>
-      <div className="">
-        {label && <label htmlFor="">{label}</label>}
-        <div className="display-flex bg-color-body-dark border">{children}</div>
-      </div>
-    </>
-  );
-};
 function Upload() {
   const [uploading, setUploading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [audioFile, setAudioFile] = useState<File>();
   const [imageFile, setImageFile] = useState<File>();
-  const [imagePreview, setImagePreview] = useState<string>("");
+  const genres = useGenres();
+  const artists = useArtists();
 
   const navigate = useNavigate();
-  const metadata: Song = {
-    id: "",
-    name: "",
-    genres: "",
-    artists: "",
-    creationDate: "",
-    streams: 0,
-    duration: 0,
-    image: "",
-    audio: "",
-  };
+  const [imagePreview, setImagePreview] = useState<string>("");
 
-  const uploadImage = useCallback(() => {
-    if (!imageFile) {
-      return;
-    }
-    const formData = new FormData();
-    formData.append("file", imageFile);
-
-    fetchApi("/v1/images/covers", {
-      method: "PUT",
-      body: formData,
-      headers: {
-        "Content-Type": imageFile.type,
-        "Content-Length": String(imageFile.size),
-      },
-    })
-      .then((res) => {
-        if (!res) {
-          setError("A network error was encountered");
-          return;
-        }
-        return res.json();
-      })
-      .then((json) => {
-        metadata.image = json.href;
-      })
-      .catch((e) => setError(e));
-  }, [audioFile]);
-
-  const uploadAudio = useCallback(() => {
-    if (!audioFile) {
-      setError("No audio file selected");
-      return;
-    }
-
-    fetchApi(
-      "/v1/audio",
+  const uploadFile = async (endpoint: string, file: File) => {
+    return fetchApi(
+      endpoint,
       {
         method: "PUT",
         headers: {
-          "Content-Type": audioFile.type,
+          "Content-Type": file.type,
         },
       },
-      { filename: audioFile.name },
+      { filename: file.name },
     )
       .then((res) => {
         if (!res || !res.ok) {
@@ -91,53 +35,110 @@ function Upload() {
         }
         return res.json();
       })
-      .then((json) => {
-        const formData = new FormData();
-        formData.append("file", audioFile);
-
-        fetch(json.links[0].href, {
+      .then(async (json) => {
+        return fetch(json.links[0].href, {
           method: "PUT",
-          body: formData,
+          body: file,
           headers: {
-            "Content-Type": audioFile.type,
-            "Content-Length": String(audioFile.size),
+            "Content-Type": file.type,
           },
-        }).then((res) => {
-          if (!res.ok) {
-            setError("A network error was encountered");
-            return;
-          }
-          metadata.audio = json.href;
-        });
+        })
+          .then((res) => {
+            if (!res.ok) {
+              setError("A network error was encountered");
+              return;
+            }
+            return json.href;
+          })
+          .catch((e) => console.log(e));
       })
-      .catch((e) => setError(e))
+      .catch((e) => console.log(e))
       .finally(() => {
         setUploading(false);
       });
-  }, [audioFile]);
+  };
+
+  const onSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (!audioFile) {
+      setError("No audio file selected");
+      return;
+    }
+
+    const form = e.target;
+    const formData = new FormData(form);
+
+    setUploading(true);
+    const audio = await uploadFile("/v1/audio", audioFile);
+    formData.append("audio", audio);
+
+    if (imageFile) {
+      const image = await uploadFile("/v1/images/covers", imageFile);
+      console.log(imageFile.type);
+      formData.append("cover", image);
+    }
+
+    formData.append("artists", JSON.stringify(artists.list));
+    formData.append("genres", JSON.stringify(genres.list));
+
+    console.log(JSON.stringify(Object.fromEntries(formData)));
+    return;
+    fetchApi("/v1/songs", {
+      method: "PUT",
+      body: JSON.stringify(formData),
+    })
+      .then((res) => {
+        if (!res || !res.ok) {
+          setError("A network error was encountered");
+          return;
+        }
+        return res.json();
+      })
+      .then((json) => {
+        console.log(json);
+      })
+      .catch((e) => console.log(e));
+
+    // if (error === "") {
+    //   navigate("/create");
+    // }
+  };
 
   if (uploading) {
-    return <main>Loading</main>;
+    return (
+      <main className="layout-main display-flex scroll-vertical">
+        Uploading
+      </main>
+    );
   }
+  const ImagePreview = ({ file }: { file: string }) => {
+    if (file === "") {
+      return;
+    }
+
+    return (
+      <div>
+        <span>Preview</span>
+        <div className="image image-128">
+          <img src={escapeHTML(file)}></img>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <main className="layout-main display-flex scroll-vertical">
       <form
-        onSubmit={() => {
-          uploadImage();
-          uploadAudio();
-          if (!error) {
-            navigate("/create");
-          }
-        }}
+        onSubmit={onSubmit}
         className="display-flex flex-column bg-color-body-medium font-size-md padding-xl margin-0-auto gap-xs"
       >
         <h1 className="font-weight-bold border-bottom">Upload Song</h1>
-
-        <Input label="Song Name">
+        <Input>
           <input
             type="text"
             id="songName"
+            name="name"
             aria-label="Song name"
             // required={true}
             placeholder="My song"
@@ -145,42 +146,27 @@ function Upload() {
           />
         </Input>
         <div className="display-flex gap-xxs">
-          <Input label="Genres">
-            <input
-              type="search"
-              id="genres"
-              aria-label="Genres"
-              placeholder="Pop"
-              // required={true}
-              className="flex-1 font-size-sm padding-xs"
-            />
-          </Input>
+          <InputList label="Genres" placeholder="Song genre" state={genres} />
+          <InputList
+            label="Artists"
+            placeholder="Song artists"
+            state={artists}
+          />
           <Input label="Creation Date">
             <input
-              type="text"
-              id="creationDate"
+              type="date"
+              name="creationDate"
               aria-label="Creation Date"
-              placeholder="YYYY-MM-DD"
               className="flex-1 font-size-sm padding-xs "
             />
           </Input>
         </div>
 
-        {/* <Input label="In Album">
-          <input
-            type="radio"
-            id="file"
-            // onChange={onFileChange}
-            className="bg-color-body-dark"
-          />
-        </Input> */}
-        {/* <div className="display "> */}
         <div className="display-flex gap-xxs margin-0-auto">
-          <div className="">
-            <Input label="Cover File">
+          <div>
+            <Input label="Cover Image">
               <input
                 type="file"
-                id="cover"
                 accept="image/*"
                 onChange={(event) => {
                   if (event.target.files) {
@@ -192,35 +178,26 @@ function Upload() {
                 className="bg-color-body-dark padding-xxs color-text-subtle"
               />
             </Input>
-            {imagePreview && (
-              <>
-                <span>Preview</span>
-                <img src={escapeHTML(imagePreview)}></img>
-              </>
-            )}
-          </div>
 
-          <div>
-            <Input label="Audio">
-              <input
-                type="file"
-                id="audio"
-                accept="audio/*"
-                onChange={(event) => {
-                  if (event.target.files) {
-                    const file = event.target.files[0];
-                    // setImagePreview(URL.createObjectURL(file));
-                    setAudioFile(file);
-                  }
-                }}
-                // required
-                className="bg-color-body-dark padding-xxs color-text-subtle"
-              />
-            </Input>
+            <ImagePreview file={imagePreview} />
           </div>
+          <Input label="Audio">
+            <input
+              type="file"
+              accept="audio/*"
+              // required
+              className="bg-color-body-dark padding-xxs color-text-subtle"
+              onChange={(event) => {
+                if (event.target.files) {
+                  const file = event.target.files[0];
+                  setAudioFile(file);
+                }
+              }}
+            />
+          </Input>
         </div>
         <span className="color-text-danger">{error}</span>
-        <button className="button-primary padding-xxs">Submit</button>
+        <SubmitButton />
       </form>
     </main>
   );

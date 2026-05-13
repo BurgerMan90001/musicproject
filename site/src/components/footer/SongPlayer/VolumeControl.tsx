@@ -1,27 +1,25 @@
-import { useEffect, useState, type JSX } from "react";
+import { useEffect, useState } from "react";
 import { usePlayerStore } from "../../../hooks/player";
 import { MutedSvg, VolumeMediumSvg } from "../Svg";
 
 const VolumeControl = () => {
   const player = usePlayerStore();
-  const [value, setValue] = useState(0);
-  const [svg, setSvg] = useState<JSX.Element>(<MutedSvg />);
-  useEffect(() => {
-    if (player.audio.volume < 0.1) {
-      setSvg(<MutedSvg />);
-      return;
-    }
-    setSvg(<VolumeMediumSvg />);
-  }, [player.audio.volume]);
+  const [volume, setVolume] = useState(0);
+  const [muted, setMuted] = useState<boolean>(false);
 
+  useEffect(() => {
+    if (player.audio.current) {
+      player.audio.current.volume = volume / 100;
+      player.audio.current.muted = muted;
+    }
+  }, [volume, player.audio, muted]);
   const VolumeButton = () => {
     return (
       <button
-        onClick={() => {
-        }}
+        onClick={() => setMuted((prev) => !prev)}
         className="image image-48 button-clear color-text-invert"
       >
-        {svg}
+        {muted || volume < 5 ? <MutedSvg /> : <VolumeMediumSvg />}
       </button>
     );
   };
@@ -33,11 +31,10 @@ const VolumeControl = () => {
           className="bg-color-body slider"
           aria-label="Volume Slider"
           type="range"
-          value={value}
-          onChange={(e) => {
-            player.audio.volume = parseInt(e.target.value) / 100;
-            setValue(parseInt(e.target.value));
-          }}
+          min={0}
+          max={100}
+          value={volume}
+          onChange={(e) => setVolume(Number(e.target.value))}
         />
       </div>
     </>

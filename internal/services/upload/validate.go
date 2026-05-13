@@ -17,10 +17,13 @@ func validateUploadRequest(req *model.SongUploadRequest) error {
 			Message: "Song request is empty",
 		}
 	}
+	
 	if req.Name == "" {
 		err.Details = "Name is empty"
 	}
-
+	if len(req.Artists) == 0 {
+		// return 
+	}
 	// Any errors apear
 	if len(err.Details) > 0 {
 		return err

@@ -10,6 +10,7 @@ import Logout from "./pages/auth/Logout";
 import Playlists from "./pages/playlists/Playlists";
 import NewPlaylist from "./pages/playlists/NewPlaylist";
 import Discovery from "./pages/playlists/Discovery";
+import Blog from "./pages/blog/Blog";
 
 const routes = [
   {
@@ -54,6 +55,10 @@ const routes = [
   {
     path: "/legal",
     element: <Legal />,
+  },
+  {
+    path: "/blog",
+    element: <Blog />,
   },
 ];
 

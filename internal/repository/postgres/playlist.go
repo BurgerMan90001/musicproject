@@ -35,12 +35,30 @@ func (r *Playlist) NewPlaylist(ctx context.Context, name string, songIds []uuid.
 			return uuid.Nil, err
 		}
 	}
+	// r.q.getPlaylists
 
 	return playlistId, nil
 }
 
-func (r *Playlist) GetPlaylistSongsByID(ctx context.Context, playlistId uuid.UUID) ([]model.Song, error) {
-	playlistSongs, err := r.q.GetPlaylistSongsByID(ctx, gensqlc.GetPlaylistSongsByIDParams{
+func (r *Playlist) GetPlaylists(ctx context.Context, n int32) ([]*model.Playlist, error) {
+	l, err := r.q.GetPlaylists(ctx, n)
+	if err != nil {
+		return nil, err
+	}
+	var playlists []*model.Playlist
+	for _, p := range l {
+		playlists = append(playlists, &model.Playlist{
+			PlaylistID: p.PlaylistID,
+			UserID:     p.UserID.UUID,
+			Name:       p.PlaylistName,
+			Cover:      p.PlaylistCoverUrl.String,
+		})
+	}
+	return playlists, nil
+}
+
+func (r *Playlist) GetPlaylistSongsById(ctx context.Context, playlistId uuid.UUID) ([]*model.Song, error) {
+	l, err := r.q.GetPlaylistSongsById(ctx, gensqlc.GetPlaylistSongsByIdParams{
 		PlaylistID: playlistId,
 		Limit:      10,
 	})
@@ -48,16 +66,16 @@ func (r *Playlist) GetPlaylistSongsByID(ctx context.Context, playlistId uuid.UUI
 		return nil, err
 	}
 
-	var songs []model.Song
-	for _, s := range playlistSongs {
-		songs = append(songs, model.Song{
-			SongID:       s.SongID,
-			AlbumID:      s.AlbumID.UUID,
+	var songs []*model.Song
+	for _, s := range l {
+		songs = append(songs, &model.Song{
+			SongId:       s.SongID,
+			AlbumId:      s.AlbumID.UUID,
 			Name:         s.SongName,
 			Genres:       strings.Split(string(s.GenreList), ","),
 			Artists:      strings.Split(string(s.ArtistList), ","),
 			Duration:     int(s.Duration),
-			CreationDate: s.SongCreationDate,
+			CreationDate: s.CreationDate,
 			Streams:      int(s.Streams),
 			Cover:        s.SongCoverUrl.String,
 			Audio:        s.SongAudioUrl,

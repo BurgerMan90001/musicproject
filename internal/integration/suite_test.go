@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+	"github.com/testcontainers/testcontainers-go"
 	"songsled.com/internal/config"
 	"songsled.com/internal/config/secrets"
 	"songsled.com/internal/handler"
@@ -35,7 +36,7 @@ type request struct {
 	// Will default to GET
 	method string
 	// Optional
-	body map[string]any
+	body any
 	// Access and refresh tokens are set in cookies as accessKey and refreshKey
 	accessToken  string
 	refreshToken string
@@ -61,15 +62,20 @@ func (s *testSuite) SetupSuite() {
 	t := s.T()
 	ctx := t.Context()
 
+	c, err := postgres.NewContainer(ctx, filepath.Join("..", "..", "database", "schema", "schema.sql"))
+	s.Require().NoError(err)
+
+	t.Cleanup(func() {
+		err := testcontainers.TerminateContainer(c)
+		s.Require().Empty(err)
+	})
+
 	// Env variables for testing
-	err := secrets.ReadEnvFile(".env")
+	err = secrets.ReadEnvFile(".env")
 	s.Require().NoError(err)
 
 	// Config
-	s.cfg, err = config.LoadConfig(filepath.Join("..", "..", "config.dev.yml"))
-	s.Require().NoError(err)
-
-	err = secrets.ReadEnvFile(filepath.Join("..", "..", ".env.dev"))
+	s.cfg, err = config.LoadConfig(filepath.Join("..", "..", "config.yml"))
 	s.Require().NoError(err)
 
 	store, err := file.New(ctx, &file.AWSS3{}, s.cfg.File)
@@ -93,8 +99,9 @@ func (s *testSuite) newRequest(url string, req *request) *httptest.ResponseRecor
 			method: "GET",
 		}
 	}
+
 	var buf io.Reader
-	if len(req.body) > 0 {
+	if req.body != nil {
 		mar, err := json.Marshal(req.body)
 		s.Require().NoError(err)
 		buf = bytes.NewBuffer(mar)

@@ -17,9 +17,18 @@ import (
 func handlePlaylists(playlistRepo *postgres.Playlist) func(r chi.Router) {
 	return func(r chi.Router) {
 
-		r.Get("/", func(w http.ResponseWriter, r *http.Request) {})
+		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			p, err := playlistRepo.GetPlaylists(ctx, 20)
+			if err != nil {
+				jsonutil.WriteError(w, err)
+				return
+			}
 
-		r.Post("/", func(w http.ResponseWriter, r *http.Request) {
+			jsonutil.WriteJSON(w, p, http.StatusOK)
+		})
+
+		r.Put("/", func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			res, err := jsonutil.ReadJson[*model.NewPlaylistRequest](r.Body)
 			if err != nil {
@@ -30,14 +39,20 @@ func handlePlaylists(playlistRepo *postgres.Playlist) func(r chi.Router) {
 				})
 				return
 			}
-			if _, err := playlistRepo.NewPlaylist(ctx, res.Name, res.SongsIDs); err != nil {
+			playlistId, err := playlistRepo.NewPlaylist(ctx, res.Name, res.SongsIDs)
+			if err != nil {
 				jsonutil.WriteError(w, err)
 				return
 			}
-			w.Header().Set("Location", "")
-			jsonutil.WriteJSON(w, nil, http.StatusCreated)
+			l, err := apiJoinUrl("v1", "playlists", playlistId.String())
+			if err != nil {
+				jsonutil.WriteError(w, err)
+				return
+			}
+			w.Header().Set("Location", l)
+			w.WriteHeader(http.StatusCreated)
 		})
-		r.Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
+		r.Get("/{playlistId}", func(w http.ResponseWriter, r *http.Request) {
 			playlistId, err := uuid.Parse(r.PathValue("id"))
 			if err != nil {
 				jsonutil.WriteError(w, &model.Error{
@@ -48,13 +63,56 @@ func handlePlaylists(playlistRepo *postgres.Playlist) func(r chi.Router) {
 				return
 			}
 			ctx := r.Context()
-			songs, err := playlistRepo.GetPlaylistSongsByID(ctx, playlistId)
+			songs, err := playlistRepo.GetPlaylistSongsById(ctx, playlistId)
 			if err != nil {
 				jsonutil.WriteError(w, err)
 				return
 			}
 			jsonutil.WriteJSON(w, songs, http.StatusOK)
 		})
+		r.Put("/{playlistId}", func(w http.ResponseWriter, r *http.Request) {
+			_, err := uuid.Parse(r.PathValue("id"))
+			if err != nil {
+				jsonutil.WriteError(w, &model.Error{
+					Code:    http.StatusBadRequest,
+					Message: "Playlist not found",
+					Details: err.Error(),
+				})
+				return
+			}
+			jsonutil.NotImplemented(w)
+		})
+		r.Put("/{playlistId}/songs", func(w http.ResponseWriter, r *http.Request) {
+			playlistId, err := uuid.Parse(r.PathValue("id"))
+			if err != nil {
+				jsonutil.WriteError(w, &model.Error{
+					Code:    http.StatusBadRequest,
+					Message: "Playlist not found",
+					Details: err.Error(),
+				})
+				return
+			}
+			ctx := r.Context()
 
+			type request struct {
+				SongId uuid.UUID `json:"songId"`
+			}
+			b, err := jsonutil.ReadJson[request](r.Body)
+			if err != nil {
+				jsonutil.WriteError(w, err)
+				return
+			}
+			if err := playlistRepo.PutPlaylistSong(ctx, playlistId, b.SongId); err != nil {
+				jsonutil.WriteError(w, err)
+				return
+			}
+			l, err := apiJoinUrl("v1", "playlists", playlistId.String(), "songs")
+			if err != nil {
+				jsonutil.WriteError(w, err)
+				return
+			}
+			w.Header().Set("Location", l)
+			w.WriteHeader(http.StatusCreated)
+		})
 	}
 }

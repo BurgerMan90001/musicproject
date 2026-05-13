@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"os"
 	"os/signal"
 	"path/filepath"
 	"syscall"
+
+	"github.com/testcontainers/testcontainers-go"
 
 	"songsled.com/internal/config"
 	"songsled.com/internal/handler"
@@ -21,10 +24,12 @@ func main() {
 	var (
 		env        string
 		configFile string
+		port       int
 	)
 
 	flag.StringVar(&env, "env", "dev", "environment")
 	flag.StringVar(&configFile, "config", filepath.Join("config.yml"), "specifies the location of the config file")
+	flag.IntVar(&port, "port", 8081, "")
 	flag.Parse()
 
 	ctx, done := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -35,19 +40,33 @@ func main() {
 		}
 	}()
 
-	if err := run(ctx, configFile, env); err != nil {
+	if err := run(ctx, configFile, env, port); err != nil {
 		log.Fatal(err)
 	}
 
 	slog.Info("Server shutdown")
 }
 
-func run(ctx context.Context, configFile, env string) error {
-	// if env == "dev" {
-	// 	if err := secrets.ReadEnvFile(filepath.Join(".env.dev")); err != nil {
-	// 		return fmt.Errorf("Load env file: %v", err)
-	// 	}
-	// }
+func run(ctx context.Context,
+	configFile,
+	env string,
+	port int,
+) error {
+	if err := os.Setenv("ENV", env); err != nil {
+		return err
+	}
+	if env == "dev" {
+		c, err := postgres.NewContainer(ctx, filepath.Join("database", "schema", "schema.sql"))
+		if err != nil {
+			return fmt.Errorf("New postgres container: %w", err)
+		}
+		defer func() {
+			err := testcontainers.TerminateContainer(c)
+			if err != nil {
+				slog.Error(err.Error())
+			}
+		}()
+	}
 
 	cfg, err := config.LoadConfig(configFile)
 	if err != nil {
@@ -62,7 +81,7 @@ func run(ctx context.Context, configFile, env string) error {
 	defer repo.DB.Close()
 
 	// create server
-	server, err := server.NewServer(cfg.API.Port)
+	server, err := server.NewServer(port)
 	if err != nil {
 		return fmt.Errorf("New server: %v", err)
 	}
@@ -71,14 +90,6 @@ func run(ctx context.Context, configFile, env string) error {
 	if err != nil {
 		return err
 	}
-
-	// rdb := redis.NewClient(&redis.Options{
-	// 	Addr:     "localhost:6379",
-	// 	Password: "",
-	// 	DB:       0,
-	// })
-
-	// defer rdb.Close()
 
 	// create handler
 	handler, err := handler.New(ctx, cfg, store, repo, nil)

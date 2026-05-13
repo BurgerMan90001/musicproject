@@ -31,7 +31,7 @@ function SearchBar() {
       action={formAction}
       className="display-flex bg-color-body-dark gap-xxs padding-xxs font-size-sm"
     >
-      <button className="icon button-clear font-size-xl" type="submit">
+      <button className="icon button-clear font-size-lg" type="submit">
         <SearchIcon />
       </button>
       <FormInput />

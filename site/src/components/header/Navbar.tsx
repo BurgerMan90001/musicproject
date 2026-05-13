@@ -6,11 +6,11 @@ const create: NavItem[] = [
   { name: "Upload Song", to: "/create/upload?type=song" },
 ];
 
-const playlists: NavItem[] = [
-  { name: "Discovery", to: "/playlists/discovery" },
-  { name: "Library", to: "/playlists" },
-  { name: "New", to: "/playlists/new" },
-];
+// const playlists: NavItem[] = [
+//   { name: "Discovery", to: "/playlists/discovery" },
+//   { name: "Library", to: "/playlists" },
+//   { name: "New", to: "/playlists/new" },
+// ];
 function Navbar() {
   // const auth = useAuthStore();
 
@@ -37,7 +37,7 @@ function Navbar() {
         Home
       </Link>
 
-      <Popover title="Playlists" buttons={playlists} />
+      {/* <Popover title="Playlists" buttons={playlists} /> */}
 
       {/* <Popover title="Profile" buttons={profile} /> */}
 

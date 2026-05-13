@@ -5,8 +5,12 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"time"
 
 	_ "github.com/lib/pq"
+	"github.com/testcontainers/testcontainers-go"
+	pgcontainer "github.com/testcontainers/testcontainers-go/modules/postgres"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"songsled.com/internal/config/secrets"
 	"songsled.com/internal/repository/postgres/gensqlc"
 )
@@ -26,11 +30,36 @@ func New(ctx context.Context, uriVar string) (*Repo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Pg open: %v", err)
 	}
-
 	if err := db.PingContext(ctx); err != nil {
 		return nil, fmt.Errorf("Pg ping: %v, %v", uri, err)
 	}
 	return &Repo{db, gensqlc.New(db)}, nil
+}
+
+// Callers must handle cleanup with testcontainers.Terminate
+func NewContainer(ctx context.Context, schama string) (*pgcontainer.PostgresContainer, error) {
+	username := "musicproject"
+	password := "admin"
+	c, err := pgcontainer.Run(ctx, "postgres:alpine",
+		pgcontainer.WithInitScripts(schama),
+		pgcontainer.WithUsername(username),
+		pgcontainer.WithPassword(password),
+		pgcontainer.WithDatabase(username),
+		testcontainers.WithWaitStrategy(
+			wait.ForLog("database system is ready to accept connections").
+				WithOccurrence(2).WithStartupTimeout(5*time.Second)))
+	if err != nil {
+		return nil, fmt.Errorf("Run postgres container: %w", err)
+	}
+
+	s, err := c.ConnectionString(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := os.Setenv("PG_URI", s); err != nil {
+		return nil, err
+	}
+	return c, nil
 }
 
 // Reads and executes a .sql file

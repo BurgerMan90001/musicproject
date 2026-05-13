@@ -17,7 +17,7 @@ export const Popover = (popover: Popover) => {
         {popover.buttons.map((n) => {
           return (
             <Link
-            
+              key={n.name}
               to={n.to}
               className="button-clear padding-xxs font-size-sm width-150"
             >

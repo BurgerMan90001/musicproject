@@ -5,21 +5,21 @@ import (
 )
 
 type Artist struct {
-	ID     uuid.UUID `json:"id"`
-	Albums []Album   `json:"albums"`
+	ArtistId uuid.UUID `json:"artistId"`
+	Name     string    `json:"name"`
+	Avatar   string    `json:"avatar"`
 }
 
-type Album struct {
-	ID       uuid.UUID `json:"id"`
-	Songs    []Song    `json:"songs"`
-	ArtistID int       `json:"artistId"`
+type Genre struct {
+	GenreId uuid.UUID `json:"genreId"`
+	Name    string    `json:"name"`
 }
 
 // A song's metadata
 type Song struct {
 	// Required
-	SongID  uuid.UUID `json:"id"`
-	AlbumID uuid.UUID `json:"albumId"`
+	SongId  uuid.UUID `json:"songId"`
+	AlbumId uuid.UUID `json:"albumId"`
 	Name    string    `json:"name"`
 
 	// Genres and artists are strings
@@ -33,7 +33,7 @@ type Song struct {
 
 	// Optional
 	// Cover url
-	Cover string `json:"covere,omitempty"`
+	Cover string `json:"cover,omitempty"`
 	// Required
 	// Song file location
 	Audio string `json:"audio"`
@@ -49,11 +49,11 @@ type Song struct {
 // Upload song metadata
 type SongUploadRequest struct {
 	// Required
-	Name    string      `json:"name"`
-	Artists []uuid.UUID `json:"artistIds"`
+	Name    string   `json:"name"`
+	Artists []string `json:"artists"`
 
 	// Optional
-	Genres []uuid.UUID `json:"genreIds"`
+	Genres []string `json:"genres"`
 
 	Duration int `json:"duration"`
 
@@ -100,10 +100,13 @@ type SongUploadRequest struct {
 // }
 
 type Playlist struct {
-	PlaylistID uuid.UUID `json:"id"`
+	PlaylistID uuid.UUID `json:"playlistId"`
 	UserID     uuid.UUID `json:"userId"`
 	Name       string    `json:"name"`
-	Songs      []Song    `json:"songs"`
+	// Optional
+	// Cover url for the playlist
+	Cover string `json:"cover,omitempty"`
+	Songs []Song `json:"songs"`
 }
 type NewPlaylistRequest struct {
 	Name     string      `json:"name"`
@@ -115,7 +118,7 @@ type Rating struct {
 	Value  float64   `json:"value"`
 }
 
-type SongPlayer struct {
-	SongID    int     `json:"songId"`
-	TimeStamp float64 `json:"timeStamp"`
-}
+// type SongPlayer struct {
+// 	SongID    int     `json:"songId"`
+// 	TimeStamp float64 `json:"timeStamp"`
+// }

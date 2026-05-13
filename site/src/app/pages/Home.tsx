@@ -1,14 +1,10 @@
 import Header from "../../components/header/Header";
 
-// import Media from "../../components/Media";
-import Footer from "../../components/footer/Footer";
 import fetchApi from "../../lib/api";
-// import test from "../../assets/images/cool-pic-128.jpg";
 import { Link } from "react-router";
 import { useEffect, useState } from "react";
 import type { Song } from "../../types/song.types";
-// import { usePlayerStore } from "../../hooks/player";
-import { SongPlaceholderSvg } from "../../components/menu/Svg";
+import { SongPlaceholderSvg } from "../../components/footer/Svg";
 import { NetworkError } from "../../lib/error";
 // function Card({ title }: { title: string }) {
 // fetch("", {
@@ -39,20 +35,6 @@ const Media = ({ song, size }: { song: Song; size: number }) => {
     </div>
   );
 };
-// const test = async () => {
-//   const res = await fetchApi(
-//     "/v1/songs",
-//     {
-//       method: "GET",
-//     },
-//     {
-//       n: String(10),
-//     },
-//   );
-//   if (res) {
-//     const json = await res.json();
-//   }
-// };
 const n = "10";
 const Home = () => {
   const [songs, _] = useState<Song[]>([]);
@@ -75,7 +57,10 @@ const Home = () => {
           setError(NetworkError);
           return;
         }
-        return res?.json();
+        return res.json();
+      })
+      .then((json) => {
+        console.log(json);
       })
       .catch((e) => setError(e));
   }, [songs]);
@@ -85,45 +70,32 @@ const Home = () => {
       return <Media song={song} size={192} />;
     });
   }
-  if (songs.length == 0) {
-    topContent = <h1 className="color-text-invert"> Nothing to show...</h1>;
+  if (songs.length === 0) {
+    topContent = <h2 className="color-text"> Nothing to show...</h2>;
   }
   if (error) {
-    topContent = <h1 className="color-text-danger">{error}</h1>;
+    topContent = <h2 className="color-text-danger">{error}</h2>;
   }
 
   return (
     <div className="layout-holy-grail height-full" id="home">
       <Header />
-      <main className="display-flex flex-column layout-main padding-lg scroll-vertical gap-lg">
-        <section className="display-grid bg-color-body-darker padding-xs gap-xs">
-          {/* <summary className="display-flex font-size-lg flex-column width-200">Title</summary> */}
-          {topContent}
+      <main className="display-flex flex-column layout-main  scroll-vertical gap-lg">
+        <section className="bg-color-primary-light color-text-invert padding-xs gap-xs">
+          <div className="display-flex align-items-center justifiy-content-center gap-lg">
+            <div className="width-300 text-align-center padding-xs margin-inline-xxl">
+              <h1 className="font-size-lg font-weight-semibold">Songsled</h1>
+              <p className="color-text-invert-subtle ">
+                Free uploads!! No signup required!!
+              </p>
+              <p> Email me at paulcasigay@gmail.com for anything</p>
+            </div>
+            <div className="image image-192 margin-inline-xxl"></div>
+          </div>
         </section>
-        {/* <div className="margin-xs display-flex flex-column gap-md">
-          <section className="margin-inline-xxxl ">
-            <h2 className="">Browse by Genre</h2>
-            <div className="display-flex margin-block-xs">
-              <Media size={128} />
-            </div>
-          </section>
-          <section className="bg-color-body-darker padding-xs margin-inline-xxxl">
-            <h2 className="">Community Playlists</h2>
-            <div className="display-flex margin-block-xs gap-xs">
-              <Media size={128} />
-              <Media size={128} />
-              <Media size={128} />
-            </div>
-          </section>
-          <section className="bg-color-body-darker padding-xs gap-xxs margin-inline-xxxl ">
-            <h2 className="">Featured Artists</h2>
-            <div className="display-flex">
-              <Media size={128} />
-            </div>
-          </section>
-        </div> */}
+        <div className="bg-color-body-dark">{topContent}</div>
       </main>
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 };

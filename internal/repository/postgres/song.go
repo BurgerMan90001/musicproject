@@ -20,7 +20,7 @@ func NewSongRepo(q *gensqlc.Queries) *Song {
 	return &Song{q}
 }
 
-func (r *Song) NewSong(ctx context.Context, s *model.Song) (uuid.UUID, error) {
+func (r *Song) NewSong(ctx context.Context, s *model.SongUploadRequest) (uuid.UUID, error) {
 	songId, err := r.q.NewSong(ctx, gensqlc.NewSongParams{
 		AlbumID:      uuid.NullUUID{UUID: s.AlbumID, Valid: s.AlbumID != uuid.Nil},
 		SongName:     s.Name,
@@ -28,14 +28,13 @@ func (r *Song) NewSong(ctx context.Context, s *model.Song) (uuid.UUID, error) {
 		CreationDate: s.CreationDate,
 		SongAudioUrl: s.Audio,
 	})
-
 	if err != nil {
 		return songId, err
 	}
 	return songId, nil
 }
 func (r *Song) GetSongByID(ctx context.Context, songId uuid.UUID) (*model.Song, error) {
-	s, err := r.q.GetSongByID(ctx, songId)
+	s, err := r.q.GetSongById(ctx, songId)
 	if err != nil {
 		if errors.Is(sql.ErrNoRows, err) {
 			return nil, repository.ErrNotFound
@@ -44,13 +43,13 @@ func (r *Song) GetSongByID(ctx context.Context, songId uuid.UUID) (*model.Song, 
 	}
 
 	return &model.Song{
-		SongID:       s.SongID,
-		AlbumID:      s.AlbumID.UUID,
+		SongId:       s.SongID,
+		AlbumId:      s.AlbumID.UUID,
 		Name:         s.SongName,
-		Genres:       strings.Split(string(s.Genres), ","),
-		Artists:      strings.Split(string(s.Artists), ","),
+		Genres:       strings.Split(string(s.GenreList), ","),
+		Artists:      strings.Split(string(s.ArtistList), ","),
 		Duration:     int(s.Duration),
-		CreationDate: s.SongCreationDate,
+		CreationDate: s.CreationDate,
 		Streams:      int(s.Streams),
 		Cover:        s.SongCoverUrl.String,
 		Audio:        s.SongAudioUrl,
@@ -64,13 +63,13 @@ func (r *Song) GetSongs(ctx context.Context, n int32) ([]*model.Song, error) {
 	var songs []*model.Song
 	for _, s := range d {
 		songs = append(songs, &model.Song{
-			SongID:       s.SongID,
-			AlbumID:      s.AlbumID.UUID,
+			SongId:       s.SongID,
+			AlbumId:      s.AlbumID.UUID,
 			Name:         s.SongName,
 			Genres:       strings.Split(string(s.GenreList), ","),
 			Artists:      strings.Split(string(s.ArtistList), ","),
 			Duration:     int(s.Duration),
-			CreationDate: s.SongCreationDate,
+			CreationDate: s.CreationDate,
 			Streams:      int(s.Streams),
 			Cover:        s.SongCoverUrl.String,
 			Audio:        s.SongAudioUrl,
@@ -79,14 +78,49 @@ func (r *Song) GetSongs(ctx context.Context, n int32) ([]*model.Song, error) {
 	return songs, nil
 }
 
-// TODO
-func (r *Song) GetSongsByGenre(ctx context.Context, genre string) ([]*model.Song, error) {
-	// r.q.GetSongsByGenre()
+func (r *Song) GetSongsByGenre(ctx context.Context, genreName string) ([]*model.Song, error) {
+	l, err := r.q.GetSongsByGenre(ctx, genreName)
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, nil
+	var songs []*model.Song
+	for _, s := range l {
+		songs = append(songs, toModelSong(
+			s.SongID,
+			s.AlbumID,
+			s.SongName,
+			s.GenreList,
+			s.ArtistList,
+			s.Duration,
+			s.CreationDate,
+			s.Streams,
+			s.SongCoverUrl,
+			s.SongAudioUrl,
+		))
+	}
+	return songs, nil
 }
+
+func (r *Song) GetSongGenres(ctx context.Context, songId uuid.UUID) ([]*model.Genre, error) {
+
+	l, err := r.q.GetSongGenres(ctx, songId)
+	if err != nil {
+		return nil, err
+	}
+	var genres []*model.Genre
+	for _, g := range l {
+		genres = append(genres, &model.Genre{
+			GenreId: g.GenreID,
+			Name:    g.GenreName,
+		})
+	}
+	return genres, nil
+}
+
+// TODO
 func (r *Song) GetSongRandom(ctx context.Context, n int) ([]*model.Song, error) {
-	// res, err := r.q.GetRandomSongs(ctx, int32(n))
+	// res, err := r.q.
 	// if err != nil {
 	// 	return nil, err
 	// }
@@ -97,16 +131,16 @@ func (r *Song) GetSongRandom(ctx context.Context, n int) ([]*model.Song, error) 
 	// }
 	return nil, nil
 }
-func (r *Song) PutArtistSong(ctx context.Context, songId, artistId uuid.UUID) error {
-	return r.q.PutArtistSong(ctx, gensqlc.PutArtistSongParams{
-		ArtistID: artistId,
-		SongID:   songId,
+func (r *Song) PutSongArtists(ctx context.Context, songId uuid.UUID, artistIds []uuid.UUID) error {
+	return r.q.PutSongArtists(ctx, gensqlc.PutSongArtistsParams{
+		ArtistIds: artistIds,
+		SongID:    songId,
 	})
 }
-func (r *Song) PutSongGenre(ctx context.Context, songId, genreId uuid.UUID) error {
-	return r.q.PutSongGenre(ctx, gensqlc.PutSongGenreParams{
-		GenreID: genreId,
-		SongID:  songId,
+func (r *Song) PutSongGenres(ctx context.Context, songId uuid.UUID, genreIds []uuid.UUID) error {
+	return r.q.PutSongGenres(ctx, gensqlc.PutSongGenresParams{
+		GenreIds: genreIds,
+		SongID:   songId,
 	})
 }
 

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -49,11 +51,14 @@ func NewS3(ctx context.Context, endpoint, region string,
 	})
 	presignClient := s3.NewPresignClient(client)
 
-	if _, err := client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
-		Bucket: aws.String("songsled"),
-	}); err != nil {
-		return nil, fmt.Errorf("S3 list objects: %w", err)
+	if os.Getenv("ENV") == "dev" {
+		public = filepath.Join(public, "test")
 	}
+	// if _, err := client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+	// 	Bucket: aws.String("songsled"),
+	// }); err != nil {
+	// 	return nil, fmt.Errorf("S3 list objects: %w", err)
+	// }
 	return &AWSS3{client: client, presignClient: presignClient, public: public}, nil
 }
 

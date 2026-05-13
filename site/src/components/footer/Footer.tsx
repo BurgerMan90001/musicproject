@@ -1,9 +1,9 @@
-import Menu from "../menu/Menu";
+import SongPlayer from "./SongPlayer/SongPlayer";
 
 const Footer = () => {
   return (
     <footer className="layout-footer bg-color-body-dark">
-      <Menu />
+      <SongPlayer />
     </footer>
   );
 };

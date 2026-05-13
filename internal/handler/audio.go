@@ -12,18 +12,19 @@ import (
 func handleAudio(uploadService *upload.Service) func(r chi.Router) {
 	return func(r chi.Router) {
 
-		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		// r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 
-			w.Header().Set("Location", "")
-			w.WriteHeader(http.StatusFound)
-		})
+		// 	// r.URL.Query().Get("genreName")
+		// 	w.Header().Set("Location", "")
+		// 	w.WriteHeader(http.StatusFound)
+		// })
 
 		r.Put("/", func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			filename := r.URL.Query().Get("filename")
 			contentType := r.Header.Get("Content-Type")
 
-			uploadLocation, objectLocation, err := uploadService.UploadUrl(ctx, "audio/", filename, contentType)
+			uploadLocation, objectLocation, err := uploadService.UploadUrl(ctx, "audio", filename, contentType)
 			if err != nil {
 				jsonutil.WriteError(w, err)
 				return

@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"testing"
 
 	"songsled.com/pkg/model"
 )
@@ -66,12 +67,15 @@ func WriteError(w http.ResponseWriter, reason error) {
 	w.Header().Set("Content-type", "application/json")
 	jerr := newJsonErr(reason)
 
-	if os.Getenv("SHOW_ERROR_DETAILS") != "true" {
+	if !testing.Testing() && os.Getenv("SHOW_ERROR_DETAILS") != "true" {
 		jerr.Details = ""
 	}
 	// Service error / internal error
 	if jerr.Code >= 500 && jerr.Code < 600 {
 		w.WriteHeader(jerr.Code)
+		if testing.Testing() {
+			jerr.Message += jerr.Details
+		}
 
 		json.NewEncoder(w).Encode(jerr)
 

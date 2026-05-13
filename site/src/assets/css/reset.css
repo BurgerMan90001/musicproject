@@ -94,3 +94,6 @@ html {
 progress {
   border: none;
 }
+li{
+  list-style: none;
+}

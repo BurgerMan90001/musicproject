@@ -2,13 +2,16 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "songsled-site",
   "compatibility_date": "2026-05-08",
+  "build": {
+    "command": "npm run build",
+  },
   "assets": {
     "directory": "./dist",
   },
   "observability": {
     "enabled": true,
   },
-  "upload_source_maps": true,
+  // "upload_source_maps": true,
   "compatibility_flags": ["nodejs_compat"],
   /**
    * Smart Placement
