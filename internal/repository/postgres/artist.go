@@ -37,12 +37,11 @@ func (r *Artist) GetArtistSongs(ctx context.Context, artistId uuid.UUID, n int32
 	var songs []*model.Song
 	for _, s := range l {
 		songs = append(songs, &model.Song{
-			SongId:       s.SongID,
-			AlbumId:      s.AlbumID.UUID,
-			Name:         s.SongName,
-			Genres:       strings.Split(string(s.GenreList), ","),
-			Artists:      strings.Split(string(s.ArtistList), ","),
-			Duration:     int(s.Duration),
+			SongId:  s.SongID,
+			AlbumId: s.AlbumID.UUID,
+			Name:    s.SongName,
+			Genres:  strings.Split(string(s.GenreList), ","),
+			Artists: strings.Split(string(s.ArtistList), ","),
 			CreationDate: s.CreationDate,
 			Streams:      int(s.Streams),
 			Cover:        s.SongCoverUrl.String,

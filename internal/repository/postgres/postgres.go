@@ -4,9 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"os"
 	"time"
 
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	mpostgres "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
 	"github.com/testcontainers/testcontainers-go"
 	pgcontainer "github.com/testcontainers/testcontainers-go/modules/postgres"
@@ -37,11 +42,11 @@ func New(ctx context.Context, uriVar string) (*Repo, error) {
 }
 
 // Callers must handle cleanup with testcontainers.Terminate
-func NewContainer(ctx context.Context, schama string) (*pgcontainer.PostgresContainer, error) {
+func NewContainer(ctx context.Context) (*pgcontainer.PostgresContainer, error) {
 	username := "musicproject"
 	password := "admin"
 	c, err := pgcontainer.Run(ctx, "postgres:alpine",
-		pgcontainer.WithInitScripts(schama),
+		// pgcontainer.WithInitScripts(schama),
 		pgcontainer.WithUsername(username),
 		pgcontainer.WithPassword(password),
 		pgcontainer.WithDatabase(username),
@@ -73,4 +78,34 @@ func (r *Repo) ExecFile(ctx context.Context, filename string) error {
 		return fmt.Errorf("postgres.ExecFile: %s, %w", filename, err)
 	}
 	return nil
+}
+
+// Set forceVer to 0 to not force
+func (r *Repo) Migrate(migrations, action string, forceVer int) error {
+	driver, err := mpostgres.WithInstance(r.DB, &postgres.Config{})
+	if err != nil {
+		return err
+	}
+
+	m, err := migrate.NewWithDatabaseInstance(
+		migrations, "postgres", driver)
+	if err != nil {
+		return fmt.Errorf("Migrate NewWithDatabaseInstance: %w", err)
+	}
+	if forceVer > 1 {
+		if err := m.Force(forceVer); err != nil {
+			return fmt.Errorf("Migrate force version: %w", err)
+		}
+	}
+	slog.Info("Migrating")
+	switch action {
+	case "up":
+		return m.Up()
+	case "down":
+		return m.Down()
+	case "drop":
+		return m.Drop()
+	default:
+		return fmt.Errorf("Invalid action: %s", action)
+	}
 }

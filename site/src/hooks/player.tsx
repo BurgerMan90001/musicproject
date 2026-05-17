@@ -8,7 +8,9 @@ interface PlayerState {
   progress: number;
   duration: number;
   setDuration: (d: number) => void;
-  queue: Song[];
+  setSong: (s: Song) => void;
+  // queue: Song[];
+  song?: Song;
 }
 export const usePlayerStore = create<PlayerState>()((set) => ({
   audio: createRef<HTMLAudioElement>(),
@@ -18,17 +20,13 @@ export const usePlayerStore = create<PlayerState>()((set) => ({
   setDuration: (n) => {
     set({ duration: n });
   },
-  queue: [
-    {
-      id: "1",
-      albumId: "1",
-      name: "8bitasdasdasdasd",
-      genres: "Pop, Rock",
-      artists: "Bossa",
-      streams: 123,
-      duration: 123,
-      creationDate: "2007-03-24",
-      audio: "https://storage.songsled.com/audio/8bit%20Bossa.mp3",
-    },
-  ],
+  setSong: (s) => {
+    set({ song: s });
+  },
+
+  // setAudio: (a: string) => {
+
+  //   get().audio.current?.src = a;
+  // },
+  song: undefined,
 }));

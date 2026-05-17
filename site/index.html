@@ -1,12 +1,30 @@
-
 <!doctype html>
 <html lang="en" class="layout">
   <head>
     <meta charset="UTF-8" />
-    <meta name="description" content="Online audio and music host.">
-    <!--<link rel="icon" type="image/svg+xml" href="/vite.svg" />-->
+    <meta
+      name="description"
+      content="Online audio and music host. Upload and listen to music for free. No signup required."
+    />
+
+    <meta name="author" content="Paul Casigay" />
+    <link rel="icon" type="image/svg+xml" href="iconv1.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   </head>
+  <!-- Google tag (gtag.js) -->
+  <script
+    async
+    src="https://www.googletagmanager.com/gtag/js?id=G-4K3QZKFKF4"
+  ></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+    gtag("js", new Date());
+
+    gtag("config", "G-4K3QZKFKF4");
+  </script>
   <body id="root"></body>
   <script type="module" src="src/app/app.jsx"></script>
 </html>

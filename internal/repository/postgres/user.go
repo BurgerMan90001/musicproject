@@ -8,16 +8,16 @@ import (
 	"songsled.com/pkg/model"
 )
 
-type UserRepo struct {
+type User struct {
 	queries *gensqlc.Queries
 }
 
-func NewUser(queries *gensqlc.Queries) *UserRepo {
-	return &UserRepo{queries}
+func NewUser(queries *gensqlc.Queries) *User {
+	return &User{queries}
 }
 
 // Gets a user's email and password hash by their uuid
-func (r *UserRepo) GetUserByID(ctx context.Context, userId uuid.UUID) (*model.User, error) {
+func (r *User) GetUserByID(ctx context.Context, userId uuid.UUID) (*model.User, error) {
 	// u, err := r.queries.GetUserByID(ctx, userId)
 	// if err != nil {
 	// 	if errors.Is(err, sql.ErrNoRows) {
@@ -35,7 +35,7 @@ func (r *UserRepo) GetUserByID(ctx context.Context, userId uuid.UUID) (*model.Us
 	return nil, nil
 }
 
-func (r *UserRepo) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
+func (r *User) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	// u, err := r.queries.GetUserByEmail(ctx, email)
 	// if err != nil {
 	// 	if errors.Is(err, sql.ErrNoRows) {
@@ -57,7 +57,7 @@ func (r *UserRepo) GetUserByEmail(ctx context.Context, email string) (*model.Use
 	// }, nil
 	return nil, nil
 }
-func (r *UserRepo) PutUser(ctx context.Context, user *model.User) (uuid.UUID, error) {
+func (r *User) PutUser(ctx context.Context, user *model.User) (uuid.UUID, error) {
 	// Password will be null if empty
 	// valid := user.PasswordHash != ""
 	// userId, err := r.queries.PutUser(ctx, gensqlc.PutUserParams{
@@ -74,7 +74,7 @@ func (r *UserRepo) PutUser(ctx context.Context, user *model.User) (uuid.UUID, er
 	return uuid.Nil, nil
 }
 
-func (r *UserRepo) DeleteUserByID(ctx context.Context, userId uuid.UUID) error {
+func (r *User) DeleteUserByID(ctx context.Context, userId uuid.UUID) error {
 	// return r.queries.DeleteUserByID(ctx, userId)
 	return nil
 }

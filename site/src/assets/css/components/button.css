@@ -1,10 +1,8 @@
-
 button {
   border: none;
   cursor: pointer;
 }
 .button-clear {
-  
   background-color: inherit;
 }
 .button-clear:hover {
@@ -55,7 +53,15 @@ input {
 .button-primary:active {
   background-color: var(--color-primary-dark);
 }
-/* button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-} */
+
+.button-success {
+  background-color: var(--color-success);
+  transition: background-color 0.25s;
+}
+.button-success:hover {
+  background-color: var(--color-success-medium);
+}
+.button-success:active {
+  background-color: var(--color-success-dark);
+}
+

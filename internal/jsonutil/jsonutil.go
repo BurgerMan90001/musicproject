@@ -122,26 +122,12 @@ func newJsonErr(reason error) *model.Error {
 func ReadJson[T any](r io.Reader) (T, error) {
 	var v T
 
-	data, err := io.ReadAll(r)
-	if err != nil {
-		return v, err
-	}
-	if len(data) == 0 {
-		return v, nil
-	}
-
-	if err := json.Unmarshal(data, &v); err != nil {
-
-		jerr := &model.Error{
+	if err := json.NewDecoder(r).Decode(&v); err != nil {
+		// Wrap the error
+		return v, &model.Error{
 			Code:    http.StatusBadRequest,
-			Message: fmt.Sprintf("Body is not of type %T %s", *new(T), string(data)),
-			Details: fmt.Sprintf("ReadJson: %T\n Reason: %s\n JSON: %s", *new(T), err.Error(), string(data)),
+			Message: fmt.Sprintf("ReadJson: %T\n Reason: %s\n", *new(T), err.Error()),
 		}
-		// if testing.Testing() {
-		// 	slog.Info(jerr.Details)
-		// }
-
-		return v, jerr
 	}
 
 	return v, nil

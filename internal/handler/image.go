@@ -33,7 +33,7 @@ func handleImages(uploadService *upload.Service) func(r chi.Router) {
 			}
 
 			jsonutil.WriteJSON(w, &model.FileUploadResponse{
-				Href: objectLocation,
+				Location: objectLocation,
 				Links: []model.Link{
 					{Rel: "upload", Href: uploadLocation},
 				},

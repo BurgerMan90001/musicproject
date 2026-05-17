@@ -1,4 +1,6 @@
 .git
+.github
+
 dist
 node_modules
 site
@@ -6,5 +8,7 @@ keycloak
 scripts
 nginx
 
-*.ts
-*.tsx
+_.ts
+_.tsx
+.env
+.env.\*

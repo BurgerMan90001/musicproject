@@ -11,10 +11,10 @@ INSERT INTO albums
 VALUES('f7eed090-032b-4175-b014-7a1bd3667751','Fireman', '2048-20-32');
 
 INSERT INTO songs
-(song_id,song_name, duration, creation_date, song_audio_url, album_id)
+(song_id,song_name, creation_date, song_audio_url, album_id)
 VALUES
-('f7d84ef8-75dc-4331-b1e3-5ada0770c4c0','Mickey', 123, '2006-03-23', '', 'f7eed090-032b-4175-b014-7a1bd3667751'),
-('f594d596-8a24-4bfe-8660-71e0f79c0a91','Mickey 2', 400, '2006-03-24', '', NULL);
+('f7d84ef8-75dc-4331-b1e3-5ada0770c4c0','Mickey',  '2006-03-23', '', 'f7eed090-032b-4175-b014-7a1bd3667751'),
+('f594d596-8a24-4bfe-8660-71e0f79c0a91','Mickey 2', '2006-03-24', '', NULL);
 
 INSERT INTO artists
 (artist_id, artist_name)

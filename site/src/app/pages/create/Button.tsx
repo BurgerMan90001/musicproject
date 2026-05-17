@@ -1,10 +1,6 @@
 const SubmitButton = () => {
   return (
-    <button
-      className="button-primary padding-xxs"
-      type="submit"
-      // onSubmit={
-    >
+    <button className="button-primary padding-xxs" type="submit">
       Submit
     </button>
   );

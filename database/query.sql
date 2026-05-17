@@ -2,8 +2,8 @@
 
 -- name: NewSong :one
 INSERT INTO songs
-(song_name, duration, album_id, creation_date, song_audio_url)
-VALUES($1, $2, $3, $4, $5) RETURNING song_id;
+(song_name, album_id, creation_date, song_audio_url)
+VALUES($1, $2, $3, $4) RETURNING song_id;
 
 -- name: NewGenre :one 
 INSERT INTO genres
@@ -34,7 +34,6 @@ song_name,
 artist_list,
 genre_list,
 streams,
-duration,
 album_id,
 creation_date, 
 song_cover_url, 	
@@ -67,7 +66,6 @@ artist_list,
 genre_list,
 album_id,
 streams,
-duration,
 creation_date,
 song_cover_url, 	
 song_audio_url
@@ -110,7 +108,6 @@ song_name,
 artist_list,
 genre_list,
 streams,
-duration,
 creation_date,  
 album_id,
 song_cover_url, 	
@@ -136,7 +133,6 @@ song_name,
 artist_list,
 genre_list,
 streams,
-duration,
 creation_date AS creation_date,
 album_id,
 song_cover_url, 	
@@ -161,7 +157,6 @@ song_name,
 artist_list,
 genre_list,
 streams,
-duration,
 songs.creation_date AS creation_date,  
 album_id,
 song_cover_url, 	
@@ -197,7 +192,6 @@ song_name,
 artist_list,
 genre_list,
 streams,
-duration,
 creation_date,  
 album_id,
 song_cover_url, 	

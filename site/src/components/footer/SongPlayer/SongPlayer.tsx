@@ -5,17 +5,8 @@ import VolumeControl from "./VolumeControl";
 import { usePlayerStore } from "../../../hooks/player";
 
 import { SongPlaceholderSvg } from "../Svg";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
-// const SongImage = () => {
-//   const queue = usePlayerStore((state) => state.queue);
-
-//   if (queue[0] && queue[0].image) {
-//     return <img src={queue[0].image} />;
-//   }
-
-//   return <SongPlaceholderSvg />;
-// };
 const formatTime = (time: number): string => {
   const minutes = Math.floor(time / 60)
     .toString()
@@ -29,9 +20,7 @@ const formatTime = (time: number): string => {
 const ProgressBar = () => {
   const player = usePlayerStore();
 
-  useEffect(() => {
-    
-  }, [player.audio])
+  useEffect(() => {}, [player.audio]);
   const onChange = () => {
     if (player.audio.current && player.progressBar.current) {
       player.audio.current.currentTime = Number(
@@ -69,7 +58,8 @@ const ProgressBar = () => {
 
 const SongPlayer = () => {
   const player = usePlayerStore();
-
+  const [audio, setAudio] = useState<string>("");
+  const [image, setImage] = useState(<SongPlaceholderSvg />);
   const onLoadedMetadata = () => {
     const seconds = player.audio.current?.duration;
     if (seconds) {
@@ -79,13 +69,24 @@ const SongPlayer = () => {
       player.progressBar.current.max = seconds.toString();
     }
   };
+  useEffect(() => {
+    if (player.song) {
+      setAudio(player.song.audio);
+
+      if (player.song.cover) {
+        setImage(<img src={player.song.cover} />);
+      } else {
+        setImage(<SongPlaceholderSvg />);
+      }
+    }
+  }, [player.song]);
 
   return (
     <div className="display-flex position-relative justifiy-content-center ">
-      {player.queue[0] && player.queue[0].audio && (
+      {audio && (
         <audio
           onLoadedMetadata={onLoadedMetadata}
-          src={player.queue[0].audio}
+          src={audio}
           ref={player.audio}
         ></audio>
       )}
@@ -96,11 +97,7 @@ const SongPlayer = () => {
       <div className="display-flex">
         <SongMetadata />
         <div className="image image-64 bg-color-body-darker color-text-invert">
-          {player.queue[0] && player.queue[0].image ? (
-            <img src={player.queue[0].image} />
-          ) : (
-            <SongPlaceholderSvg />
-          )}
+          {image}
         </div>
 
         <div className="display-flex align-items-center grid-template-rows-1fr-auto">

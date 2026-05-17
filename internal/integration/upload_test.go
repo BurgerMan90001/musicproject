@@ -50,7 +50,7 @@ func (s *testSuite) TestUploadCover() {
 }
 
 func (s *testSuite) TestUploadAudio() {
-	endpoint := "/v1/audio"
+	endpoint := "/v1/audio/songs"
 
 	type test struct {
 		name      string
@@ -76,7 +76,7 @@ func (s *testSuite) TestUploadAudio() {
 		s.Require().NoError(err)
 
 		s.Equal(tt.wantCode, w.Code)
-		s.NotEmpty(b.Href)
+		s.NotEmpty(b.Location)
 		s.NotEmpty(b.Links[0].Href)
 		s.Equal("upload", b.Links[0].Rel)
 
@@ -103,7 +103,7 @@ func (s *testSuite) TestUploadSongMetadata() {
 					Artists: []string{"rockguy", "rockguy2"},
 					Genres:  []string{"Rock", "Pop"},
 					// Audio:        "mysong.mp3",
-					Duration:     123,
+
 					CreationDate: time.Now().Format(time.RFC3339),
 				},
 			},
@@ -122,12 +122,12 @@ func (s *testSuite) TestUploadSongMetadata() {
 		tt := test{
 			req: &request{
 				method: http.MethodPut,
-				body: model.SongUploadRequest{
+				body: &model.SongUploadRequest{
 					Name:         "Cool music",
 					Artists:      []string{"rockguy", "rockguy2"},
 					Genres:       []string{"Rock", "Pop"},
 					Audio:        "mysong.mp3",
-					Duration:     123,
+					Cover:        "asdasd",
 					CreationDate: time.Now().Format(time.RFC3339),
 				},
 			},
@@ -136,23 +136,28 @@ func (s *testSuite) TestUploadSongMetadata() {
 		}
 		w := s.newRequest(endpoint, tt.req)
 
-		b, err := jsonutil.ReadJson[string](w.Body)
-		s.Require().NoError(err)
+		// err := json.NewEncoder(os.Stdout).Encode(tt.req.body)
+		// t, err := json.Marshal(tt.req.body)
+		// s.Equal("", string(t))
+		// _, err := jsonutil.ReadJson[string](tt.req)
+		// s.Require().NoError(err)
 		s.Equal(tt.wantCode, w.Code)
 
 		e2 := w.Header().Get("Location")
 		s.NotEmpty(e2)
 
 		// Check the uploaded song metadata
-		w2 := s.newRequest("/v1/artists", &request{
+		w2 := s.newRequest("/v1/songs", &request{
 			method: "GET",
 		})
 
 		s.Equal(http.StatusOK, w2.Code)
 
-		b, err = jsonutil.ReadJson[string](w2.Body)
+		b2, err := jsonutil.ReadJson[[]model.Song](w2.Body)
 		s.Require().NoError(err, e2)
-		s.Equal("", b)
+		s.NotNil(b2)
+
+		// s.Equal("asdasd", b2)
 	})
 }
 

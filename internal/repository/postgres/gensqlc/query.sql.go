@@ -60,7 +60,6 @@ artist_list,
 genre_list,
 album_id,
 streams,
-duration,
 creation_date,
 song_cover_url, 	
 song_audio_url
@@ -91,7 +90,6 @@ type GetAlbumSongsRow struct {
 	GenreList    []byte
 	AlbumID      uuid.NullUUID
 	Streams      int32
-	Duration     int32
 	CreationDate string
 	SongCoverUrl sql.NullString
 	SongAudioUrl string
@@ -113,7 +111,6 @@ func (q *Queries) GetAlbumSongs(ctx context.Context, arg GetAlbumSongsParams) ([
 			&i.GenreList,
 			&i.AlbumID,
 			&i.Streams,
-			&i.Duration,
 			&i.CreationDate,
 			&i.SongCoverUrl,
 			&i.SongAudioUrl,
@@ -178,7 +175,6 @@ song_name,
 artist_list,
 genre_list,
 streams,
-duration,
 creation_date,  
 album_id,
 song_cover_url, 	
@@ -209,7 +205,6 @@ type GetArtistSongsRow struct {
 	ArtistList   []byte
 	GenreList    []byte
 	Streams      int32
-	Duration     int32
 	CreationDate string
 	AlbumID      uuid.NullUUID
 	SongCoverUrl sql.NullString
@@ -231,7 +226,6 @@ func (q *Queries) GetArtistSongs(ctx context.Context, arg GetArtistSongsParams) 
 			&i.ArtistList,
 			&i.GenreList,
 			&i.Streams,
-			&i.Duration,
 			&i.CreationDate,
 			&i.AlbumID,
 			&i.SongCoverUrl,
@@ -350,7 +344,6 @@ song_name,
 artist_list,
 genre_list,
 streams,
-duration,
 album_id,
 creation_date, 
 song_cover_url, 	
@@ -383,7 +376,6 @@ type GetPlaylistSongsByIdRow struct {
 	ArtistList   []byte
 	GenreList    []byte
 	Streams      int32
-	Duration     int32
 	AlbumID      uuid.NullUUID
 	CreationDate string
 	SongCoverUrl sql.NullString
@@ -405,7 +397,6 @@ func (q *Queries) GetPlaylistSongsById(ctx context.Context, arg GetPlaylistSongs
 			&i.ArtistList,
 			&i.GenreList,
 			&i.Streams,
-			&i.Duration,
 			&i.AlbumID,
 			&i.CreationDate,
 			&i.SongCoverUrl,
@@ -469,7 +460,6 @@ song_name,
 artist_list,
 genre_list,
 streams,
-duration,
 songs.creation_date AS creation_date,  
 album_id,
 song_cover_url, 	
@@ -495,7 +485,6 @@ type GetSongByIdRow struct {
 	ArtistList   []byte
 	GenreList    []byte
 	Streams      int32
-	Duration     int32
 	CreationDate string
 	AlbumID      uuid.NullUUID
 	SongCoverUrl sql.NullString
@@ -511,7 +500,6 @@ func (q *Queries) GetSongById(ctx context.Context, songID uuid.UUID) (GetSongByI
 		&i.ArtistList,
 		&i.GenreList,
 		&i.Streams,
-		&i.Duration,
 		&i.CreationDate,
 		&i.AlbumID,
 		&i.SongCoverUrl,
@@ -561,7 +549,6 @@ song_name,
 artist_list,
 genre_list,
 streams,
-duration,
 creation_date AS creation_date,
 album_id,
 song_cover_url, 	
@@ -586,7 +573,6 @@ type GetSongsRow struct {
 	ArtistList   []byte
 	GenreList    []byte
 	Streams      int32
-	Duration     int32
 	CreationDate string
 	AlbumID      uuid.NullUUID
 	SongCoverUrl sql.NullString
@@ -608,7 +594,6 @@ func (q *Queries) GetSongs(ctx context.Context, limit int32) ([]GetSongsRow, err
 			&i.ArtistList,
 			&i.GenreList,
 			&i.Streams,
-			&i.Duration,
 			&i.CreationDate,
 			&i.AlbumID,
 			&i.SongCoverUrl,
@@ -634,7 +619,6 @@ song_name,
 artist_list,
 genre_list,
 streams,
-duration,
 creation_date,  
 album_id,
 song_cover_url, 	
@@ -659,7 +643,6 @@ type GetSongsByGenreRow struct {
 	ArtistList   []byte
 	GenreList    []byte
 	Streams      int32
-	Duration     int32
 	CreationDate string
 	AlbumID      uuid.NullUUID
 	SongCoverUrl sql.NullString
@@ -681,7 +664,6 @@ func (q *Queries) GetSongsByGenre(ctx context.Context, genreName string) ([]GetS
 			&i.ArtistList,
 			&i.GenreList,
 			&i.Streams,
-			&i.Duration,
 			&i.CreationDate,
 			&i.AlbumID,
 			&i.SongCoverUrl,
@@ -772,13 +754,12 @@ func (q *Queries) NewPlaylist(ctx context.Context, arg NewPlaylistParams) (uuid.
 
 const newSong = `-- name: NewSong :one
 INSERT INTO songs
-(song_name, duration, album_id, creation_date, song_audio_url)
-VALUES($1, $2, $3, $4, $5) RETURNING song_id
+(song_name, album_id, creation_date, song_audio_url)
+VALUES($1, $2, $3, $4) RETURNING song_id
 `
 
 type NewSongParams struct {
 	SongName     string
-	Duration     int32
 	AlbumID      uuid.NullUUID
 	CreationDate string
 	SongAudioUrl string
@@ -787,7 +768,6 @@ type NewSongParams struct {
 func (q *Queries) NewSong(ctx context.Context, arg NewSongParams) (uuid.UUID, error) {
 	row := q.db.QueryRowContext(ctx, newSong,
 		arg.SongName,
-		arg.Duration,
 		arg.AlbumID,
 		arg.CreationDate,
 		arg.SongAudioUrl,

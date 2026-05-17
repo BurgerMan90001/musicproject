@@ -127,6 +127,11 @@ func (s *Service) UploadSongMetadata(ctx context.Context,
 	if err := s.songRepo.PutSongGenres(ctx, songId, genreIds); err != nil {
 		return uuid.Nil, err
 	}
+	if req.Cover != "" {
+		if err := s.songRepo.PutSongCover(ctx, songId, req.Cover); err != nil {
+			return uuid.Nil, err
+		}
+	}
 
 	return songId, nil
 }

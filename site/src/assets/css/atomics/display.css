@@ -12,6 +12,7 @@
   display: grid;
 
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-rows: repeat(auto-fit, 200px);
 }
 .display-block {
   display: block;
@@ -36,7 +37,6 @@
 }
 .justifiy-content-center {
   justify-content: center;
-  
 }
 
 .flex-column {

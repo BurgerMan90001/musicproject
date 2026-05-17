@@ -40,6 +40,13 @@ func handleGenres(repo *postgres.Genre) func(r chi.Router) {
 				jsonutil.WriteError(w, err)
 				return
 			}
+			if b.Name == "" {
+				jsonutil.WriteError(w, &model.Error{
+					Code:    http.StatusBadRequest,
+					Message: "Empty genreName",
+				})
+				return
+			}
 			genreId, err := repo.NewGenre(ctx, b.Name)
 			if err != nil {
 				jsonutil.WriteError(w, err)
@@ -51,7 +58,7 @@ func handleGenres(repo *postgres.Genre) func(r chi.Router) {
 				return
 			}
 			w.Header().Set("Location", location)
-			w.WriteHeader(http.StatusSeeOther)
+			w.WriteHeader(http.StatusCreated)
 		})
 		r.Get("/{genreId}", func(w http.ResponseWriter, r *http.Request) {
 			genreId, err := uuid.Parse(r.URL.Query().Get("genreId"))

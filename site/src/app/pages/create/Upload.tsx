@@ -1,6 +1,5 @@
 import { useState } from "react";
 import fetchApi from "../../../lib/api";
-import { useNavigate } from "react-router";
 import { escapeHTML } from "../../../lib/html";
 import { Input, InputList } from "./Input";
 import { useArtists, useGenres } from "../../../hooks/upload";
@@ -14,7 +13,6 @@ function Upload() {
   const genres = useGenres();
   const artists = useArtists();
 
-  const navigate = useNavigate();
   const [imagePreview, setImagePreview] = useState<string>("");
 
   const uploadFile = async (endpoint: string, file: File) => {
@@ -48,7 +46,7 @@ function Upload() {
               setError("A network error was encountered");
               return;
             }
-            return json.href;
+            return json.location;
           })
           .catch((e) => console.log(e));
       })
@@ -70,7 +68,7 @@ function Upload() {
     const formData = new FormData(form);
 
     setUploading(true);
-    const audio = await uploadFile("/v1/audio", audioFile);
+    const audio = await uploadFile("/v1/audio/songs", audioFile);
     formData.append("audio", audio);
 
     if (imageFile) {
@@ -79,30 +77,31 @@ function Upload() {
       formData.append("cover", image);
     }
 
-    formData.append("artists", JSON.stringify(artists.list));
-    formData.append("genres", JSON.stringify(genres.list));
-
-    console.log(JSON.stringify(Object.fromEntries(formData)));
-    return;
-    fetchApi("/v1/songs", {
+    await fetchApi("/v1/songs", {
       method: "PUT",
-      body: JSON.stringify(formData),
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        name: formData.get("name"),
+        artists: artists.list,
+        genres: genres.list,
+        creationDate: formData.get("creationDate"),
+
+        cover: formData.get("cover"),
+        audio: formData.get("audio"),
+      }),
     })
       .then((res) => {
         if (!res || !res.ok) {
           setError("A network error was encountered");
           return;
         }
-        return res.json();
+        return res.headers.get("location");
       })
-      .then((json) => {
-        console.log(json);
-      })
-      .catch((e) => console.log(e));
 
-    // if (error === "") {
-    //   navigate("/create");
-    // }
+      .catch((e) => console.log(e));
   };
 
   if (uploading) {
@@ -137,10 +136,9 @@ function Upload() {
         <Input>
           <input
             type="text"
-            id="songName"
             name="name"
             aria-label="Song name"
-            // required={true}
+            required={true}
             placeholder="My song"
             className="flex-1 font-size-sm padding-xs "
           />
@@ -185,7 +183,7 @@ function Upload() {
             <input
               type="file"
               accept="audio/*"
-              // required
+              required
               className="bg-color-body-dark padding-xxs color-text-subtle"
               onChange={(event) => {
                 if (event.target.files) {

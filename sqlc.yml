@@ -2,8 +2,12 @@ version: "2"
 sql:
   - engine: "postgresql"
     queries: "database/query.sql"
-    schema: "database/schema/schema.sql"
+    schema: "database/migrate"
+
     gen:
       go:
         package: "gensqlc"
         out: "internal/repository/postgres/gensqlc"
+  # - engine: postgresql
+  #   queries: "database/query.sql"
+  #   schema: *schema

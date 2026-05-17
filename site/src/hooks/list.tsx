@@ -1,5 +1,3 @@
-import { create } from "zustand";
-
 export interface ListState {
   list: string[];
   clear: () => void;

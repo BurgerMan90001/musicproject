@@ -19,7 +19,7 @@ func handleAudio(uploadService *upload.Service) func(r chi.Router) {
 		// 	w.WriteHeader(http.StatusFound)
 		// })
 
-		r.Put("/", func(w http.ResponseWriter, r *http.Request) {
+		r.Put("/songs", func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			filename := r.URL.Query().Get("filename")
 			contentType := r.Header.Get("Content-Type")
@@ -31,7 +31,7 @@ func handleAudio(uploadService *upload.Service) func(r chi.Router) {
 			}
 
 			jsonutil.WriteJSON(w, &model.FileUploadResponse{
-				Href: objectLocation,
+				Location: objectLocation,
 				Links: []model.Link{
 					{Rel: "upload", Href: uploadLocation},
 				},

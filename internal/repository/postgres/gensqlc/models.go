@@ -54,7 +54,6 @@ type Song struct {
 	SongID       uuid.UUID
 	SongName     string
 	Streams      int32
-	Duration     int32
 	CreationDate string
 	AlbumID      uuid.NullUUID
 	SongCoverUrl sql.NullString

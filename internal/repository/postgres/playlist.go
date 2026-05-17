@@ -74,7 +74,6 @@ func (r *Playlist) GetPlaylistSongsById(ctx context.Context, playlistId uuid.UUI
 			Name:         s.SongName,
 			Genres:       strings.Split(string(s.GenreList), ","),
 			Artists:      strings.Split(string(s.ArtistList), ","),
-			Duration:     int(s.Duration),
 			CreationDate: s.CreationDate,
 			Streams:      int(s.Streams),
 			Cover:        s.SongCoverUrl.String,

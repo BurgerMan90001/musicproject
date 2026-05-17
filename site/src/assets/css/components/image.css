@@ -2,6 +2,13 @@
   display: block;
   position: relative;
 }
+.image img,
+.image svg {
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  display: block;
+}
 
 .image.image-16 {
   width: 16px;

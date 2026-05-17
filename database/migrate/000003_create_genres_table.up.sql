@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS genres (
+    genre_id UUID PRIMARY KEY DEFAULT uuidv7() NOT NULL,
+    genre_name VARCHAR(100) NOT NULL UNIQUE
+);

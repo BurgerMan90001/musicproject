@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -62,7 +63,7 @@ func (s *testSuite) SetupSuite() {
 	t := s.T()
 	ctx := t.Context()
 
-	c, err := postgres.NewContainer(ctx, filepath.Join("..", "..", "database", "schema", "schema.sql"))
+	c, err := postgres.NewContainer(ctx)
 	s.Require().NoError(err)
 
 	t.Cleanup(func() {
@@ -82,6 +83,18 @@ func (s *testSuite) SetupSuite() {
 	s.Require().NoError(err)
 
 	s.repo, err = postgres.New(ctx, "PG_URI")
+
+	wd, err := os.Getwd()
+	s.Require().NoError(err)
+
+	l := strings.Split(wd, "/")
+	path := filepath.Join("file://", strings.Join(l[:len(l)-2], "/"), "database", "migrate")
+	// s.Equal("", path)
+	// path := filepath.Join("file://", "..", "..", "database", "migrate")
+	// s.Require().NoError(err)
+
+	err = s.repo.Migrate(path, "up", 0)
+	s.Require().NoError(err)
 
 	if os.Getenv("LOAD_TESTDATA") == "true" {
 		err = s.repo.ExecFile(ctx, filepath.Join("..", "..", "database", "test.sql"))

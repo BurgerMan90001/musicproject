@@ -1,6 +1,5 @@
 
 # FOR LOCAL DEVELPMENT ONLY
-
 PORT=8081 && ADC=~/.config/gcloud/application_default_credentials.json && \
 docker run  \
 -p ${PORT}:${PORT} \

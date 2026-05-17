@@ -24,7 +24,6 @@ func (r *Song) NewSong(ctx context.Context, s *model.SongUploadRequest) (uuid.UU
 	songId, err := r.q.NewSong(ctx, gensqlc.NewSongParams{
 		AlbumID:      uuid.NullUUID{UUID: s.AlbumID, Valid: s.AlbumID != uuid.Nil},
 		SongName:     s.Name,
-		Duration:     int32(s.Duration),
 		CreationDate: s.CreationDate,
 		SongAudioUrl: s.Audio,
 	})
@@ -48,7 +47,6 @@ func (r *Song) GetSongByID(ctx context.Context, songId uuid.UUID) (*model.Song, 
 		Name:         s.SongName,
 		Genres:       strings.Split(string(s.GenreList), ","),
 		Artists:      strings.Split(string(s.ArtistList), ","),
-		Duration:     int(s.Duration),
 		CreationDate: s.CreationDate,
 		Streams:      int(s.Streams),
 		Cover:        s.SongCoverUrl.String,
@@ -63,12 +61,12 @@ func (r *Song) GetSongs(ctx context.Context, n int32) ([]*model.Song, error) {
 	var songs []*model.Song
 	for _, s := range d {
 		songs = append(songs, &model.Song{
-			SongId:       s.SongID,
-			AlbumId:      s.AlbumID.UUID,
-			Name:         s.SongName,
-			Genres:       strings.Split(string(s.GenreList), ","),
-			Artists:      strings.Split(string(s.ArtistList), ","),
-			Duration:     int(s.Duration),
+			SongId:  s.SongID,
+			AlbumId: s.AlbumID.UUID,
+			Name:    s.SongName,
+			Genres:  strings.Split(string(s.GenreList), ","),
+			Artists: strings.Split(string(s.ArtistList), ","),
+
 			CreationDate: s.CreationDate,
 			Streams:      int(s.Streams),
 			Cover:        s.SongCoverUrl.String,
@@ -92,7 +90,6 @@ func (r *Song) GetSongsByGenre(ctx context.Context, genreName string) ([]*model.
 			s.SongName,
 			s.GenreList,
 			s.ArtistList,
-			s.Duration,
 			s.CreationDate,
 			s.Streams,
 			s.SongCoverUrl,

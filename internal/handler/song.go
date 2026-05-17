@@ -4,11 +4,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"songsled.com/internal/jsonutil"
 	"songsled.com/internal/repository/postgres"
+	"songsled.com/internal/services/download"
 	"songsled.com/internal/services/upload"
 	"songsled.com/pkg/model"
 )
@@ -17,23 +19,31 @@ import (
 //		GetSongByID(ctx context.Context, id uuid.UUID) (*model.Song, error)
 //		PutSong(ctx context.Context, s *model.Song) (uuid.UUID, error)
 //	}
-func handleSongs(songRepo *postgres.Song, genreRepo *postgres.Genre, uploadService *upload.Service) func(r chi.Router) {
+func handleSongs(songRepo *postgres.Song, downloadService *download.Service, uploadService *upload.Service) func(r chi.Router) {
 	return func(r chi.Router) {
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 
-			// var n int32 = 10
-			// sn := r.URL.Query().Get("n")
-			// if sn != "" {
-			// 	n, err : = strconv.ParseInt(sn, 10, 32)
-			// 	if err != nil {
-			// 		jsonutil.WriteError(w, &model.Error{
-			// 			Code:    http.StatusBadRequest,
-			// 			Message: "Missing query param n",
-			// 		})
-			// 		return
-			// 	}
-			// }
+			var n int32 = 10
+			sn := r.URL.Query().Get("n")
+			if sn == "" {
+				var err error
+				n64, err := strconv.ParseInt(sn, 10, 32)
+				if err != nil {
+					jsonutil.WriteError(w, &model.Error{
+						Code:    http.StatusBadRequest,
+						Message: "Missing query param n",
+					})
+					return
+				}
+				n = int32(n64)
+			}
+			songs, err := songRepo.GetSongs(ctx, n)
+			if err != nil {
+				jsonutil.WriteError(w, err)
+				return
+			}
+			jsonutil.WriteJSON(w, songs, http.StatusOK)
 
 			genre := r.URL.Query().Get("genre")
 			if genre != "" {
@@ -46,13 +56,8 @@ func handleSongs(songRepo *postgres.Song, genreRepo *postgres.Genre, uploadServi
 				return
 			}
 
-			songs, err := songRepo.GetSongs(ctx, 10)
-			if err != nil {
-				jsonutil.WriteError(w, err)
-				return
-			}
-			jsonutil.WriteJSON(w, songs, http.StatusOK)
 		})
+
 		// Song upload
 		r.Put("/", func(w http.ResponseWriter, r *http.Request) {
 			songRequest, err := jsonutil.ReadJson[*model.SongUploadRequest](r.Body)
@@ -92,6 +97,24 @@ func handleSongs(songRepo *postgres.Song, genreRepo *postgres.Genre, uploadServi
 				return
 			}
 			jsonutil.WriteJSON(w, song, http.StatusOK)
+		})
+		r.HandleFunc("/{songId}/download", func(w http.ResponseWriter, r *http.Request) {
+			songId, err := uuid.Parse(r.PathValue("songId"))
+			if err != nil {
+				jsonutil.WriteError(w, &model.Error{
+					Code:    http.StatusNotFound,
+					Message: "Song not found",
+				})
+				return
+			}
+			ctx := r.Context()
+
+			res, err := downloadService.DownloadUrl(ctx, songId)
+			if err != nil {
+				jsonutil.WriteError(w, err)
+				return
+			}
+			jsonutil.WriteJSON(w, res, http.StatusOK)
 		})
 		r.Get("/{songId}/genres", func(w http.ResponseWriter, r *http.Request) {
 			songId, err := uuid.Parse(r.PathValue("songId"))

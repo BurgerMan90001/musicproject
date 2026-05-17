@@ -31,7 +31,7 @@
   font-size: 1rem;
 }
 .font-size-lg {
-  font-size: 2rem;
+  font-size: 1.5rem;
 }
 .font-size-xl {
   font-size: 3rem;
@@ -48,10 +48,16 @@
   text-align: center;
 }
 
-.line-height {
+.line-height-normal {
   line-height: normal;
+}
+.line-height-sm {
+  line-height: 1;
 }
 
 .letter-spacing-wide {
   letter-spacing: 0.2rem;
+}
+.text-decoration-underline {
+  text-decoration: underline;
 }

@@ -25,7 +25,6 @@ type Song struct {
 	// Genres and artists are strings
 	Genres       []string `json:"genres"`
 	Artists      []string `json:"artists"`
-	Duration     int      `json:"duration"`
 	CreationDate string   `json:"creationDate"`
 
 	// Defaults to 0
@@ -55,13 +54,11 @@ type SongUploadRequest struct {
 	// Optional
 	Genres []string `json:"genres"`
 
-	Duration int `json:"duration"`
-
 	// YYYY-MM-DD format
 	CreationDate string `json:"creationDate"`
 
 	// Optional
-	AlbumID uuid.UUID `json:"albumId"`
+	AlbumID uuid.UUID `json:"albumId,omitempty"`
 
 	// Image and audio locations
 	Cover string `json:"cover,omitempty"`

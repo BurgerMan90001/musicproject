@@ -14,7 +14,3 @@ type Link struct {
 	Href string `json:"href"`
 }
 
-type FileUploadResponse struct {
-	Href  string `json:"href"`
-	Links []Link `json:"links"`
-}

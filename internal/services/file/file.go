@@ -20,6 +20,7 @@ func New(ctx context.Context, T Blobstore, cfg config.File) (Blobstore, error) {
 		return NewS3(ctx, cfg.Endpoint, cfg.Region, cfg.Public, "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY")
 	case *GoogleCloud:
 		return NewGoogleCloud(ctx, cfg.Endpoint, "GOOGLE_ACCESS_ID")
+		
 	default:
 		return NewFileSystem(), nil
 	}

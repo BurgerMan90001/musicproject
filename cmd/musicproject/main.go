@@ -52,11 +52,17 @@ func run(ctx context.Context,
 	env string,
 	port int,
 ) error {
+	cfg, err := config.LoadConfig(configFile)
+	if err != nil {
+		return fmt.Errorf("Load config file: %v", err)
+	}
+
 	if err := os.Setenv("ENV", env); err != nil {
 		return err
 	}
+
 	if env == "dev" {
-		c, err := postgres.NewContainer(ctx, filepath.Join("database", "schema", "schema.sql"))
+		c, err := postgres.NewContainer(ctx)
 		if err != nil {
 			return fmt.Errorf("New postgres container: %w", err)
 		}
@@ -66,19 +72,20 @@ func run(ctx context.Context,
 				slog.Error(err.Error())
 			}
 		}()
-	}
 
-	cfg, err := config.LoadConfig(configFile)
-	if err != nil {
-		return fmt.Errorf("Load config file: %v", err)
 	}
-
 	//create database connection
 	repo, err := postgres.New(ctx, "PG_URI")
 	if err != nil {
 		return fmt.Errorf("New postgres connection: %v", err)
 	}
 	defer repo.DB.Close()
+
+	if env == "dev" {
+		if err := repo.Migrate("file://database/migrate", "up", 0); err != nil {
+			return fmt.Errorf("Migrate: %w", err)
+		}
+	}
 
 	// create server
 	server, err := server.NewServer(port)
